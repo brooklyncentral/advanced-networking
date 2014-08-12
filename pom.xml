@@ -37,8 +37,6 @@
 
     <properties>
         <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version> <!--  BROOKLYN_VERSION -->
-        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
-        <jclouds.version>1.7.4-ea-brooklyn.1</jclouds.version>
     </properties>
 
     <scm>
