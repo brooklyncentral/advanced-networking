@@ -18,10 +18,10 @@ package brooklyn.networking.subnet;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.annotations.Beta;
@@ -101,7 +101,7 @@ public interface PortForwarder {
      * @param protocol
      * @param accessingCidr
      */
-    public HostAndPort openPortForwarding(MachineLocation machine, int targetPort,
+    public HostAndPort openPortForwarding(HasNetworkAddresses machine, int targetPort,
             Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr);
 
     /**

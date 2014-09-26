@@ -34,6 +34,7 @@ import brooklyn.location.basic.PortRanges;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
@@ -41,6 +42,7 @@ import brooklyn.util.ssh.IptablesCommands.Policy;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 
@@ -93,10 +95,10 @@ public class PortForwarderIptables implements PortForwarder {
     }
 
     @Override
-    public HostAndPort openPortForwarding(MachineLocation targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
+    public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
 
-        String targetIp = ((MachineLocation)targetMachine).getAddress().getHostAddress();
+    	String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
         if (targetIp==null) {
             throw new IllegalStateException("Failed to open port-forarding for machine "+targetMachine+" because its location has no target ip: "+targetMachine);
         }

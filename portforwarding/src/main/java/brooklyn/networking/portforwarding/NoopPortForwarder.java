@@ -19,14 +19,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
 public class NoopPortForwarder implements PortForwarder {
@@ -57,13 +58,13 @@ public class NoopPortForwarder implements PortForwarder {
         if (log.isDebugEnabled()) log.debug("no-op in {} for openFirewallPortRange({}, {}, {}, {})", new Object[] {this, entity, portRange, protocol, accessingCidr});
     }
 
-    @Override
-    public HostAndPort openPortForwarding(MachineLocation targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
+    public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
         if (log.isDebugEnabled()) log.debug("no-op in {} for openPortForwarding({}, {}, {}, {}, {})", new Object[] {this, targetMachine, targetPort, optionalPublicPort, protocol, accessingCidr});
-        return HostAndPort.fromParts(targetMachine.getAddress().getHostAddress(), targetPort);
+        String address = Iterables.getFirst(Iterables.concat(targetMachine.getPublicAddresses(), targetMachine.getPrivateAddresses()), null);
+        return HostAndPort.fromParts(address, targetPort);
     }
-
+    
     @Override
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
         if (log.isDebugEnabled()) log.debug("no-op in {} for openPortForwarding({}, {}, {}, {})", new Object[] {this, targetSide, optionalPublicPort, protocol, accessingCidr});

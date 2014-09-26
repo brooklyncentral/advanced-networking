@@ -35,23 +35,22 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.location.LocationSpec;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.PortForwarder;
-import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.test.entity.TestEntity;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
@@ -164,9 +163,10 @@ public class SubnetTierTest {
         StubPortForwarder(Map<HostAndPort, HostAndPort> mapping) {
             this.mapping = mapping;
         }
-        @Override public HostAndPort openPortForwarding(MachineLocation targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
+        @Override public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
                 Protocol protocol, Cidr accessingCidr) {
-            HostAndPort targetSide = HostAndPort.fromParts(targetMachine.getAddress().getHostAddress(), targetPort);
+        	String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
+            HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
             return checkNotNull(mapping.get(targetSide), "no mapping for %s", targetSide);
         }
         @Override public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {

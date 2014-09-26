@@ -28,16 +28,6 @@ import org.jclouds.sshj.config.SshjSshClientModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.net.HostAndPort;
-import com.google.inject.Module;
-
 import brooklyn.entity.Entity;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
@@ -48,7 +38,18 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
+
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
+import com.google.inject.Module;
 
 public class DockerPortForwarder implements PortForwarder {
 
@@ -99,6 +100,7 @@ public class DockerPortForwarder implements PortForwarder {
         }
     }
 
+    @Override
     public PortForwardManager getPortForwardManager() {
         return portForwardManager;
     }
@@ -127,10 +129,10 @@ public class DockerPortForwarder implements PortForwarder {
     }
 
     @Override
-    public HostAndPort openPortForwarding(MachineLocation targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
+    public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
 
-        String targetIp = targetMachine.getAddress().getHostAddress();
+    	String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
         if (targetIp==null) {
             throw new IllegalStateException("Failed to open port-forwarding for machine "+targetMachine+" because its" +
                     " location has no target ip: "+targetMachine);

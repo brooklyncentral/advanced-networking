@@ -107,12 +107,26 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         }
 
         @Override
-        public HostAndPort openPortForwarding(NodeMetadata node, int targetPort, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
-            String vmIp = Iterables.get(Iterables.concat(node.getPrivateAddresses(), node.getPublicAddresses()), 0);
-            HostAndPort targetSide = HostAndPort.fromParts(vmIp, node.getLoginPort());
+        public HostAndPort openPortForwarding(final NodeMetadata node, int targetPort, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
+        	HasNetworkAddresses hasNetworkAddresses = new HasNetworkAddresses() {
+				@Override public String getHostname() {
+					return node.getHostname();
+				}
+				@Override public Set<String> getPublicAddresses() {
+					return node.getPublicAddresses();
+				}
+				@Override public Set<String> getPrivateAddresses() {
+					return node.getPrivateAddresses();
+				}
+				@Override
+				public String toString() {
+					return node.toString();
+				}
+        	};
             return pf.openPortForwarding(
-                    targetSide,
-                    Optional.of(node.getLoginPort()),
+                    hasNetworkAddresses,
+                    node.getLoginPort(),
+                    optionalPublicPort,
                     Protocol.TCP,
                     Cidr.UNIVERSAL);
         }
