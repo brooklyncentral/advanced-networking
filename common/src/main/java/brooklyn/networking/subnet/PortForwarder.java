@@ -15,9 +15,12 @@
  */
 package brooklyn.networking.subnet;
 
+import java.util.List;
+
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.util.net.Cidr;
@@ -40,6 +43,8 @@ import com.google.common.net.HostAndPort;
  */
 @Beta
 public interface PortForwarder {
+
+    public void inject(Entity owner, List<Location> locations);
 
     /**
      * Returns the IP/hostname of a public gateway (for accessing the private subnet).

@@ -15,9 +15,12 @@
  */
 package brooklyn.networking.subnet;
 
+import java.util.List;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.event.AttributeSensor;
+import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
@@ -108,6 +111,11 @@ public class PortForwarderClient implements PortForwarder {
             _delegate = delegateSupplier.get();
         }
         return _delegate;
+    }
+
+    @Override
+    public void inject(Entity owner, List<Location> locations) {
+        getDelegate().inject(owner, locations);
     }
 
     @Override

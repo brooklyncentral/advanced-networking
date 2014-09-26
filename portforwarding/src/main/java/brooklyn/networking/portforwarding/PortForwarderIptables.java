@@ -66,6 +66,11 @@ public class PortForwarderIptables implements PortForwarder {
         this.forwarderMachine = forwarderMachine;
     }
 
+    @Override
+    public void inject(Entity owner, List<Location> locations) {
+        // no-op
+    }
+    
     public PortForwardManager getPortForwardManager() {
         return portForwardManager;
     }

@@ -101,6 +101,11 @@ public class DockerPortForwarder implements PortForwarder {
     }
 
     @Override
+    public void inject(Entity owner, List<Location> locations) {
+        // no-op
+    }
+
+    @Override
     public PortForwardManager getPortForwardManager() {
         return portForwardManager;
     }

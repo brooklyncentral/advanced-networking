@@ -18,6 +18,7 @@ package brooklyn.networking.subnet;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.testng.Assert.assertEquals;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -35,7 +36,9 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
+import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
+import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
@@ -172,6 +175,9 @@ public class SubnetTierTest {
 
         StubPortForwarder(Map<HostAndPort, HostAndPort> mapping) {
             this.mapping = mapping;
+        }
+        @Override public void inject(Entity owner, List<Location> locations) {
+            // no-op
         }
         @Override public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
                 Protocol protocol, Cidr accessingCidr) {

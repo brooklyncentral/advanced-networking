@@ -157,6 +157,9 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     }
 
     public void start(Collection<? extends Location> locations) {
+        PortForwarder portForwarder = getPortForwarder();
+        portForwarder.inject(getProxy(), ImmutableList.copyOf(locations));
+        
         addLocations(locations);
         Location origLoc = Iterables.getOnlyElement(locations);
         Location customizedLoc = customizeLocation(origLoc);

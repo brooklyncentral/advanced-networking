@@ -17,6 +17,7 @@ package brooklyn.networking.portforwarding;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Executors;
 
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
+import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.networking.subnet.PortForwarder;
@@ -44,6 +46,11 @@ public class NoopPortForwarder implements PortForwarder {
     private static final Logger log = LoggerFactory.getLogger(NoopPortForwarder.class);
 
     public NoopPortForwarder() {
+    }
+
+    @Override
+    public void inject(Entity owner, List<Location> locations) {
+        // no-op
     }
 
     @Override
