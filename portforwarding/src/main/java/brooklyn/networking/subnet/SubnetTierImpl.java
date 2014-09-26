@@ -18,14 +18,18 @@ package brooklyn.networking.subnet;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.jclouds.compute.domain.NodeMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.trait.StartableMethods;
@@ -38,27 +42,29 @@ import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import brooklyn.management.internal.CollectionChangeListener;
+import brooklyn.management.internal.ManagementContextInternal;
 import brooklyn.networking.AttributeMunger;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
-import brooklyn.networking.subnet.PortForwarder;
-import brooklyn.networking.subnet.PortForwarderAsync;
-import brooklyn.networking.subnet.PortForwarderAsyncImpl;
-import brooklyn.networking.subnet.PortForwarderClient;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
+import brooklyn.util.javalang.Reflections;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 
 public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 
     public static AttributeSensor<PortForwardManager> PORT_FORWARD_MANAGER_LIVE = Sensors.newSensor(PortForwardManager.class, "subnet.portForwardManager.live");
     public static AttributeSensor<PortForwarder> PORT_FORWARDER_LIVE = Sensors.newSensor(PortForwarder.class, "subnet.portForwarder.live");
-
+    
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(SubnetTierImpl.class);
 
@@ -66,6 +72,8 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     protected transient PortForwarderAsync _portForwarderAsync;
     protected transient JcloudsPortForwarderExtension _portForwarderExtension;
 
+    protected transient Set<Entity> portMappedEntities = Collections.synchronizedSet(Sets.<Entity>newLinkedHashSet());
+    
     @Override
     public void init() {
         super.init();
@@ -92,6 +100,43 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         setAttribute(PORT_FORWARDER_LIVE, pf);
 
         attributeMunger = new AttributeMunger(this);
+
+        // TODO For rebind, would require to re-register this; same for portMappedEntities field
+        CollectionChangeListener<Entity> descendentsChangedListener = new CollectionChangeListener<Entity>() {
+            @Override public void onItemAdded(Entity item) {
+                SubnetTierImpl.this.onEntityAdded(item);
+            }
+            @Override public void onItemRemoved(Entity item) {
+            }
+        };
+        ((ManagementContextInternal) getManagementContext()).addEntitySetListener(descendentsChangedListener);
+        rescanDescendants();
+    }
+    
+    private void rescanDescendants() {
+        for (Entity descendant : Entities.descendants(this)) {
+            if (!portMappedEntities.contains(descendant)) {
+                onEntityAdded(descendant);
+            }
+        }
+    }
+    // Tracking entities so can automatically set up port-forwarding as required
+    private void onEntityAdded(Entity entity) {
+        if (Entities.isAncestor(entity, SubnetTierImpl.this) && !portMappedEntities.contains(entity)) {
+            Iterable<AttributeSensor<Integer>> attributes = entity.getConfig(PUBLICLY_FORWARDED_PORTS);
+            if (attributes != null) {
+                portMappedEntities.add(entity);
+                for (AttributeSensor<Integer> attribute : attributes) {
+                    AttributeSensor<String> mappedAttribute = Sensors.newStringSensor("mapped."+attribute.getName());
+                    openPortForwardingAndAdvertise(
+                            EntityAndAttribute.supplier(entity, attribute), 
+                            Optional.<Integer>absent(), 
+                            Protocol.TCP, 
+                            Cidr.UNIVERSAL, 
+                            EntityAndAttribute.supplier(entity, mappedAttribute));
+                }
+            }
+        }
     }
 
     protected JcloudsPortForwarderExtension newJcloudsPortForwarderExtension() {
