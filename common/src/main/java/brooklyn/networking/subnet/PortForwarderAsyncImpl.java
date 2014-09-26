@@ -26,6 +26,7 @@ import brooklyn.event.SensorEvent;
 import brooklyn.event.SensorEventListener;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
+import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.AttributeMunger;
 import brooklyn.util.net.Cidr;
@@ -84,7 +85,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
         DeferredExecutor<Integer> updater = new DeferredExecutor<Integer>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
             public void run() {
                 Entity entity = privatePort.getEntity();
-                MachineLocation machine = (MachineLocation) Iterables.getOnlyElement(entity.getLocations(), null);
+                MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePort.getValue(), optionalPublicPort, protocol, accessingCidr);
                 whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());
             }});
