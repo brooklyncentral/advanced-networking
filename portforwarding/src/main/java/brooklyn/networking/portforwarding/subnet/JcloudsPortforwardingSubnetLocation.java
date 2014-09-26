@@ -86,8 +86,8 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     public JcloudsSshMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
         MutableMap<Object, Object> flags2 = MutableMap.builder()
                 .putAll(flagsIn)
-                .put(JcloudsLocation.USE_PORT_FORWARDING, "true")
-                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, getRequiredConfig(PORT_FORWARDER))
+                .put(JcloudsLocation.USE_PORT_FORWARDING, getConfig(USE_PORT_FORWARDING))
+                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, getConfig(PORT_FORWARDER))
                 .build();
 
         // Throttle to ensure only one call to obtain per X seconds (but calls can overlap)

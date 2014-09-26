@@ -140,7 +140,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         if (jl != null) {
             return jl.newSubLocation(JcloudsPortforwardingSubnetLocation.class, new ConfigBag()
                     // put these fields on the location so it has the info it needs to create the subnet
-                    .configure(JcloudsLocation.USE_PORT_FORWARDING, true)
+                    .configure(JcloudsLocation.USE_PORT_FORWARDING, getConfig(MANAGEMENT_ACCESS_REQUIRES_PORT_FORWARDING))
                     .configure(JcloudsLocation.PORT_FORWARDER, getPortForwarderExtension())
                     .configure(JcloudsLocation.PORT_FORWARDING_MANAGER, PortForwardManagerClient.fromAttributeOnEntity(this, PORT_FORWARD_MANAGER_LIVE))
                     .configure(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, PortForwarderClient.fromAttributeOnEntity(this, PORT_FORWARDER_LIVE))

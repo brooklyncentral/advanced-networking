@@ -44,6 +44,14 @@ public interface SubnetTier extends Entity, Startable {
     public static final ConfigKey<Cidr> SUBNET_CIDR = new BasicConfigKey<Cidr>(Cidr.class,
             "subnet.cidr", "CIDR to use for this subnet", null);
 
+    // TODO This is respected for JcloudsLocation not setting up port-forwarding to 22; but what about
+    // BrooklynAccessUtils.getBrooklynAccessibleAddress?
+    // See JcloudsPortforwardingSubnetMachineLocation.getSocketEndpointFor
+    public static final ConfigKey<Boolean> MANAGEMENT_ACCESS_REQUIRES_PORT_FORWARDING = ConfigKeys.newBooleanConfigKey(
+            "subnet.managementnetwork.portforwarding.enabled", 
+            "Whether to setup port-forwarding for the management plane to use when subsequently accessing the VM (e.g. over the ssh port)", 
+            true);
+
     @SetFromFlag("portForwarder")
     public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
             PortForwarder.class, 
