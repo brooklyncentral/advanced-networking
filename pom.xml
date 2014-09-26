@@ -77,6 +77,7 @@
     <modules>
         <module>common</module>
         <module>cloudstack</module>
+        <module>vcloud-director</module>
         <module>portforwarding</module>
     </modules>
 </project>
