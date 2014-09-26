@@ -30,13 +30,14 @@
 
     <parent>
         <groupId>io.brooklyn</groupId>
-        <artifactId>brooklyn-parent</artifactId>
+        <artifactId>brooklyn-downstream-parent</artifactId>
         <version>0.7.0-SNAPSHOT</version>  <!-- BROOKLYN_VERSION -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <properties>
         <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version> <!--  BROOKLYN_VERSION -->
+        <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
     </properties>
 
     <scm>
