@@ -29,8 +29,6 @@ import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
-import brooklyn.networking.subnet.PortForwarder;
-import brooklyn.networking.subnet.PortForwarderAsync;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
@@ -48,7 +46,14 @@ public interface SubnetTier extends Entity, Startable {
 
     @SetFromFlag("portForwarder")
     public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
-            PortForwarder.class, "subnet.portForwarder", "port forwarding implementation for use at this subnet tier (required)");
+            PortForwarder.class, 
+            "subnet.portForwarder", 
+            "port forwarding implementation for use at this subnet tier (required, or specify subnet.portForwarder.type)");
+
+    @SetFromFlag("portForwarder")
+    public static final ConfigKey<String> PORT_FORWARDER_TYPE = ConfigKeys.newStringConfigKey(
+            "subnet.portForwarder.type", 
+            "port forwarding implementation type for use at this subnet tier");
 
     /** optional manager which can be injected for shared visibility of management rules;
      * injection should be a client typically, cf {@link PortForwardManagerClient} */

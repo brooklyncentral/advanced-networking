@@ -16,6 +16,7 @@
 package brooklyn.networking.subnet;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
 
@@ -40,6 +41,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
+import brooklyn.networking.portforwarding.NoopPortForwarder;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.test.entity.TestEntity;
@@ -155,6 +157,14 @@ public class SubnetTierTest {
         entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
+    public void testConfigurePortForwarderType() throws Exception {
+        SubnetTier subnetTier2 = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDER_TYPE, NoopPortForwarder.class.getName()));
+
+        assertEquals(subnetTier2.getAttribute(SubnetTierImpl.PORT_FORWARDER_LIVE).getClass(), NoopPortForwarder.class);
     }
 
     public static class StubPortForwarder implements PortForwarder {

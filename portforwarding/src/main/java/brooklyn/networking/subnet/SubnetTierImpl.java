@@ -70,7 +70,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     public void init() {
         super.init();
 
-        PortForwarder pf = checkNotNull(getConfig(PORT_FORWARDER), "portForwarder");
+        PortForwarder pf = checkNotNull(getPortForwarder(), "portForwarder");
         PortForwardManager pfm = getConfig(PORT_FORWARDING_MANAGER);
         if (pfm == null && pf.getPortForwardManager() == null) {
             pfm = new PortForwardManagerAuthority();
@@ -177,8 +177,22 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     @Override
     public synchronized PortForwarder getPortForwarder() {
         PortForwarder pf = getAttribute(PORT_FORWARDER_LIVE);
-        if (pf!=null) return pf;
-        return getConfig(PORT_FORWARDER);
+        if (pf != null) return pf;
+        
+        PortForwarder result = getConfig(PORT_FORWARDER);
+        if (result != null) return result;
+        
+        String type = getConfig(PORT_FORWARDER_TYPE);
+        ClassLoader catalogClassLoader = getManagementContext().getCatalog().getRootClassLoader();
+        if (Strings.isNonBlank(type)) {
+            Optional<PortForwarder> portForwarderByType = Reflections.invokeConstructorWithArgs(catalogClassLoader, type);
+            if (portForwarderByType.isPresent()) {
+                result = portForwarderByType.get();
+            } else {
+                throw new IllegalStateException("Failed to create PortForwarder "+type+" for subnet tier "+this);
+            }
+        }
+        return result;
     }
 
     @Override
