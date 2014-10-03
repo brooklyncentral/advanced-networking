@@ -15,15 +15,18 @@
  */
 package brooklyn.networking.subnet;
 
+import java.util.List;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.event.AttributeSensor;
-import brooklyn.location.MachineLocation;
+import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.annotations.Beta;
@@ -110,28 +113,38 @@ public class PortForwarderClient implements PortForwarder {
         return _delegate;
     }
 
+    @Override
+    public void inject(Entity owner, List<Location> locations) {
+        getDelegate().inject(owner, locations);
+    }
 
+    @Override
     public String openGateway() {
         return getDelegate().openGateway();
     }
 
+    @Override
     public String openStaticNat(Entity serviceToOpen) {
         return getDelegate().openStaticNat(serviceToOpen);
     }
 
+    @Override
     public void openFirewallPort(Entity entity, int port, Protocol protocol, Cidr accessingCidr) {
         getDelegate().openFirewallPort(entity, port, protocol, accessingCidr);
     }
 
+    @Override
     public void openFirewallPortRange(Entity entity, PortRange portRange, Protocol protocol, Cidr accessingCidr) {
         getDelegate().openFirewallPortRange(entity, portRange, protocol, accessingCidr);
     }
 
-    public HostAndPort openPortForwarding(MachineLocation machine, int targetPort, Optional<Integer> optionalPublicPort,
+    @Override
+    public HostAndPort openPortForwarding(HasNetworkAddresses machine, int targetPort, Optional<Integer> optionalPublicPort,
         Protocol protocol, Cidr accessingCidr) {
         return getDelegate().openPortForwarding(machine, targetPort, optionalPublicPort, protocol, accessingCidr);
     }
 
+    @Override
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol,
         Cidr accessingCidr) {
         return getDelegate().openPortForwarding(targetSide, optionalPublicPort, protocol, accessingCidr);

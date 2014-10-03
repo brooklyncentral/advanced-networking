@@ -15,13 +15,16 @@
  */
 package brooklyn.networking.subnet;
 
+import java.util.List;
+
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.location.MachineLocation;
+import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.annotations.Beta;
@@ -40,6 +43,8 @@ import com.google.common.net.HostAndPort;
  */
 @Beta
 public interface PortForwarder {
+
+    public void inject(Entity owner, List<Location> locations);
 
     /**
      * Returns the IP/hostname of a public gateway (for accessing the private subnet).
@@ -101,7 +106,7 @@ public interface PortForwarder {
      * @param protocol
      * @param accessingCidr
      */
-    public HostAndPort openPortForwarding(MachineLocation machine, int targetPort,
+    public HostAndPort openPortForwarding(HasNetworkAddresses machine, int targetPort,
             Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr);
 
     /**

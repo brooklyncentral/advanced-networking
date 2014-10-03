@@ -19,14 +19,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.concurrent.Executors;
 
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.net.HostAndPort;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
@@ -39,11 +38,19 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Networking;
+import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /** requires zone id and tier id to be specified; shared_network_id optional (but needed if you want to connect!) */
 public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
@@ -86,8 +93,8 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     public JcloudsSshMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
         MutableMap<Object, Object> flags2 = MutableMap.builder()
                 .putAll(flagsIn)
-                .put(JcloudsLocation.USE_PORT_FORWARDING, "true")
-                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, getRequiredConfig(PORT_FORWARDER))
+                .put(JcloudsLocation.USE_PORT_FORWARDING, getConfig(USE_PORT_FORWARDING))
+                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, getConfig(PORT_FORWARDER))
                 .build();
 
         // Throttle to ensure only one call to obtain per X seconds (but calls can overlap)
@@ -117,6 +124,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     // the todos/fixmes in this method are copied from there; they should be addressed in core brooklyn
     @Override
     protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, String vmHostname, Optional<HostAndPort> sshHostAndPort, ConfigBag setup) throws IOException {
+        String user = getUser(setup);
         Map<?,?> sshConfig = extractSshConfig(setup, node);
         String nodeAvailabilityZone = extractAvailabilityZone(setup, node);
         String nodeRegion = extractRegion(setup, node);
@@ -130,20 +138,37 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
             Networking.getInetAddressWithFixedName(address);
             // fine, it resolves
         } catch (Exception e) {
-            // occurs if an unresolvable hostname is given as vmHostname, and the machine only has private IP addresses but they are reachable
-            // TODO cleanup use of getPublicHostname so its semantics are clearer, returning reachable hostname or ip, and
+            // occurs if an unresolvable hostname is given as vmHostname
+            // TODO cleanup use of getPublicHostname so its semantics are clearer, returning reachable hostname or ip, and 
             // do this check/fix there instead of here!
             Exceptions.propagateIfFatal(e);
-            LOG.debug("Could not resolve reported address '"+address+"' for "+vmHostname+" ("+setup.getDescription()+"/"+node+"), requesting reachable address");
-            if (computeService==null) throw Exceptions.propagate(e);
-            // this has sometimes already been done in waitForReachable (unless skipped) but easy enough to do again
-            address = JcloudsUtil.getFirstReachableAddress(computeService.getContext(), node);
+            if ("false".equalsIgnoreCase(setup.get(WAIT_FOR_SSHABLE))) {
+                // Don't want to wait for (or don't expect) VM to be ssh'able, so just check IP reachabilty; 
+                // but don't fail if can't access it at all.
+                // TODO What is a sensible time to wait?
+                LOG.debug("Could not resolve reported address '"+address+"' for "+vmHostname+" ("+setup.getDescription()+"/"+node+"), waitForSshable=false, so requesting reachable address");
+                Iterable<String> addresses = Iterables.concat(node.getPublicAddresses(), node.getPrivateAddresses());
+                ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+                try {
+                    address = new ConcurrentReachableAddressFinder(executor).findReachable(addresses, Duration.ONE_MINUTE);
+                } catch (NoSuchElementException e2) {
+                    address = Iterables.getFirst(addresses, null);
+                    LOG.warn("Could not resolve reachable address for "+node+"; falling back to first address "+address, e2);
+                } finally {
+                    executor.shutdownNow();
+                }
+            } else {
+                LOG.debug("Could not resolve reported address '"+address+"' for "+vmHostname+" ("+setup.getDescription()+"/"+node+"), requesting reachable socket address");
+                if (computeService==null) throw Exceptions.propagate(e);
+                // this has sometimes already been done in waitForReachable (unless skipped) but easy enough to do again
+                address = JcloudsUtil.getFirstReachableAddress(computeService.getContext(), node);
+            }
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("creating JcloudsPortforwardingSubnetMachineLocation representation for {}@{} ({}/{}) for {}/{}",
                     new Object[] {
-                            getUser(setup),
+                            user,
                             address,
                             Entities.sanitize(sshConfig),
                             sshHostAndPort,
@@ -152,11 +177,20 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                     });
 
         if (isManaged()) {
+            // TODO Am adding all `setup` configuration to machine, so that custom values passed in obtain(map) 
+            //      are also available to the machine. For example, SshMachineLocation.NO_STDOUT_LOGGING, 
+            //      JcloudsLocation.WAIT_FOR_SSHABLE, etc.
+            //      This is not being done in super.createJcloudsSshMachineLocation - why not?!
+            //      Is there a better way to just pass in the custom, so all other config can just be inherited 
+            //      from parent rather than duplicated?
+            // TODO Why pass in "config"? I (Aled) am dubious that has any effect!
+            // TODO These things need fixed in JcloudsLocation.createJcloudsSshMachineLocation, rather than just here.
             return getManagementContext().getLocationManager().createLocation(LocationSpec.create(JcloudsPortforwardingSubnetMachineLocation.class)
-                    .configure("displayName", vmHostname)
+                    .displayName(vmHostname)
+                    .configure(setup.getAllConfig())
                     .configure("address", address)
                     .configure("port", sshHostAndPort.isPresent() ? sshHostAndPort.get().getPort() : node.getLoginPort())
-                    .configure("user", getUser(setup))
+                    .configure("user", user)
                     // don't think "config" does anything
                     .configure(sshConfig)
                     // FIXME remove "config" -- inserted directly, above

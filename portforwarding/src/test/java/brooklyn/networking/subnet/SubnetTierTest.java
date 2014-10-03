@@ -16,7 +16,9 @@
 package brooklyn.networking.subnet;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.testng.Assert.assertEquals;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
+import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
@@ -41,17 +44,18 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.PortForwarder;
-import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.NoopPortForwarder;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.test.entity.TestEntity;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
@@ -158,15 +162,27 @@ public class SubnetTierTest {
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
+    @Test
+    public void testConfigurePortForwarderType() throws Exception {
+        SubnetTier subnetTier2 = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDER_TYPE, NoopPortForwarder.class.getName()));
+
+        assertEquals(subnetTier2.getAttribute(SubnetTierImpl.PORT_FORWARDER_LIVE).getClass(), NoopPortForwarder.class);
+    }
+
     public static class StubPortForwarder implements PortForwarder {
         final Map<HostAndPort, HostAndPort> mapping;
 
         StubPortForwarder(Map<HostAndPort, HostAndPort> mapping) {
             this.mapping = mapping;
         }
-        @Override public HostAndPort openPortForwarding(MachineLocation targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
+        @Override public void inject(Entity owner, List<Location> locations) {
+            // no-op
+        }
+        @Override public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
                 Protocol protocol, Cidr accessingCidr) {
-            HostAndPort targetSide = HostAndPort.fromParts(targetMachine.getAddress().getHostAddress(), targetPort);
+        	String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
+            HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
             return checkNotNull(mapping.get(targetSide), "no mapping for %s", targetSide);
         }
         @Override public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {

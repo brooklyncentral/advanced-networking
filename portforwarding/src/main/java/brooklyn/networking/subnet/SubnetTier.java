@@ -29,8 +29,6 @@ import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
-import brooklyn.networking.subnet.PortForwarder;
-import brooklyn.networking.subnet.PortForwarderAsync;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
@@ -38,17 +36,43 @@ import brooklyn.util.net.Protocol;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
 
 @Beta
 @ImplementedBy(SubnetTierImpl.class)
 public interface SubnetTier extends Entity, Startable {
 
+    // TODO Only works for integer ports currently; should also make it work for URLs and HostAndPort (like in clocker)
+    // Config should be set on entities within subnet tier, rather than on the subnet tier itself
+    public static final ConfigKey<Iterable<AttributeSensor<Integer>>> PUBLICLY_FORWARDED_PORTS = ConfigKeys.newConfigKey(
+            new TypeToken<Iterable<AttributeSensor<Integer>>>() {},
+            "subnet.publiclyForwardedPorts",
+            "Configuration to be set on individual entities that are descendents of SubnetTier; these ports will automatically be opened",
+            ImmutableList.<AttributeSensor<Integer>>of());
+
     public static final ConfigKey<Cidr> SUBNET_CIDR = new BasicConfigKey<Cidr>(Cidr.class,
             "subnet.cidr", "CIDR to use for this subnet", null);
 
+    // TODO This is respected for JcloudsLocation not setting up port-forwarding to 22; but what about
+    // BrooklynAccessUtils.getBrooklynAccessibleAddress?
+    // See JcloudsPortforwardingSubnetMachineLocation.getSocketEndpointFor
+    public static final ConfigKey<Boolean> MANAGEMENT_ACCESS_REQUIRES_PORT_FORWARDING = ConfigKeys.newBooleanConfigKey(
+            "subnet.managementnetwork.portforwarding.enabled", 
+            "Whether to setup port-forwarding for the management plane to use when subsequently accessing the VM (e.g. over the ssh port)", 
+            true);
+
     @SetFromFlag("portForwarder")
     public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
-            PortForwarder.class, "subnet.portForwarder", "port forwarding implementation for use at this subnet tier (required)");
+            PortForwarder.class, 
+            "subnet.portForwarder", 
+            "port forwarding implementation for use at this subnet tier (required, or specify subnet.portForwarder.type)");
+
+    @Beta
+    @SetFromFlag("portForwarder")
+    public static final ConfigKey<String> PORT_FORWARDER_TYPE = ConfigKeys.newStringConfigKey(
+            "subnet.portForwarder.type", 
+            "port forwarding implementation type for use at this subnet tier");
 
     /** optional manager which can be injected for shared visibility of management rules;
      * injection should be a client typically, cf {@link PortForwardManagerClient} */
