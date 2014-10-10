@@ -34,6 +34,7 @@ import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
+import brooklyn.location.access.PortMapping;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.networking.subnet.PortForwarder;
@@ -152,14 +153,18 @@ public class DockerPortForwarder implements PortForwarder {
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
         // FIXME Does this actually open the port forwarding? Or just record that the port is supposed to be open?
         PortForwardManager pfw = getPortForwardManager();
-        int publicPort;
+        PortMapping mapping;
         if (optionalPublicPort.isPresent()) {
-            publicPort = optionalPublicPort.get();
-            pfw.acquirePublicPortExplicit(dockerHostname, publicPort);
+            int publicPort = optionalPublicPort.get();
+            mapping = pfw.acquirePublicPortExplicit(dockerHostname, publicPort);
         } else {
-            publicPort = pfw.acquirePublicPort(dockerHostname);
+            mapping = pfw.acquirePublicPortExplicit(dockerHostname, targetSide.getPort());
         }
-        return HostAndPort.fromParts(dockerHostname, publicPort);
+        if (mapping == null) {
+            return HostAndPort.fromParts(dockerHostname, targetSide.getPort());
+        } else {
+            return HostAndPort.fromParts(dockerHostname, mapping.getPublicPort());
+        }
     }
 
     public Map<Integer, Integer> getPortMappings(MachineLocation targetMachine) {
