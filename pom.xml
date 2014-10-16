@@ -19,7 +19,7 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.apache.brooklyn.networking</groupId>
+    <groupId>io.brooklyn.networking</groupId>
     <artifactId>brooklyn-networking-parent</artifactId>
     <packaging>pom</packaging>
 
