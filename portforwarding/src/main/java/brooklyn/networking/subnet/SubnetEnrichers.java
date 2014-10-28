@@ -34,6 +34,7 @@ import brooklyn.policy.EnricherSpec;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Function;
 import com.google.common.net.HostAndPort;
@@ -80,9 +81,9 @@ public class SubnetEnrichers {
         public void init() {
             final SubnetTier subnetTier = getConfig(SUBNET_TIER);
 
-            setConfig(TRANSFORMATION_FROM_EVENT, new Function<SensorEvent<String>,String>() {
-                    @Override public String apply(SensorEvent<String> event) {
-                        String sensorVal = event.getValue();
+            setConfig(TRANSFORMATION_FROM_EVENT, new Function<SensorEvent<Object>,String>() {
+                    @Override public String apply(SensorEvent<Object> event) {
+                        String sensorVal = Strings.toString(event.getValue());
                         Entity source = event.getSource();
                         Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(source.getLocations());
                         if (sensorVal != null && machine.isPresent()) {
@@ -106,7 +107,8 @@ public class SubnetEnrichers {
                         } else {
                             return sensorVal;
                         }
-                    }});        }
+                    }});
+            }
     }
 
     public static class HostAndPortTransformingEnricher extends Transformer<Object, String> {
