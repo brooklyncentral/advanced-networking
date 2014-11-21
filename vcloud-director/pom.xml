@@ -40,11 +40,23 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>brooklyn-networking-common</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.jclouds.labs</groupId>
+                    <artifactId>vcloud-director</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>brooklyn-networking-portforwarding</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.jclouds.labs</groupId>
+                    <artifactId>vcloud-director</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
@@ -65,12 +77,18 @@
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-locations-jclouds</artifactId>
             <version>${brooklyn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.jclouds.labs</groupId>
+                    <artifactId>vcloud-director</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
  
         <dependency>
-            <groupId>${jclouds.groupId}.labs</groupId>
+            <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>vcloud-director</artifactId>
-            <version>${jclouds.version}</version>
+            <version>1.8.2-alpha-cloudsoft.6</version>
         </dependency>
 
         <dependency>
