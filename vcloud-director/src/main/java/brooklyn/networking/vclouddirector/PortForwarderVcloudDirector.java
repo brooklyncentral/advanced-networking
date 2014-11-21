@@ -27,9 +27,9 @@ import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.vclouddirector.NatService.OpenPortForwardingConfig;
@@ -60,22 +60,29 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             "advancednetworking.vcloud.network.publicip",
             "Optionally specify an existing public IP associated with the network");
 
-    private final PortForwardManager portForwardManager;
-
     private final Object mutex = new Object();
     
+    private PortForwardManager portForwardManager;
+
     private NatService service;
 
     private SubnetTier subnetTier;
     
     public PortForwarderVcloudDirector() {
-        this(new PortForwardManagerAuthority());
     }
 
     public PortForwarderVcloudDirector(PortForwardManager portForwardManager) {
         this.portForwardManager = portForwardManager;
     }
 
+    @Override
+    public void injectManagementContext(ManagementContext managementContext) {
+        if (portForwardManager == null) {
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        }
+    }
+
+    @Override
     public PortForwardManager getPortForwardManager() {
         return portForwardManager;
     }
@@ -141,7 +148,6 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         int publicPort;
         if (optionalPublicPort.isPresent()) {
             publicPort = optionalPublicPort.get();
-            pfw.acquirePublicPortExplicit(publicIp, publicPort);
         } else {
             publicPort = pfw.acquirePublicPort(publicIp);
         }

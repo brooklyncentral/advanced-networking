@@ -26,7 +26,7 @@ import brooklyn.entity.basic.StartableApplication;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.BasicConfigKey;
-import brooklyn.location.access.PortForwardManagerAuthority;
+import brooklyn.location.access.PortForwardManager;
 import brooklyn.util.BrooklynNetworkUtils;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
@@ -78,7 +78,10 @@ public abstract class LegacyAbstractSubnetApp extends AbstractApplication implem
         setIfNotAlreadySet(USE_VPC, false);
         setIfNotAlreadySet(USE_SUBNET, true);
         // FIXME not safe for persistence
-        setIfNotAlreadySet(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, new PortForwardManagerAuthority());
+        if (getConfigMap().getConfigRaw(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, true).isAbsent()) {
+            PortForwardManager pfm = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
+            configure(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, pfm);
+        }
 
         setIfNotAlreadySet(MANAGEMENT_ACCESS_CIDR, MANAGEMENT_ACCESS_CIDR.getDefaultValue());
         LOG.info("Management access will be granted to "+getConfig(MANAGEMENT_ACCESS_CIDR));

@@ -40,12 +40,15 @@ public class JcloudsPortforwardingSubnetMachineLocation extends AbstractJcloudsS
         PortForwardManager pfw = getRequiredConfig(PORT_FORWARDING_MANAGER);
         PortForwarder portForwarder = getRequiredConfig(PORT_FORWARDER);
         synchronized (pfw) {
-            HostAndPort hp = pfw.lookup(this, privatePort);
-            if (hp!=null) return hp;
+            HostAndPort result = pfw.lookup(this, privatePort);
+            if (result!=null) return result;
+
+            result = pfw.lookup(getJcloudsId(), privatePort);
+            if (result!=null) return result;
 
             // TODO What to use for associate's publicIpId?
-            HostAndPort result = portForwarder.openPortForwarding(this, privatePort, Optional.<Integer>absent(), Protocol.TCP, accessor);
-            pfw.associate(getJcloudsId(), result.getPort(), this, privatePort);
+            result = portForwarder.openPortForwarding(this, privatePort, Optional.<Integer>absent(), Protocol.TCP, accessor);
+            pfw.associate(getJcloudsId(), result, this, privatePort);
             return result;
         }
     }

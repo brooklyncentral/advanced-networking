@@ -28,6 +28,7 @@ import brooklyn.entity.Entity;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 import brooklyn.util.net.Cidr;
@@ -45,9 +46,22 @@ public class NoopPortForwarder implements PortForwarder {
 
     private static final Logger log = LoggerFactory.getLogger(NoopPortForwarder.class);
 
+    private PortForwardManager portForwardManager;
+    
     public NoopPortForwarder() {
     }
 
+    public NoopPortForwarder(PortForwardManager portForwardManager) {
+        this.portForwardManager = portForwardManager;
+    }
+
+    @Override
+    public void injectManagementContext(ManagementContext managementContext) {
+        if (portForwardManager == null) {
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        }
+    }
+    
     @Override
     public void inject(Entity owner, List<Location> locations) {
         // no-op
@@ -116,7 +130,7 @@ public class NoopPortForwarder implements PortForwarder {
 
     @Override
     public PortForwardManager getPortForwardManager() {
-        return null;
+        return portForwardManager;
     }
 
     @Override

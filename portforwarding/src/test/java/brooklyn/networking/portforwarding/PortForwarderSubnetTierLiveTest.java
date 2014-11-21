@@ -58,7 +58,9 @@ public class PortForwarderSubnetTierLiveTest extends AbstractPortForwarderIptabl
 
         subnetTier = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager)
-                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.PORT_FORWARDER_TYPE, portForwarderType)
+                .configure(PortForwarderIptables.FORWARDER_IP, forwarderPublicIp)
+                .configure(PortForwarderIptables.FORWARDER_MACHINE, forwarderMachine)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 
         app.start(ImmutableList.of(targetPrivateMachine));

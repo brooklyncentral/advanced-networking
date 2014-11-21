@@ -34,7 +34,6 @@ import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
@@ -72,8 +71,8 @@ public abstract class AbstractPortForwarderIptablesTest {
 
     protected ManagementContext managementContext;
     protected PortForwardManager portForwardManager;
-    protected TestApplication app;
     protected PortForwarderIptables portForwarder;
+    protected TestApplication app;
     protected ExecutorService executor;
 
     protected JcloudsLocation loc; // will be null if USE_EXISTING_MACHINES
@@ -82,6 +81,7 @@ public abstract class AbstractPortForwarderIptablesTest {
     protected SshMachineLocation targetPrivateMachine;
     protected String forwarderPublicIp;
     protected String targetPrivateIp;
+    protected String portForwarderType = PortForwarderIptables.class.getName();
     protected HostAndPort frontEndHostAndPort;
 
     /** set true for live tests, false for unit tests */
@@ -94,8 +94,9 @@ public abstract class AbstractPortForwarderIptablesTest {
     @BeforeClass(alwaysRun=true)
     public void setUpClass() throws Exception {
         managementContext = newManagementContext();
-        portForwardManager = new PortForwardManagerAuthority();
-
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        portForwarder = new PortForwarderIptables(portForwardManager, forwarderPublicIp, forwarderMachine);
+        
         if (!requiresMachines()) {
             // no op; many fields will be null
 
@@ -179,7 +180,6 @@ public abstract class AbstractPortForwarderIptablesTest {
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
         app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
-        portForwarder = new PortForwarderIptables(portForwardManager, forwarderPublicIp, forwarderMachine);
     }
 
     @AfterMethod(alwaysRun=true)

@@ -33,12 +33,10 @@ import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Networking;
@@ -78,7 +76,8 @@ public abstract class AbstractDockerPortForwarderTest {
     @BeforeClass(alwaysRun = true)
     public void setUpClass() throws Exception {
         managementContext = Entities.newManagementContext();
-        portForwardManager = new PortForwardManagerAuthority();
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+
         // Note: using different username on each to ensure no mix up there!
         loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve(LOC_SPEC, MutableMap.<String, Object>builder()
                 .put("identity", "notused")

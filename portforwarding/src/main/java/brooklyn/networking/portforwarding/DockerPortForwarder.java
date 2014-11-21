@@ -33,10 +33,11 @@ import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
+import brooklyn.location.access.PortForwardManagerImpl;
 import brooklyn.location.access.PortMapping;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
@@ -56,20 +57,26 @@ public class DockerPortForwarder implements PortForwarder {
 
     private static final Logger log = LoggerFactory.getLogger(DockerPortForwarder.class);
 
-    private final PortForwardManager portForwardManager;
+    private PortForwardManager portForwardManager;
     private String dockerEndpoint;
     private String dockerHostname;
     private String dockerIdentity;
     private String dockerCredential;
 
     public DockerPortForwarder() {
-        this(new PortForwardManagerAuthority());
     }
 
     public DockerPortForwarder(PortForwardManager portForwardManager) {
         this.portForwardManager = portForwardManager;
     }
 
+    @Override
+    public void injectManagementContext(ManagementContext managementContext) {
+        if (portForwardManager == null) {
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        }
+    }
+    
     public void init(String dockerHostIp, int dockerHostPort) {
         this.dockerEndpoint = URI.create("http://" + dockerHostIp + ":" + dockerHostPort).toASCIIString();
         this.dockerHostname = dockerHostIp;
@@ -108,6 +115,11 @@ public class DockerPortForwarder implements PortForwarder {
 
     @Override
     public PortForwardManager getPortForwardManager() {
+        if (portForwardManager == null) {
+            log.warn("Instantiating new PortForwardManager, because ManagementContext not injected into "+this
+                    +" (deprecated behaviour that will not be supported in future versions)");
+            portForwardManager = new PortForwardManagerImpl();
+        }
         return portForwardManager;
     }
 
@@ -198,5 +210,4 @@ public class DockerPortForwarder implements PortForwarder {
     public boolean isClient() {
         return false;
     }
-
 }

@@ -26,6 +26,7 @@ import brooklyn.event.SensorEvent;
 import brooklyn.event.SensorEventListener;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
+import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.AttributeMunger;
@@ -35,7 +36,6 @@ import brooklyn.util.net.Protocol;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
 public class PortForwarderAsyncImpl implements PortForwarderAsync {
@@ -45,7 +45,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     private final EntityLocal adjunctEntity;
     private final PortForwarder portForwarder;
 
-    public PortForwarderAsyncImpl(EntityLocal adjunctEntity, PortForwarder portForwarder) {
+    public PortForwarderAsyncImpl(EntityLocal adjunctEntity, PortForwarder portForwarder, PortForwardManager portForwardManager) {
         this.adjunctEntity = adjunctEntity;
         this.portForwarder = portForwarder;
     }
@@ -85,8 +85,12 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
         DeferredExecutor<Integer> updater = new DeferredExecutor<Integer>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
             public void run() {
                 Entity entity = privatePort.getEntity();
+                Integer privatePortVal = privatePort.getValue();
                 MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
-                HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePort.getValue(), optionalPublicPort, protocol, accessingCidr);
+                HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+                
+                // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+                portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
                 whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());
             }});
         subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);

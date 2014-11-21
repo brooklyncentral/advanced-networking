@@ -37,8 +37,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
-import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
@@ -62,15 +60,14 @@ import com.google.common.net.HostAndPort;
 
 public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 
+    private static final Logger log = LoggerFactory.getLogger(SubnetTierImpl.class);
+    
     public static AttributeSensor<PortForwardManager> PORT_FORWARD_MANAGER_LIVE = Sensors.newSensor(PortForwardManager.class, "subnet.portForwardManager.live");
     public static AttributeSensor<PortForwarder> PORT_FORWARDER_LIVE = Sensors.newSensor(PortForwarder.class, "subnet.portForwarder.live");
     
-    @SuppressWarnings("unused")
-    private static final Logger log = LoggerFactory.getLogger(SubnetTierImpl.class);
-
-    protected AttributeMunger attributeMunger;
-    protected transient PortForwarderAsync _portForwarderAsync;
-    protected transient JcloudsPortForwarderExtension _portForwarderExtension;
+    private transient volatile AttributeMunger _attributeMunger;
+    private transient volatile PortForwarderAsync _portForwarderAsync;
+    private transient volatile JcloudsPortForwarderExtension _portForwarderExtension;
 
     protected transient Set<Entity> portMappedEntities = Collections.synchronizedSet(Sets.<Entity>newLinkedHashSet());
     
@@ -79,27 +76,41 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         super.init();
 
         PortForwarder pf = checkNotNull(getPortForwarder(), "portForwarder");
-        PortForwardManager pfm = getConfig(PORT_FORWARDING_MANAGER);
-        if (pfm == null && pf.getPortForwardManager() == null) {
-            pfm = new PortForwardManagerAuthority();
-        }
-        if (pfm!=null) {
-            if (!pfm.isClient()) {
-                // ensure we really are the owner
-                ((PortForwardManagerAuthority)pfm).injectOwningEntity(this);
-                // store this authoritative source here, but set the config to be the client safe for inheriting
-                setConfig(PORT_FORWARDING_MANAGER, PortForwardManagerClient.fromAttributeOnEntity(this, PORT_FORWARD_MANAGER_LIVE));
+
+        PortForwardManager pfmFromConf = getConfig(PORT_FORWARDING_MANAGER);
+        PortForwardManager pfmFromPf = pf.getPortForwardManager();
+        PortForwardManager pfmLive;
+        
+        // Get the PortForwardManager. This could be supplied as config, or via the PortForwarder, or if both
+        // are null then we'll instantiate a new one. We will ensure that config(PORT_FORWARDING_MANAGER) is
+        // set (with a client, so safe for inheritance), and ensure that attribute(PORT_FORWARD_MANAGER_LIVE)
+        // is also set.
+        // TODO Can greatly simplify this, now that PortForwardManager is a location. Don't need to separate
+        // the "live" and config.
+        if (pfmFromConf == null) {
+            if (pfmFromPf == null) {
+                log.trace("Subnet tier "+this+" has no PortForwardManager supplied; retrieving portForwardManager(scope=global)");
+                pfmLive = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
+            } else {
+                log.trace("Subnet tier "+this+" using "+pfmFromPf+", retrieved from PortForwarder "+pf);
+                pfmLive = pfmFromPf;
             }
-            setAttribute(PORT_FORWARD_MANAGER_LIVE, pfm);
+        } else {
+            if (pfmFromPf != null) {
+                // check if they are the same; warn if they are not
+                if (!pfmFromConf.getId().equals(pfmFromPf.getId())) {
+                    log.warn("Conflicting PortForwardManagers supplied for {}; config is {}; port forwarder "
+                            + "{} has {}; using config value", new Object[] {this, pfmFromConf, pf, pfmFromPf});
+                }
+            }
+            log.trace("Subnet tier "+this+" using "+pfmFromConf+", retrieved from entity config");
+            pfmLive = pfmFromConf;
         }
-
-        if (!pf.isClient()) {
-            // set the config to be the client safe for inheriting
-            setConfig(PORT_FORWARDER, PortForwarderClient.fromAttributeOnEntity(this, PORT_FORWARDER_LIVE));
-        }
+        
+        setConfig(PORT_FORWARDING_MANAGER, pfmLive);
+        setAttribute(PORT_FORWARD_MANAGER_LIVE, pfmLive);
         setAttribute(PORT_FORWARDER_LIVE, pf);
-
-        attributeMunger = new AttributeMunger(this);
+        if (log.isDebugEnabled()) log.debug("Subnet tier {} using PortForwardManager {}, and port forwarder {}", new Object[] {this, pfmLive, pf});
 
         // TODO For rebind, would require to re-register this; same for portMappedEntities field
         CollectionChangeListener<Entity> descendentsChangedListener = new CollectionChangeListener<Entity>() {
@@ -140,15 +151,19 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     }
 
     protected JcloudsPortForwarderExtension newJcloudsPortForwarderExtension() {
-        return new SubnetTierJcloudsPortForwarderExtension(PortForwarderClient.fromMethodOnEntity(this, "getPortForwarder"));
+        return new SubnetTierJcloudsPortForwarderExtension(
+                PortForwarderClient.fromMethodOnEntity(this, "getPortForwarder"), 
+                getPortForwardManager());
     }
 
     public static class SubnetTierJcloudsPortForwarderExtension implements JcloudsPortForwarderExtension {
         protected final PortForwarder pf;
+        protected final PortForwardManager pfm;
 
-        public SubnetTierJcloudsPortForwarderExtension(PortForwarder pf) {
-            if (!pf.isClient()) throw new IllegalStateException("Must take a client");
+        public SubnetTierJcloudsPortForwarderExtension(PortForwarder pf, PortForwardManager pfm) {
+            if (!pf.isClient()) throw new IllegalStateException("Must take a PortForwarder client");
             this.pf = pf;
+            this.pfm = pfm;
         }
 
         @Override
@@ -168,12 +183,14 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 					return node.toString();
 				}
         	};
-            return pf.openPortForwarding(
+            HostAndPort result = pf.openPortForwarding(
                     hasNetworkAddresses,
                     node.getLoginPort(),
                     optionalPublicPort,
                     Protocol.TCP,
                     Cidr.UNIVERSAL);
+            pfm.associate(node.getId(), result, targetPort);
+            return result;
         }
     }
 
@@ -187,7 +204,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                     // put these fields on the location so it has the info it needs to create the subnet
                     .configure(JcloudsLocation.USE_PORT_FORWARDING, getConfig(MANAGEMENT_ACCESS_REQUIRES_PORT_FORWARDING))
                     .configure(JcloudsLocation.PORT_FORWARDER, getPortForwarderExtension())
-                    .configure(JcloudsLocation.PORT_FORWARDING_MANAGER, PortForwardManagerClient.fromAttributeOnEntity(this, PORT_FORWARD_MANAGER_LIVE))
+                    .configure(JcloudsLocation.PORT_FORWARDING_MANAGER, getPortForwardManager())
                     .configure(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, PortForwarderClient.fromAttributeOnEntity(this, PORT_FORWARDER_LIVE))
                     .getAllConfig());
         } else {
@@ -228,25 +245,40 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         if (pf != null) return pf;
         
         PortForwarder result = getConfig(PORT_FORWARDER);
-        if (result != null) return result;
         
-        String type = getConfig(PORT_FORWARDER_TYPE);
-        ClassLoader catalogClassLoader = getManagementContext().getCatalog().getRootClassLoader();
-        if (Strings.isNonBlank(type)) {
-            Optional<PortForwarder> portForwarderByType = Reflections.invokeConstructorWithArgs(catalogClassLoader, type);
-            if (portForwarderByType.isPresent()) {
-                result = portForwarderByType.get();
-            } else {
-                throw new IllegalStateException("Failed to create PortForwarder "+type+" for subnet tier "+this);
+        if (result == null) {
+            String type = getConfig(PORT_FORWARDER_TYPE);
+            if (Strings.isNonBlank(type)) {
+                log.trace("Subnet tier "+this+" instantiating new PortForwarder of type "+type);
+                ClassLoader catalogClassLoader = getManagementContext().getCatalog().getRootClassLoader();
+                Optional<PortForwarder> portForwarderByType = Reflections.invokeConstructorWithArgs(catalogClassLoader, type);
+                if (portForwarderByType.isPresent()) {
+                    result = portForwarderByType.get();
+                } else {
+                    throw new IllegalStateException("Failed to create PortForwarder "+type+" for subnet tier "+this);
+                }
             }
+        }
+        if (result != null) {
+            result.injectManagementContext(getManagementContext());
+            setAttribute(PORT_FORWARDER_LIVE, result);
         }
         return result;
     }
 
+    protected AttributeMunger getAttributeMunger() {
+        // AttributeMunger is stateless; if we create two instances then no harm; not worrying about synchronization
+        // beyond a volatile field to ensure other threads don't see a partially instantiated object.
+        if (_attributeMunger == null) {
+            _attributeMunger = new AttributeMunger(this);
+        }
+        return _attributeMunger;
+    }
+    
     @Override
     public synchronized PortForwarderAsync getPortForwarderAsync() {
         if (_portForwarderAsync==null) {
-            _portForwarderAsync = new PortForwarderAsyncImpl(this, getPortForwarder());
+            _portForwarderAsync = new PortForwarderAsyncImpl(this, getPortForwarder(), getPortForwardManager());
         }
         return _portForwarderAsync;
     }
@@ -285,7 +317,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                 SoftwareProcess.ADDRESS,
                 SubnetTier.PRIVATE_HOSTNAME,
                 SUBNET_HOSTNAME_SENSOR);
-        attributeMunger.transformSensorStringReplacingWithPublicAddressAndPort(targetToUpdate, optionalTargetPort, targetsToMatch, replacementSource);
+        getAttributeMunger().transformSensorStringReplacingWithPublicAddressAndPort(targetToUpdate, optionalTargetPort, targetsToMatch, replacementSource);
     }
 
     @Override
