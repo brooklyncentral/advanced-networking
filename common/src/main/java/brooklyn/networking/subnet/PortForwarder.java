@@ -23,6 +23,7 @@ import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.management.ManagementContextInjectable;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
@@ -42,7 +43,7 @@ import com.google.common.net.HostAndPort;
  * accessible etc.
  */
 @Beta
-public interface PortForwarder {
+public interface PortForwarder extends ManagementContextInjectable {
 
     public void inject(Entity owner, List<Location> locations);
 

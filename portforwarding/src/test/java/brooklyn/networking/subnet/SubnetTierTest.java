@@ -28,7 +28,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import brooklyn.entity.Entity;
-import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
@@ -38,10 +37,8 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.portforwarding.NoopPortForwarder;
@@ -75,18 +72,18 @@ public class SubnetTierTest {
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
+        app = TestApplication.Factory.newManagedInstanceForTests();
+        managementContext = app.getManagementContext();
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        
         portMapping = Maps.newLinkedHashMap();
         PortForwarder portForwarder = new StubPortForwarder(portMapping);
-        portForwardManager = new PortForwardManagerAuthority();
 
-        app = ApplicationBuilder.newManagedApp(TestApplication.class);
         subnetTier = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager));
         entity = subnetTier.addChild(EntitySpec.create(TestEntity.class));
         Entities.manage(entity);
-
-        managementContext = app.getManagementContext();
 
         simulatedMachine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("address", Networking.getInetAddressWithFixedName(machineAddress))
@@ -128,9 +125,7 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
-        portForwardManager.recordPublicIpHostname(publicIpId, publicAddress);
-        portForwardManager.acquirePublicPortExplicit(publicIpId, 40080);
-        portForwardManager.associate(publicIpId, 40080, simulatedMachine, 80);
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
         entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
                 new EntityAndAttribute<Integer>(entity, TARGET_PORT),
@@ -150,9 +145,7 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
-        portForwardManager.recordPublicIpHostname(publicIpId, publicAddress);
-        portForwardManager.acquirePublicPortExplicit(publicIpId, 40080);
-        portForwardManager.associate(publicIpId, 40080, simulatedMachine, 80);
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
         entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
 
@@ -175,6 +168,9 @@ public class SubnetTierTest {
 
         StubPortForwarder(Map<HostAndPort, HostAndPort> mapping) {
             this.mapping = mapping;
+        }
+        @Override public void injectManagementContext(ManagementContext managementContext) {
+            // no-op
         }
         @Override public void inject(Entity owner, List<Location> locations) {
             // no-op

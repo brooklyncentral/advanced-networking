@@ -45,7 +45,7 @@ public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarder
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(PortForwarderSubnetTierRebindUnitTest.class);
 
-    private SubnetTier subnetTier;
+    private SubnetTier origSubnetTier;
 
     private File mementoDir;
 
@@ -63,43 +63,49 @@ public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarder
 
     @Test
     public void testRebindSubnetTier() throws Exception {
-        subnetTier = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
+        origSubnetTier = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager)
-                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.PORT_FORWARDER_TYPE, portForwarderType)
+                .configure(PortForwarderIptables.FORWARDER_IP, forwarderPublicIp)
+                .configure(PortForwarderIptables.FORWARDER_MACHINE, forwarderMachine)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 
-        TestEntity testChild = subnetTier.addChild(EntitySpec.create(TestEntity.class));
-        Entities.startManagement(testChild);
+        TestEntity origTestChild = origSubnetTier.addChild(EntitySpec.create(TestEntity.class));
+        Entities.startManagement(origTestChild);
 
         // don't start it, so the port-forwarder isn't actually used
         // (this is a brittle hack but it should work)
 //        app.start(ImmutableList.<Location>of());
 
-        int p1 = testChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p1");
-        PortForwardManager pfm1 = Preconditions.checkNotNull( testChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER) );
-        Collection<PortMapping> mappings1 = pfm1.getPortMappingWithPublicIpId("p1");
+        // Create a mapping
+        int p1 = origTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p1");
+        PortForwardManager origPfm = Preconditions.checkNotNull( origTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER) );
+        Collection<PortMapping> mappings1 = origPfm.getPortMappingWithPublicIpId("p1");
         Assert.assertEquals(mappings1.size(), 1);
         Assert.assertEquals(mappings1.iterator().next().getPublicPort(), p1);
 
+        // Rebind, and check mapping still exists
         Application newApp = rebind();
-        Entity subnetRebinded = Iterables.getOnlyElement(newApp.getChildren());
-        PortForwardManager pfm2 = Preconditions.checkNotNull( subnetRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER) );
-        Collection<PortMapping> mappings1a = pfm2.getPortMappingWithPublicIpId("p1");
+        Entity newSubnetTier = Iterables.getOnlyElement(newApp.getChildren());
+        PortForwardManager newPfm = Preconditions.checkNotNull( newSubnetTier.getConfig(SubnetTier.PORT_FORWARDING_MANAGER) );
+        Collection<PortMapping> mappings1a = newPfm.getPortMappingWithPublicIpId("p1");
         Assert.assertEquals(mappings1, mappings1a);
 
-        Entity testChildRebinded = Iterables.getOnlyElement(subnetRebinded.getChildren());
-        Collection<PortMapping> mappings1b = testChildRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p1");
+        // Check that PFM of child entity still gives same result
+        Entity newTestChild = Iterables.getOnlyElement(newSubnetTier.getChildren());
+        Collection<PortMapping> mappings1b = newTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p1");
         Assert.assertEquals(mappings1, mappings1b);
 
-        int p2 = subnetRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p2");
-        Collection<PortMapping> mappings2a = subnetRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p2");
-        Collection<PortMapping> mappings2b = testChildRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p2");
+        // Check that PFM is still usable (and same instance being shared by parent and child entity)
+        int p2 = newSubnetTier.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p2");
+        Collection<PortMapping> mappings2a = newSubnetTier.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p2");
+        Collection<PortMapping> mappings2b = newTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p2");
         Assert.assertEquals(mappings2a, mappings2b);
         Assert.assertEquals(mappings2a.iterator().next().getPublicPort(), p2);
 
-        int p3 = testChildRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p3");
-        Collection<PortMapping> mappings3a = subnetRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p3");
-        Collection<PortMapping> mappings3b = testChildRebinded.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p3");
+        int p3 = newTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).acquirePublicPort("p3");
+        Collection<PortMapping> mappings3a = newSubnetTier.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p3");
+        Collection<PortMapping> mappings3b = newTestChild.getConfig(SubnetTier.PORT_FORWARDING_MANAGER).getPortMappingWithPublicIpId("p3");
         Assert.assertEquals(mappings3a, mappings3b);
         Assert.assertEquals(mappings3a.iterator().next().getPublicPort(), p3);
     }
@@ -112,7 +118,4 @@ public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarder
         managementContext = result.getManagementContext();
         return result;
     }
-
-
-
 }

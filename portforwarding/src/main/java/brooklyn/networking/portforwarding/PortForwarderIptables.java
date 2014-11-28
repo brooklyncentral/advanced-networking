@@ -24,14 +24,16 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
@@ -50,14 +52,30 @@ public class PortForwarderIptables implements PortForwarder {
 
     // FIXME Currently ignores the protocol passed in, and always does TCP (without checking!)
 
+    // FIXME How to pass FORWARDER_MACHINE in a yaml blueprint?
+    // Should we pass a location spec string instead (for a single host)?
+    
     private static final Logger log = LoggerFactory.getLogger(PortForwarderIptables.class);
 
-    private final PortForwardManager portForwardManager;
-    private final String forwarderIp;
-    private final SshMachineLocation forwarderMachine;
+    public static final ConfigKey<String> FORWARDER_IP = ConfigKeys.newStringConfigKey(
+            "advancednetworking.iptables.forwarder.ip",
+            "The public IP address of the machine to use for port-forwarding");
 
+    public static final ConfigKey<SshMachineLocation> FORWARDER_MACHINE = ConfigKeys.newConfigKey(
+            SshMachineLocation.class,
+            "advancednetworking.iptables.forwarder.machine",
+            "The machine to which iptables port-forwarding rules should be added (corresponding to the advancednetworking.iptables.forwarder.ip)");
+
+
+    private PortForwardManager portForwardManager;
+    private String forwarderIp;
+    private SshMachineLocation forwarderMachine;
+
+    public PortForwarderIptables() {
+    }
+    
     public PortForwarderIptables(String forwarderIp, SshMachineLocation forwarderMachine) {
-        this(new PortForwardManagerAuthority(), forwarderIp, forwarderMachine);
+        this(null, forwarderIp, forwarderMachine);
     }
 
     public PortForwarderIptables(PortForwardManager portForwardManager, String forwarderIp, SshMachineLocation forwarderMachine) {
@@ -67,8 +85,20 @@ public class PortForwarderIptables implements PortForwarder {
     }
 
     @Override
+    public void injectManagementContext(ManagementContext managementContext) {
+        if (portForwardManager == null) {
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        }
+    }
+    
+    @Override
     public void inject(Entity owner, List<Location> locations) {
-        // no-op
+        if (forwarderIp == null) {
+            forwarderIp = owner.getConfig(FORWARDER_IP);
+        }
+        if (forwarderMachine == null) {
+            forwarderMachine = owner.getConfig(FORWARDER_MACHINE);
+        }
     }
     
     public PortForwardManager getPortForwardManager() {
@@ -123,7 +153,6 @@ public class PortForwarderIptables implements PortForwarder {
         int publicPort;
         if (optionalPublicPort.isPresent()) {
             publicPort = optionalPublicPort.get();
-            pfw.acquirePublicPortExplicit(forwarderIp, publicPort);
         } else {
             publicPort = pfw.acquirePublicPort(forwarderIp);
         }

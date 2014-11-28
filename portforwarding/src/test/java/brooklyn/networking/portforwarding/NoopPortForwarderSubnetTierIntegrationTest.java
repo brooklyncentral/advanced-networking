@@ -16,7 +16,6 @@
 package brooklyn.networking.portforwarding;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.LocalhostMachineProvisioningLocation;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
@@ -70,8 +68,8 @@ public class NoopPortForwarderSubnetTierIntegrationTest {
     public void setUp() throws Exception {
         app = TestApplication.Factory.newManagedInstanceForTests();
         managementContext = app.getManagementContext();
-        portForwarder = new NoopPortForwarder();
-        portForwardManager = new PortForwardManagerAuthority();
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        portForwarder = new NoopPortForwarder(portForwardManager);
 
         // Note: using different username on each to ensure no mix up there!
         loc = (LocalhostMachineProvisioningLocation) managementContext.getLocationRegistry().resolve(LOC_SPEC);

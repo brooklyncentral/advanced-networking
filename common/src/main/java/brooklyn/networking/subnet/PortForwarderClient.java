@@ -24,6 +24,7 @@ import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
@@ -113,6 +114,11 @@ public class PortForwarderClient implements PortForwarder {
         return _delegate;
     }
 
+    @Override
+    public void injectManagementContext(ManagementContext managementContext) {
+        getDelegate().injectManagementContext(managementContext);
+    }
+    
     @Override
     public void inject(Entity owner, List<Location> locations) {
         getDelegate().inject(owner, locations);

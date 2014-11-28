@@ -44,7 +44,6 @@ import brooklyn.event.SensorEvent;
 import brooklyn.event.SensorEventListener;
 import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.access.PortMapping;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
@@ -225,7 +224,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             pfw = getConfig(PORT_FORWARDING_MANAGER);
             if (pfw==null) {
                 // FIXME not safe for persistence
-                pfw = new PortForwardManagerAuthority();
+                pfw = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
                 setConfigEvenIfOwned(PORT_FORWARDING_MANAGER, pfw);
             }
             setAttribute(SUBNET_SERVICE_PORT_FORWARDS, pfw);
