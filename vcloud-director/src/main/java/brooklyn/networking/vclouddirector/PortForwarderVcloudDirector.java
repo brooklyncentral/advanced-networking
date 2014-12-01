@@ -15,8 +15,22 @@
  */
 package brooklyn.networking.vclouddirector;
 
+import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.collect.Iterables.tryFind;
+import static org.jclouds.vcloud.director.v1_5.VCloudDirectorMediaType.ORG_NETWORK;
 import java.util.List;
 
+import org.jclouds.ContextBuilder;
+import org.jclouds.compute.ComputeService;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.vcloud.VCloudApiMetadata;
+import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
+import org.jclouds.vcloud.director.v1_5.compute.util.VCloudDirectorComputeUtils;
+import org.jclouds.vcloud.director.v1_5.domain.Link;
+import org.jclouds.vcloud.director.v1_5.domain.network.Network;
+import org.jclouds.vcloud.director.v1_5.domain.org.Org;
+import org.jclouds.vcloud.director.v1_5.features.NetworkApi;
+import org.jclouds.vcloud.director.v1_5.predicates.ReferencePredicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +43,7 @@ import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
@@ -36,11 +51,18 @@ import brooklyn.networking.vclouddirector.NatService.OpenPortForwardingConfig;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
 
+import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
+import com.google.inject.Module;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
 
@@ -56,6 +78,10 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             "advancednetworking.vcloud.network.id",
             "Optionally specify the id of an existing network");
 
+    public static final ConfigKey<String> NETWORK_NAME = ConfigKeys.newStringConfigKey(
+            "advancednetworking.vcloud.network.name",
+            "Optionally specify the name of an existing network");
+
     public static final ConfigKey<String> NETWORK_PUBLIC_IP = ConfigKeys.newStringConfigKey(
             "advancednetworking.vcloud.network.publicip",
             "Optionally specify an existing public IP associated with the network");
@@ -67,7 +93,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     private NatService service;
 
     private SubnetTier subnetTier;
-    
+
+    private JcloudsLocation jcloudsLocation;
+
     public PortForwarderVcloudDirector() {
     }
 
@@ -90,7 +118,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     @Override
     public void inject(Entity owner, List<Location> locations) {
         subnetTier = (SubnetTier) owner;
-        JcloudsLocation jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
+        jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
         service = NatService.builder().location(jcloudsLocation).build();
     }
     
@@ -142,7 +170,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         // TODO Given the VM, could look up to find the network (rather than hard-coding!)
         // TODO Pass cidr in vcloud-director call
         PortForwardManager pfw = getPortForwardManager();
-        String networkId = subnetTier.getConfig(NETWORK_ID);
+        String networkId = firstNonNull(subnetTier.getConfig(NETWORK_ID), getNetworkIdFromNetworkName(subnetTier.getConfig(NETWORK_NAME)));
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
 
         int publicPort;
@@ -173,8 +201,18 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
     }
 
+    private String getNetworkIdFromNetworkName(String networkName) {
+        if (Strings.isBlank(networkName)) return null;
+        ComputeService computeService = JcloudsUtil.findComputeService(jcloudsLocation.getAllConfigBag());
+        VCloudDirectorApi api = computeService.getContext().unwrapApi(VCloudDirectorApi.class);
+        Optional<Network> optionaNetwork = VCloudDirectorComputeUtils.tryFindNetworkNamedInCurrentOrg(api, networkName);
+        if (!optionaNetwork.isPresent()) return null;
+        return optionaNetwork.get().getId();
+    }
+
     @Override
     public boolean isClient() {
         return false;
     }
+
 }
