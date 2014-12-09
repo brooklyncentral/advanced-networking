@@ -22,6 +22,8 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
 
     private static final String LOCATION_SPEC = "canopy-vCHS";
 
+    private static final String LOCATION_TAI_SPEC = "canopy-TAI";
+
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
     public static final String NETWORK_ID = "041e176a-befc-4b28-89e2-3c5343ff4d12";
@@ -40,6 +42,15 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
+    }
+    
+    // TAI is (currently as at 2014-12-16) running vcloud-director version 5.1
+    @Test(groups="Live")
+    public void testGetNatRulesAtTai() throws Exception {
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_SPEC);
+        NatService service = NatService.builder().location(loc).build();
+        List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
+        assertNotNull(rules);
     }
     
     // Simple test that just checks no errors (e.g. can authenticate etc)
