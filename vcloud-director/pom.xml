@@ -88,7 +88,7 @@
         <dependency>
             <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>vcloud-director</artifactId>
-            <version>1.8.2-alpha-cloudsoft.6</version>
+            <version>1.8.2-alpha-cloudsoft.8</version>
         </dependency>
 
         <dependency>

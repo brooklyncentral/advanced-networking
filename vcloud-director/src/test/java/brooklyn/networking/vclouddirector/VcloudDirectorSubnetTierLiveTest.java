@@ -26,12 +26,14 @@ import com.google.common.collect.ImmutableList;
 
 public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport {
 
-    // FIXME listNodes not implemented yet; can't just rebind to an existing VM
+   // FIXME listNodes not implemented yet; can't just rebind to an existing VM
     private static final String EXISTING_VM_ID = "15fc5694-9270-4b24-9b57-615b3a000165";
-    
     private static final String LOCATION_SPEC = "canopy-vCHS";
-    
-    protected JcloudsLocation loc;
+    public static final String EXISTING_NETWORK_NAME = "M523007043-2739-default-routed";
+    public static final String AVAILABLE_PUBLIC_IP = "23.92.230.8";
+    public static final String EXPECTED_ENDPOINT = "23.92.230.8:5678";
+
+   protected JcloudsLocation loc;
     
     @BeforeMethod(alwaysRun=true)
     @Override
@@ -47,12 +49,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     }
     
     @Test(groups="Live")
-    public void testFoo() throws Exception {
+    public void testOpenPortForwardingAndAdvertise() throws Exception {
         final AttributeSensor<Integer> PRIVATE_PORT = Sensors.newIntegerSensor("mapped.port");
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
-        
-        //JcloudsSshMachineLocation machine = loc.rebindMachine(ImmutableMap.of("id", EXISTING_VM_ID));
-        //JcloudsSshMachineLocation machine = loc.obtain();
         
         SshMachineLocation machine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("user", "myuser")
@@ -61,8 +60,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         try {
             SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
                     .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
-                    .configure(PortForwarderVcloudDirector.NETWORK_ID, "041e176a-befc-4b28-89e2-3c5343ff4d12")
-                    .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, "23.92.230.8"));
+                    .configure(PortForwarderVcloudDirector.NETWORK_NAME, EXISTING_NETWORK_NAME)
+                    .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, AVAILABLE_PUBLIC_IP));
             final TestEntity entity = subnetTier.addChild(EntitySpec.create(TestEntity.class)
                     .location(machine));
             Entities.manage(subnetTier);
@@ -78,10 +77,10 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             
             Asserts.succeedsEventually(new Runnable() {
                 public void run() {
-                    assertEquals(entity.getAttribute(MAPPED_ENDPOINT), "23.92.230.8:5678");
+                    assertEquals(entity.getAttribute(MAPPED_ENDPOINT), EXPECTED_ENDPOINT);
                 }});
         } finally {
-            //loc.release(machine);
+            // don't remove pre-existing VM
         }
     }
 }
