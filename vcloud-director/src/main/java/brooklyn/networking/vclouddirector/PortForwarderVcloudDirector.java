@@ -15,21 +15,18 @@
  */
 package brooklyn.networking.vclouddirector;
 
-import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.tryFind;
 import static org.jclouds.vcloud.director.v1_5.VCloudDirectorMediaType.ORG_NETWORK;
 import java.util.List;
 
-import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.vcloud.VCloudApiMetadata;
 import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
 import org.jclouds.vcloud.director.v1_5.compute.util.VCloudDirectorComputeUtils;
 import org.jclouds.vcloud.director.v1_5.domain.Link;
+import org.jclouds.vcloud.director.v1_5.domain.Session;
 import org.jclouds.vcloud.director.v1_5.domain.network.Network;
 import org.jclouds.vcloud.director.v1_5.domain.org.Org;
-import org.jclouds.vcloud.director.v1_5.features.NetworkApi;
 import org.jclouds.vcloud.director.v1_5.predicates.ReferencePredicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,18 +48,14 @@ import brooklyn.networking.vclouddirector.NatService.OpenPortForwardingConfig;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Module;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
 
@@ -170,7 +163,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         // TODO Given the VM, could look up to find the network (rather than hard-coding!)
         // TODO Pass cidr in vcloud-director call
         PortForwardManager pfw = getPortForwardManager();
-        String networkId = firstNonNull(subnetTier.getConfig(NETWORK_ID), getNetworkIdFromNetworkName(subnetTier.getConfig(NETWORK_NAME)));
+        Network network = checkNotNull(getNetwork());
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
 
         int publicPort;
@@ -186,7 +179,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             // execute concurrently we may not get both new NAT rules in the resulting uploaded set.
             synchronized (mutex) {
                 HostAndPort result = service.openPortForwarding(new OpenPortForwardingConfig()
-                        .networkId(networkId)
+                        .network(network)
                         .publicIp(publicIp)
                         .protocol(Protocol.TCP)
                         .target(target)
@@ -201,13 +194,40 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
     }
 
-    private String getNetworkIdFromNetworkName(String networkName) {
-        if (Strings.isBlank(networkName)) return null;
+    private Network getNetwork() {
         ComputeService computeService = JcloudsUtil.findComputeService(jcloudsLocation.getAllConfigBag());
         VCloudDirectorApi api = computeService.getContext().unwrapApi(VCloudDirectorApi.class);
-        Optional<Network> optionaNetwork = VCloudDirectorComputeUtils.tryFindNetworkNamedInCurrentOrg(api, networkName);
-        if (!optionaNetwork.isPresent()) return null;
-        return optionaNetwork.get().getId();
+        if (subnetTier.getConfig(NETWORK_ID) != null) {
+            return tryFindNetworkById(api, subnetTier.getConfig(NETWORK_ID)).orNull();
+        } else {
+            String networkName = checkNotNull(subnetTier.getConfig(NETWORK_NAME));
+            return tryFindNetworkByName(api, networkName).orNull();
+        }
+    }
+
+    private Optional<Network> tryFindNetworkByName(VCloudDirectorApi api, String networkName) {
+        return VCloudDirectorComputeUtils.tryFindNetworkNamedInCurrentOrg(api, networkName);
+    }
+
+    private static Optional<Network> tryFindNetworkById(final VCloudDirectorApi api, final String networkId) {
+        Session session = api.getCurrentSession();
+        final Org org = api.getOrgApi().get(Iterables.find(api.getOrgApi().list(), ReferencePredicates.nameEquals(session.get())).getHref());
+        FluentIterable<Network> networks = FluentIterable.from(org.getLinks())
+                .filter(ReferencePredicates.typeEquals(ORG_NETWORK))
+                .transform(new Function<Link, Network>() {
+                    @Override
+                    public Network apply(Link in) {
+                        return api.getNetworkApi().get(in.getHref());
+                    }
+                });
+
+        return tryFind(networks, new Predicate<Network>() {
+            @Override
+            public boolean apply(Network input) {
+                if (input.getTasks().size() != 0) return false;
+                return input.getId().equals(networkId);
+            }
+        });
     }
 
     @Override
