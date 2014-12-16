@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 
 import javax.xml.bind.JAXBElement;
 
@@ -15,18 +16,20 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.net.Urls;
 
 import com.google.api.client.repackaged.com.google.common.base.Objects;
 import com.google.common.annotations.Beta;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;
 import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatServiceType;
 import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
-import com.vmware.vcloud.api.rest.schema.ObjectFactory;
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
 import com.vmware.vcloud.sdk.ReferenceResult;
 import com.vmware.vcloud.sdk.Task;
@@ -57,6 +60,7 @@ public class NatService {
         private String endpoint;
         private String trustStore;
         private String trustStorePassword;
+        private Level logLevel;
         
         public Builder location(JcloudsLocation val) {
         	identity(val.getIdentity());
@@ -88,6 +92,9 @@ public class NatService {
         public Builder trustStorePassword(String val) {
         	this.trustStorePassword = val; return this;
         }
+        public Builder logLevel(java.util.logging.Level val) {
+            this.logLevel = val; return this;
+        }
     	public NatService build() {
     		return new NatService(this);
     	}
@@ -98,7 +105,7 @@ public class NatService {
 
     public NatService(Builder builder) {
     	client = newVcloudClient(checkNotNull(builder.endpoint, "endpoint"), checkNotNull(builder.identity, "identity"), 
-    			checkNotNull(builder.credential, "credential"), builder.trustStore, builder.trustStorePassword);
+    			checkNotNull(builder.credential, "credential"), builder.trustStore, builder.trustStorePassword, builder.logLevel);
     	baseUrl = builder.endpoint;
     }
 
@@ -138,75 +145,118 @@ public class NatService {
     	}
     }
     public HostAndPort openPortForwarding(OpenPortForwardingConfig args) throws VCloudException {
+        // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
+        // If instead we create new objects then risk those having different config - this is *not* a delta!
+        
     	args.checkValid();
     	if (LOG.isDebugEnabled()) LOG.debug("Opening port forwarding at {}: {}", baseUrl, args);
     	
         EdgeGateway edgeGateway = getEdgeGateway();
-        List<NatRuleType> natRules = getNatRules(edgeGateway);
-
-    	String networkUrl = Urls.mergePaths(baseUrl, "api/admin/network", args.networkId);
+        GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
+        NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
+        
+        // Modify the natService (which is the object retrieved directly from edgeGateway)
+        String networkUrl = Urls.mergePaths(baseUrl, "api/admin/network", args.networkId);
 
         ReferenceType interfaceRef = generateReference(networkUrl, NETWORK_NAME, "application/vnd.vmware.admin.network+xml");
 
         GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
-        		args.protocol, 
-        		HostAndPort.fromParts(args.publicIp, args.publicPort), 
-        		args.target, 
-        		interfaceRef);
+                args.protocol, 
+                HostAndPort.fromParts(args.publicIp, args.publicPort), 
+                args.target, 
+                interfaceRef);
         NatRuleType dnatRule = generateDnatRule(true, gatewayNatRule);
 
-        // append DNAT rule to NAT service
-        // TODO Should retrieve existing NAT Service object, rather than creating a new one.
-        //      We lose/override existing config potentially.
-        natRules.add(dnatRule);
-        NatServiceType natService = new NatServiceType();
-        natService.setIsEnabled(true);
-        natService.getNatRule().addAll(natRules);
-        ObjectFactory objectFactory = new ObjectFactory();
-        JAXBElement<NetworkServiceType> serviceType = objectFactory.createNetworkService(natService);
-        GatewayFeaturesType gatewayFeatures = new GatewayFeaturesType();
-        gatewayFeatures.getNetworkService().add(serviceType);
+        natService.getNatRule().add(dnatRule);
         
         // Execute task
         Task task = edgeGateway.configureServices(gatewayFeatures);
-        if (task != null) {
-            try {
-                task.waitForTask(0);
-            } catch (TimeoutException e) {
-                throw Exceptions.propagate(e);
-            }
+        waitForTask(task, "add dnat rule");
+
+        // Confirm that the newly created rule exists, 
+        // with the expected translated (i.e internal) and original (i.e. public) addresses,
+        // and without any conflicting DNAT rules already using that port.
+        // Retrieves a new EdgeGateway instance, to ensure we're not just looking at our local copy.
+        List<NatRuleType> rules = getNatRules(getEdgeGateway());
+        
+        Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
+                NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
+                NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort())));
+        
+        Iterable<NatRuleType> conflicts = Iterables.filter(rules, Predicates.and(
+                NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
+                Predicates.not(NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort()))));
+        
+        if (Iterables.isEmpty(matches)) {
+            throw new IllegalStateException(
+                    String.format("Gateway NAT Rules: cannot find translated %s and original %s:%s at %s", 
+                            args.target, args.publicIp, args.publicPort, baseUrl));
+        } else if (Iterables.size(matches) > 1) {
+            LOG.warn(String.format("Gateway NAT Rules: %s duplicates for translated %s and original %s:%s at %s; continuing.", 
+                    Iterables.size(matches), args.target, args.publicIp, args.publicPort, baseUrl));
+        }
+        if (Iterables.size(conflicts) > 0) {
+            throw new IllegalStateException(
+                    String.format("Gateway NAT Rules: original already assigned for translated %s and original %s:%s at %s", 
+                            args.target, args.publicIp, args.publicPort, baseUrl));
         }
 
-        // Find the newly created rule, and find the translated (i.e. public) address
-        List<NatRuleType> rules = getNatRules(edgeGateway);
-        for (NatRuleType rule : rules) {
-        	GatewayNatRuleType gatewayRule = rule.getGatewayNatRule();
-        	if (gatewayRule != null && args.target.getHostText().equals(gatewayRule.getTranslatedIp()) 
-        			&& Integer.toString(args.target.getPort()).equals(gatewayRule.getTranslatedPort())) {
-        		return HostAndPort.fromParts(gatewayRule.getOriginalIp(), Integer.parseInt(gatewayRule.getOriginalPort()));
-        	}
-        }
-        throw new IllegalStateException("Cannot find translated host:port for Gateway NAT Rule added for target "+args.target);
+        return HostAndPort.fromParts(args.publicIp, args.publicPort);
     }
 
+    public void enableNatService() throws VCloudException {
+        if (LOG.isDebugEnabled()) LOG.debug("Enabling NAT Service at {}", baseUrl);
+        
+        EdgeGateway edgeGateway = getEdgeGateway();
+        GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
+        NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
+
+        // Modify
+        natService.setIsEnabled(true);
+        
+        // Execute task
+        Task task = edgeGateway.configureServices(gatewayFeatures);
+        waitForTask(task, "enable nat-service");
+    }
+
+    protected void waitForTask(Task task, String summary) throws VCloudException {
+        checkNotNull(task, "task null for %s", summary);
+        try {
+            task.waitForTask(0);
+        } catch (TimeoutException e) {
+            throw Exceptions.propagate(e);
+        }
+    }
+    
     protected EdgeGateway getEdgeGateway() throws VCloudException {
         List<ReferenceType> edgeGatewayRef = queryEdgeGateways();
         return EdgeGateway.getEdgeGatewayById(client, edgeGatewayRef.get(0).getId());
     }
-    
-    protected List<NatRuleType> getNatRules(EdgeGateway edgeGateway) {
-        List<JAXBElement<? extends NetworkServiceType>> services = edgeGateway
+
+    protected GatewayFeaturesType getGatewayFeatures(EdgeGateway edgeGateway) {
+        return edgeGateway
                 .getResource()
                 .getConfiguration()
-                .getEdgeGatewayServiceConfiguration()
-                .getNetworkService();
-        
-		for (JAXBElement<? extends NetworkServiceType> service : services) {
-            if (service.getDeclaredType().getSimpleName().equals(NAT_SERVICE_TYPE)) {
-                return ((NatServiceType) service.getValue()).getNatRule();
+                .getEdgeGatewayServiceConfiguration();
+    }
+
+    protected List<JAXBElement<? extends NetworkServiceType>> getNetworkServices(EdgeGateway edgeGateway) {
+        return getGatewayFeatures(edgeGateway).getNetworkService();
+    }
+
+    protected <T extends NetworkServiceType> Maybe<T> tryFindService(List<JAXBElement<? extends NetworkServiceType>> services, Class<T> type) {
+        for (JAXBElement<? extends NetworkServiceType> service : services) {
+            if (service.getDeclaredType().getSimpleName().equals(type.getSimpleName())) {
+                return Maybe.of(type.cast(service.getValue()));
             }
         }
-        return new ArrayList<NatRuleType>();
+        return Maybe.absent("No service of type "+type.getSimpleName());
+    }
+    
+    protected List<NatRuleType> getNatRules(EdgeGateway edgeGateway) {
+        List<JAXBElement<? extends NetworkServiceType>> services = getNetworkServices(edgeGateway);
+        Maybe<NatServiceType> natService = tryFindService(services, NatServiceType.class);
+        return (natService.isPresent()) ? natService.get().getNatRule() : new ArrayList<NatRuleType>();
     }
 
     private List<ReferenceType> queryEdgeGateways() throws VCloudException {
@@ -220,12 +270,16 @@ public class NatService {
     }
 
     // FIXME Don't set sysprop as could affect all other activities of the JVM!
-    private VcloudClient newVcloudClient(String arg0, String identity, String credential, String trustStore, String trustStorePassword) {
+    protected VcloudClient newVcloudClient(String endpoint, String identity, String credential, String trustStore, String trustStorePassword, Level logLevel) {
     	try {
-    		// Client login
-    		// FIXME Why turn log level off?
-    		//VcloudClient.setLogLevel(Level.OFF);
-			VcloudClient result = new VcloudClient(arg0, Version.V5_5);
+    	    if (logLevel != null) {
+    	        // Logging is extremely verbose at INFO - it logs in full every http request/response (including payload).
+    	        // Consider setting this to WARN; leaving as default is not explicitly set
+    	        VcloudClient.setLogLevel(logLevel);
+    	    }
+    	    
+            // Client login
+			VcloudClient result = new VcloudClient(endpoint, Version.V5_5);
 	
 			// Performing Certificate Validation
 			if (trustStore != null) {
