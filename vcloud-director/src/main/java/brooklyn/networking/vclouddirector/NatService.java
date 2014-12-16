@@ -23,6 +23,7 @@ import brooklyn.util.net.Urls;
 import com.google.api.client.repackaged.com.google.common.base.Objects;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;
@@ -49,6 +50,8 @@ public class NatService {
 	private static final String NAT_SERVICE_TYPE = "NatServiceType";
 
 	private static final String NETWORK_NAME = "d4p5-ext";
+
+    private static final List<Version> VCLOUD_VERSIONS = ImmutableList.of(Version.V5_5, Version.V5_1, Version.V1_5);
 
 	public static Builder builder() {
 		return new Builder();
@@ -278,24 +281,36 @@ public class NatService {
     	        VcloudClient.setLogLevel(logLevel);
     	    }
     	    
-            // Client login
-			VcloudClient result = new VcloudClient(endpoint, Version.V5_5);
-	
-			// Performing Certificate Validation
+    		// Client login
+            VcloudClient vcloudClient = null;
+            boolean versionFound = false;
+            for (Version version : VCLOUD_VERSIONS) {
+                try {
+                    vcloudClient = new VcloudClient(endpoint, version);
+                    LOG.debug("VCloudClient - trying login to {} using {}", endpoint, version);
+                    vcloudClient.login(identity, credential);
+                    versionFound = true;
+                    LOG.info("VCloudClient - Logged into {} using version {}", endpoint, version);
+                    break;
+                } catch (VCloudException e) {
+                    LOG.debug("VCloudClient - Cannot login to " + endpoint + " using " + version, e);
+                }
+            }
+            if (!versionFound) {
+                throw new IllegalStateException("Cannot login to " + endpoint + " using any of " + VCLOUD_VERSIONS);
+            }
+            
+            // Performing Certificate Validation
 			if (trustStore != null) {
 				System.setProperty("javax.net.ssl.trustStore", trustStore);
 				System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-				result.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
-				
+				vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
+
 			} else {
-				System.err
-						.println("Ignoring the Certificate Validation using FakeSSLSocketFactory.java - DO NOT DO THIS IN PRODUCTION");
-				result.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
+                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
 			}
-	
-			result.login(identity, credential);
-			return result;
-			
+			return vcloudClient;
     	} catch (Exception e) {
     		throw Exceptions.propagate(e);
     	}
