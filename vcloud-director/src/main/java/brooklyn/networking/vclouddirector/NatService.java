@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.xml.bind.JAXBElement;
 
+import org.jclouds.vcloud.director.v1_5.domain.network.Network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +45,6 @@ public class NatService {
 	private static final Logger LOG = LoggerFactory.getLogger(NatService.class);
 	
 	private static final String NAT_SERVICE_TYPE = "NatServiceType";
-
-	private static final String NETWORK_NAME = "d4p5-ext";
 
 	public static Builder builder() {
 		return new Builder();
@@ -105,15 +104,15 @@ public class NatService {
     public static class OpenPortForwardingConfig {
     	private Protocol protocol;
     	private HostAndPort target;
-    	private String networkId;
+    	private Network network;
     	private String publicIp;
     	private Integer publicPort;
     	
     	public OpenPortForwardingConfig protocol(Protocol val) {
     		this.protocol = val; return this;
     	}
-    	public OpenPortForwardingConfig networkId(String val) {
-    		this.networkId = val; return this;
+    	public OpenPortForwardingConfig network(Network val) {
+    		this.network = val; return this;
     	}
     	public OpenPortForwardingConfig target(HostAndPort val) {
     		this.target = val; return this;
@@ -127,13 +126,13 @@ public class NatService {
         public void checkValid() {
         	checkNotNull(protocol, "protocol");
         	checkNotNull(target, "target");
-        	checkNotNull(networkId, "networkId");
+        	checkNotNull(network, "network");
         	checkNotNull(publicIp, "publicIp");
             checkNotNull(publicPort, publicPort);
         }
     	@Override
     	public String toString() {
-    		return Objects.toStringHelper(this).add("protocol", protocol).add("target", target).add("networkId", networkId)
+    		return Objects.toStringHelper(this).add("protocol", protocol).add("target", target).add("network", network)
     				.add("publicIp", publicIp).add("publicPort", publicPort).toString();
     	}
     }
@@ -144,9 +143,7 @@ public class NatService {
         EdgeGateway edgeGateway = getEdgeGateway();
         List<NatRuleType> natRules = getNatRules(edgeGateway);
 
-    	String networkUrl = Urls.mergePaths(baseUrl, "api/admin/network", args.networkId);
-
-        ReferenceType interfaceRef = generateReference(networkUrl, NETWORK_NAME, "application/vnd.vmware.admin.network+xml");
+        ReferenceType interfaceRef = generateInterfaceRef(args.network);
 
         GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
         		args.protocol, 
@@ -219,40 +216,48 @@ public class NatService {
         return referenceResult.getReferences();
     }
 
+    private static ReferenceType generateInterfaceRef(Network network) {
+        ReferenceType interfaceRef = new ReferenceType();
+        interfaceRef.setHref(network.getHref().toString());
+        interfaceRef.setName(network.getName());
+        interfaceRef.setType(network.getType());
+        return interfaceRef;
+    }
+
     // FIXME Don't set sysprop as could affect all other activities of the JVM!
     private VcloudClient newVcloudClient(String arg0, String identity, String credential, String trustStore, String trustStorePassword) {
     	try {
     		// Client login
-    		// FIXME Why turn log level off?
-    		//VcloudClient.setLogLevel(Level.OFF);
-			VcloudClient result = new VcloudClient(arg0, Version.V5_5);
-	
-			// Performing Certificate Validation
+            VcloudClient vcloudClient = null;
+            boolean versionFound = false;
+            for (Version version : new Version[]{Version.V5_5, Version.V5_1, Version.V1_5}) {
+                try {
+                    if (!versionFound) {
+                        vcloudClient = new VcloudClient(arg0, version);
+                        LOG.info("VCloudClient - Trying login using " + version);
+                        vcloudClient.login(identity, credential);
+                        versionFound = true;
+                        break;
+                    }
+                } catch (VCloudException e) {
+                    LOG.info("VCloudClient - Cannot login using " + version);
+                }
+            }
+            if (!versionFound) throw new IllegalStateException("Can't login to " + arg0);
+            // Performing Certificate Validation
 			if (trustStore != null) {
 				System.setProperty("javax.net.ssl.trustStore", trustStore);
 				System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-				result.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
-				
+				vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
+
 			} else {
-				System.err
-						.println("Ignoring the Certificate Validation using FakeSSLSocketFactory.java - DO NOT DO THIS IN PRODUCTION");
-				result.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
+                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
 			}
-	
-			result.login(identity, credential);
-			return result;
-			
+			return vcloudClient;
     	} catch (Exception e) {
     		throw Exceptions.propagate(e);
     	}
-    }
-    
-    private ReferenceType generateReference(String href, String name, String type) {
-        ReferenceType appliedOn = new ReferenceType();
-        appliedOn.setHref(href);
-        appliedOn.setName(name);
-        appliedOn.setType(type);
-        return appliedOn;
     }
 
     private GatewayNatRuleType generateGatewayNatRule(Protocol protocol, HostAndPort original,
