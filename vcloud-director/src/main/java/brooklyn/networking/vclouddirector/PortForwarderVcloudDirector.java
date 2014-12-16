@@ -16,21 +16,13 @@
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Objects.firstNonNull;
-import static com.google.common.collect.Iterables.tryFind;
-import static org.jclouds.vcloud.director.v1_5.VCloudDirectorMediaType.ORG_NETWORK;
+
 import java.util.List;
 
-import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.vcloud.VCloudApiMetadata;
 import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
 import org.jclouds.vcloud.director.v1_5.compute.util.VCloudDirectorComputeUtils;
-import org.jclouds.vcloud.director.v1_5.domain.Link;
 import org.jclouds.vcloud.director.v1_5.domain.network.Network;
-import org.jclouds.vcloud.director.v1_5.domain.org.Org;
-import org.jclouds.vcloud.director.v1_5.features.NetworkApi;
-import org.jclouds.vcloud.director.v1_5.predicates.ReferencePredicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,16 +45,10 @@ import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.text.Strings;
 
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Module;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
 
@@ -90,11 +76,12 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     
     private PortForwardManager portForwardManager;
 
-    private NatService service;
-
     private SubnetTier subnetTier;
 
     private JcloudsLocation jcloudsLocation;
+
+    // Always access via #getService(), to support rebind
+    private volatile transient NatService service;
 
     public PortForwarderVcloudDirector() {
     }
@@ -121,7 +108,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
         service = NatService.builder().location(jcloudsLocation).build();
     }
-    
+
     @Override
     public String openGateway() {
         // TODO Handle case where publicIp not already supplied
@@ -185,7 +172,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             // 2) add new rule to collection; 3) upload all NAT rules. Therefore if two threads
             // execute concurrently we may not get both new NAT rules in the resulting uploaded set.
             synchronized (mutex) {
-                HostAndPort result = service.openPortForwarding(new OpenPortForwardingConfig()
+                HostAndPort result = getService().openPortForwarding(new OpenPortForwardingConfig()
                         .networkId(networkId)
                         .publicIp(publicIp)
                         .protocol(Protocol.TCP)
@@ -215,4 +202,11 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         return false;
     }
 
+    // For rebind, always access via getter so can recreate the service after rebind
+    private NatService getService() {
+        if (service == null) {
+            service = NatService.builder().location(jcloudsLocation).build();
+        }
+        return service;
+    }
 }
