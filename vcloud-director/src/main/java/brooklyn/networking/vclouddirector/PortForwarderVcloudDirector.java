@@ -225,7 +225,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             @Override
             public boolean apply(Network input) {
                 if (input.getTasks().size() != 0) return false;
-                return input.getId().equals(networkId);
+                return input.getId().endsWith(networkId);
             }
         });
     }
