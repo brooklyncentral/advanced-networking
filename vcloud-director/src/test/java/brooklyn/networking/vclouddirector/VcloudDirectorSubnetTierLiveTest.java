@@ -1,5 +1,6 @@
 package brooklyn.networking.vclouddirector;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.AfterMethod;
@@ -9,6 +10,8 @@ import org.testng.annotations.Test;
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.machine.MachineEntity;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
@@ -31,21 +34,16 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     
     private static final String LOCATION_SPEC = "canopy-vCHS";
 
-    public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
-    
-    public static final String EXISTING_NETWORK_NAME = "M523007043-2739-default-routed";
-    public static final String AVAILABLE_PUBLIC_IP_FOR_NETWORK_NAME = "23.92.230.8";
-    
-    public static final String EXISTING_NETWORK_ID = "041e176a-befc-4b28-89e2-3c5343ff4d12";
-    public static final String AVAILABLE_PUBLIC_IP_FOR_NETWORK_ID = "23.92.230.21";
-
     protected JcloudsLocation loc;
+
+    private String publicIp;
     
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
         super.setUp();
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
+        publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
     }
     
     @AfterMethod(alwaysRun=true)
@@ -60,33 +58,28 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
         
         final int expectedPort = 5678;
-        final String expectedEndpoint = AVAILABLE_PUBLIC_IP_FOR_NETWORK_NAME+":"+expectedPort;
+        final String expectedEndpoint = publicIp +":"+expectedPort;
 
-        SshMachineLocation machine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("user", "myuser")
-                .configure("address", INTERNAL_MACHINE_IP));
-
+        SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
+                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp));
+        final MachineEntity entity = subnetTier.addChild(EntitySpec.create(MachineEntity.class)
+                .location(loc));
         try {
-            SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
-                    .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
-                    .configure(PortForwarderVcloudDirector.NETWORK_NAME, EXISTING_NETWORK_NAME)
-                    .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, AVAILABLE_PUBLIC_IP_FOR_NETWORK_NAME));
-            final TestEntity entity = subnetTier.addChild(EntitySpec.create(TestEntity.class)
-                    .location(machine));
             Entities.manage(subnetTier);
             app.start(ImmutableList.of(loc));
             
-            entity.setAttribute(PRIVATE_PORT, 1234);
+            ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
-                    EntityAndAttribute.supplier(entity, PRIVATE_PORT), 
+                    EntityAndAttribute.supplier(entity, PRIVATE_PORT),
                     Optional.of(expectedPort),
                     Protocol.TCP,
                     Cidr.UNIVERSAL,
                     EntityAndAttribute.supplier(entity, MAPPED_ENDPOINT));
-            
+
             EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, expectedEndpoint);
         } finally {
-            // TODO Delete DNAT rule
+            ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.supplier(entity, PRIVATE_PORT), Optional.of(expectedPort));
         }
     }
     
@@ -96,23 +89,19 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
         
         final int expectedPort = 5678;
-        final String expectedEndpoint = AVAILABLE_PUBLIC_IP_FOR_NETWORK_ID+":"+expectedPort;
+        final String expectedEndpoint = publicIp+":"+expectedPort;
 
-        SshMachineLocation machine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("user", "myuser")
-                .configure("address", "192.168.109.10"));
-
+        SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
+                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp));
+        final MachineEntity entity = subnetTier.addChild(EntitySpec.create(MachineEntity.class)
+                .location(loc));
         try {
-            SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
-                    .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
-                    .configure(PortForwarderVcloudDirector.NETWORK_ID, EXISTING_NETWORK_ID)
-                    .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, AVAILABLE_PUBLIC_IP_FOR_NETWORK_ID));
-            final TestEntity entity = subnetTier.addChild(EntitySpec.create(TestEntity.class)
-                    .location(machine));
+
             Entities.manage(subnetTier);
             app.start(ImmutableList.of(loc));
-            
-            entity.setAttribute(PRIVATE_PORT, 1234);
+
+            ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
                     EntityAndAttribute.supplier(entity, PRIVATE_PORT), 
                     Optional.of(expectedPort),
@@ -125,7 +114,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                     assertEquals(entity.getAttribute(MAPPED_ENDPOINT), expectedEndpoint);
                 }});
         } finally {
-            // TODO Delete DNAT rule
+            ((PortForwarderVcloudDirector ) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.supplier(entity, PRIVATE_PORT), Optional.of(expectedPort));
         }
     }
 }
