@@ -167,13 +167,37 @@ public class NatService {
     				.add("publicIp", publicIp).add("publicPort", publicPort).toString();
     	}
     }
+    
     public HostAndPort openPortForwarding(OpenPortForwardingConfig args) throws VCloudException {
+        args.checkValid();
+        if (LOG.isDebugEnabled()) LOG.debug("Opening port forwarding at {}: {}", baseUrl, args);
+
+        int iteration = 0;
+        do {
+            iteration++;
+            try {
+                return openPortForwardingImpl(args);
+            } catch (VCloudException e) {
+                // If the EdgeGateway is being reconfigured by someone else, then the update operation will fail.
+                // In that situation, retry (from the beginning - retrieve all rules again in case they are
+                // different from last time). We've seen it regularly take 45 seconds to reconfigure the
+                // EdgeGateway (to add/remove a NAT rule), so be patient!
+                // 
+                // TODO Don't hard-code exception messages - dangerous for internationalisation etc.
+                if (e.toString().contains("is busy completing an operation")) {
+                    if (LOG.isDebugEnabled()) LOG.debug("Retrying after iteration {} failed (server busy), opening port forwarding at {}: {} - {}", 
+                            new Object[] {iteration, baseUrl, args, e});
+                } else {
+                    throw e;
+                }
+            }
+        } while (true);
+    }
+    
+    protected HostAndPort openPortForwardingImpl(OpenPortForwardingConfig args) throws VCloudException {
         // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
         // If instead we create new objects then risk those having different config - this is *not* a delta!
         
-    	args.checkValid();
-    	if (LOG.isDebugEnabled()) LOG.debug("Opening port forwarding at {}: {}", baseUrl, args);
-    	
     	synchronized (getMutex()) {
             EdgeGateway edgeGateway = getEdgeGateway();
             GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
