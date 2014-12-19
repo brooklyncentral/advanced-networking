@@ -42,6 +42,20 @@ import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 
+/**
+ * For adding/removing NAT rules to vcloud-director.
+ * 
+ * The threading model is that inernally all access (to update DNAT rules) is synchronized.
+ * The mutex to synchronize on can be passed in (see {@link NatService.Builder#mutex(Object)}).
+ * The intent is that the same mutex be passed in for everything accessing the same Edge Gateway.
+ * It is extremely important to synchronize because adding NAT rule involves:
+ * <ol>
+ *   <li>download existing NAT rules;
+ *   <li>add new rule to collection;
+ *   <li>upload all NAT rules.
+ * </ol>
+ * Therefore if two threads execute concurrently we may not get both new NAT rules in the resulting uploaded set!
+ */
 @Beta
 public class NatService {
 
@@ -64,6 +78,7 @@ public class NatService {
         private String trustStore;
         private String trustStorePassword;
         private Level logLevel;
+        private Object mutex = new Object();
         
         public Builder location(JcloudsLocation val) {
         	identity(val.getIdentity());
@@ -87,7 +102,7 @@ public class NatService {
         	this.credential = val; return this;
         }
         public Builder endpoint(String val) {
-        	this.endpoint = val; return this;
+        	this.endpoint = checkNotNull(val, "endpoint"); return this;
         }
         public Builder trustStore(String val) {
         	this.trustStore = val; return this;
@@ -98,6 +113,9 @@ public class NatService {
         public Builder logLevel(java.util.logging.Level val) {
             this.logLevel = val; return this;
         }
+        public Builder mutex(Object mutex) {
+            this.mutex = checkNotNull(mutex, "mutex"); return this;
+        }
     	public NatService build() {
     		return new NatService(this);
     	}
@@ -105,11 +123,13 @@ public class NatService {
     
 	private final VcloudClient client;
 	private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
-
+	private final Object mutex;
+	
     public NatService(Builder builder) {
     	client = newVcloudClient(checkNotNull(builder.endpoint, "endpoint"), checkNotNull(builder.identity, "identity"), 
     			checkNotNull(builder.credential, "credential"), builder.trustStore, builder.trustStorePassword, builder.logLevel);
-    	baseUrl = builder.endpoint;
+    	baseUrl = checkNotNull(builder.endpoint, "endpoint");
+    	mutex = checkNotNull(builder.mutex, "mutex");
     }
 
     public static class OpenPortForwardingConfig {
@@ -154,74 +174,82 @@ public class NatService {
     	args.checkValid();
     	if (LOG.isDebugEnabled()) LOG.debug("Opening port forwarding at {}: {}", baseUrl, args);
     	
-        EdgeGateway edgeGateway = getEdgeGateway();
-        GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
-        NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
-        
-        // Modify the natService (which is the object retrieved directly from edgeGateway)
-        String networkUrl = Urls.mergePaths(baseUrl, "api/admin/network", args.networkId);
-
-        ReferenceType interfaceRef = generateReference(networkUrl, NETWORK_NAME, "application/vnd.vmware.admin.network+xml");
-
-        GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
-                args.protocol, 
-                HostAndPort.fromParts(args.publicIp, args.publicPort), 
-                args.target, 
-                interfaceRef);
-        NatRuleType dnatRule = generateDnatRule(true, gatewayNatRule);
-
-        natService.getNatRule().add(dnatRule);
-        
-        // Execute task
-        Task task = edgeGateway.configureServices(gatewayFeatures);
-        waitForTask(task, "add dnat rule");
-
-        // Confirm that the newly created rule exists, 
-        // with the expected translated (i.e internal) and original (i.e. public) addresses,
-        // and without any conflicting DNAT rules already using that port.
-        // Retrieves a new EdgeGateway instance, to ensure we're not just looking at our local copy.
-        List<NatRuleType> rules = getNatRules(getEdgeGateway());
-        
-        Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
-                NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
-                NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort())));
-        
-        Iterable<NatRuleType> conflicts = Iterables.filter(rules, Predicates.and(
-                NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
-                Predicates.not(NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort()))));
-        
-        if (Iterables.isEmpty(matches)) {
-            throw new IllegalStateException(
-                    String.format("Gateway NAT Rules: cannot find translated %s and original %s:%s at %s", 
-                            args.target, args.publicIp, args.publicPort, baseUrl));
-        } else if (Iterables.size(matches) > 1) {
-            LOG.warn(String.format("Gateway NAT Rules: %s duplicates for translated %s and original %s:%s at %s; continuing.", 
-                    Iterables.size(matches), args.target, args.publicIp, args.publicPort, baseUrl));
-        }
-        if (Iterables.size(conflicts) > 0) {
-            throw new IllegalStateException(
-                    String.format("Gateway NAT Rules: original already assigned for translated %s and original %s:%s at %s", 
-                            args.target, args.publicIp, args.publicPort, baseUrl));
-        }
-
-        return HostAndPort.fromParts(args.publicIp, args.publicPort);
+    	synchronized (getMutex()) {
+            EdgeGateway edgeGateway = getEdgeGateway();
+            GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
+            NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
+            
+            // Modify the natService (which is the object retrieved directly from edgeGateway)
+            String networkUrl = Urls.mergePaths(baseUrl, "api/admin/network", args.networkId);
+    
+            ReferenceType interfaceRef = generateReference(networkUrl, NETWORK_NAME, "application/vnd.vmware.admin.network+xml");
+    
+            GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
+                    args.protocol, 
+                    HostAndPort.fromParts(args.publicIp, args.publicPort), 
+                    args.target, 
+                    interfaceRef);
+            NatRuleType dnatRule = generateDnatRule(true, gatewayNatRule);
+    
+            natService.getNatRule().add(dnatRule);
+            
+            // Execute task
+            Task task = edgeGateway.configureServices(gatewayFeatures);
+            waitForTask(task, "add dnat rule");
+    
+            // Confirm that the newly created rule exists, 
+            // with the expected translated (i.e internal) and original (i.e. public) addresses,
+            // and without any conflicting DNAT rules already using that port.
+            // Retrieves a new EdgeGateway instance, to ensure we're not just looking at our local copy.
+            List<NatRuleType> rules = getNatRules(getEdgeGateway());
+            
+            Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
+                    NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
+                    NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort())));
+            
+            Iterable<NatRuleType> conflicts = Iterables.filter(rules, Predicates.and(
+                    NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
+                    Predicates.not(NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort()))));
+            
+            if (Iterables.isEmpty(matches)) {
+                throw new IllegalStateException(
+                        String.format("Gateway NAT Rules: cannot find translated %s and original %s:%s at %s", 
+                                args.target, args.publicIp, args.publicPort, baseUrl));
+            } else if (Iterables.size(matches) > 1) {
+                LOG.warn(String.format("Gateway NAT Rules: %s duplicates for translated %s and original %s:%s at %s; continuing.", 
+                        Iterables.size(matches), args.target, args.publicIp, args.publicPort, baseUrl));
+            }
+            if (Iterables.size(conflicts) > 0) {
+                throw new IllegalStateException(
+                        String.format("Gateway NAT Rules: original already assigned for translated %s and original %s:%s at %s", 
+                                args.target, args.publicIp, args.publicPort, baseUrl));
+            }
+    
+            return HostAndPort.fromParts(args.publicIp, args.publicPort);
+    	}
     }
 
     public void enableNatService() throws VCloudException {
         if (LOG.isDebugEnabled()) LOG.debug("Enabling NAT Service at {}", baseUrl);
         
-        EdgeGateway edgeGateway = getEdgeGateway();
-        GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
-        NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
-
-        // Modify
-        natService.setIsEnabled(true);
-        
-        // Execute task
-        Task task = edgeGateway.configureServices(gatewayFeatures);
-        waitForTask(task, "enable nat-service");
+        synchronized (getMutex()) {
+            EdgeGateway edgeGateway = getEdgeGateway();
+            GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
+            NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
+    
+            // Modify
+            natService.setIsEnabled(true);
+            
+            // Execute task
+            Task task = edgeGateway.configureServices(gatewayFeatures);
+            waitForTask(task, "enable nat-service");
+        }
     }
 
+    protected Object getMutex() {
+        return mutex;
+    }
+    
     protected void waitForTask(Task task, String summary) throws VCloudException {
         checkNotNull(task, "task null for %s", summary);
         try {
