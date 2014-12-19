@@ -18,6 +18,7 @@ package brooklyn.networking.vclouddirector;
 import static com.google.common.base.Objects.firstNonNull;
 
 import java.util.List;
+import java.util.Map;
 
 import org.jclouds.compute.ComputeService;
 import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
@@ -48,6 +49,7 @@ import brooklyn.util.text.Strings;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
@@ -72,7 +74,25 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             "advancednetworking.vcloud.network.publicip",
             "Optionally specify an existing public IP associated with the network");
 
-    private final Object mutex = new Object();
+    /**
+     * Returns the mutex to be synchronized on whenever accessing/editing the DNAT rules for a given endpoint.
+     */
+    private static enum MutexRegistry {
+        INSTANCE;
+        
+        private final Map<String, Object> mutexes = Maps.newLinkedHashMap();
+        
+        public Object getMutexFor(String endpoint) {
+            synchronized (mutexes) {
+                Object mutex = mutexes.get(endpoint);
+                if (mutex == null) {
+                    mutex = new Object();
+                    mutexes.put(endpoint, mutex);
+                }
+                return mutex;
+            }
+        }
+    }
     
     private PortForwardManager portForwardManager;
 
@@ -106,7 +126,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     public void inject(Entity owner, List<Location> locations) {
         subnetTier = (SubnetTier) owner;
         jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
-        service = NatService.builder().location(jcloudsLocation).build();
+        service = newService();
     }
 
     @Override
@@ -168,19 +188,14 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
         
         try {
-            // must synchronize because adding NAT rule involves: 1) download existing NAT rules; 
-            // 2) add new rule to collection; 3) upload all NAT rules. Therefore if two threads
-            // execute concurrently we may not get both new NAT rules in the resulting uploaded set.
-            synchronized (mutex) {
-                HostAndPort result = getService().openPortForwarding(new OpenPortForwardingConfig()
-                        .networkId(networkId)
-                        .publicIp(publicIp)
-                        .protocol(Protocol.TCP)
-                        .target(target)
-                        .publicPort(publicPort));
-                LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
-                return result;
-            }
+            HostAndPort result = getService().openPortForwarding(new OpenPortForwardingConfig()
+                    .networkId(networkId)
+                    .publicIp(publicIp)
+                    .protocol(Protocol.TCP)
+                    .target(target)
+                    .publicPort(publicPort));
+            LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
+            return result;
         } catch (Exception e) {
             LOG.error("Failed creating port forwarding rule on "+this+" to "+target, e);
             // it might already be created, so don't crash and burn too hard!
@@ -205,8 +220,13 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     // For rebind, always access via getter so can recreate the service after rebind
     private NatService getService() {
         if (service == null) {
-            service = NatService.builder().location(jcloudsLocation).build();
+            service = newService();
         }
         return service;
+    }
+    
+    private NatService newService() {
+        String endpoint = jcloudsLocation.getEndpoint();
+        return NatService.builder().location(jcloudsLocation).mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint)).build();
     }
 }
