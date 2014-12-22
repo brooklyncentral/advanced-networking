@@ -59,11 +59,15 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
 import brooklyn.util.http.HttpToolResponse;
 import brooklyn.util.time.Time;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
@@ -101,8 +105,8 @@ public class CloudstackNew40FeaturesClient {
             .apiVersion("3.0.5")
             .credentials(apiKey, secretKey)
             .modules(ImmutableSet.<Module>builder()
-                .add(new SLF4JLoggingModule())
-                .build()
+                            .add(new SLF4JLoggingModule())
+                            .build()
             )
             .overrides(overrides);
 
@@ -941,5 +945,52 @@ public class CloudstackNew40FeaturesClient {
         HttpToolResponse response = HttpUtil.invoke(request);
         // TODO does non-2xx response need to be handled separately ?
         return response;
+    }
+
+    public Maybe<VirtualMachine> findVmByIp(final String ipAddress) {
+        Set<VirtualMachine> vms = getVirtualMachineClient().listVirtualMachines();
+        LOG.debug("VMs: ");
+        return Maybe.of(Iterables.tryFind(vms, new Predicate<VirtualMachine>() {
+            @Override
+            public boolean apply(VirtualMachine vm) {
+                //check first NIC for ip address
+                return vm.getNICs().iterator().next().getIPAddress().equals(ipAddress);
+            }
+        }));
+    }
+
+    public String findVpcIdFromNetworkId(final String networkId) {
+        Multimap<String, String> params = ArrayListMultimap.create();
+        params.put("command", "listNetworks");
+        params.put("apiKey", this.apiKey);
+        params.put("response", "json");
+
+        HttpRequest request = HttpRequest.builder()
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
+
+        request = getQuerySigner().filter(request);
+
+        HttpToolResponse response = HttpUtil.invoke(request);
+        JsonElement offers = json(response);
+        LOG.debug("LIST NETWORKS\n" + pretty(offers));
+        //get the first network object
+        Optional<JsonElement> matchingNetwork = Iterables.tryFind(offers.getAsJsonObject().get("listnetworksresponse")
+                .getAsJsonObject().get("network").getAsJsonArray(), new Predicate<JsonElement>() {
+            @Override
+            public boolean apply(JsonElement jsonElement) {
+                JsonObject matchingNetwork = jsonElement.getAsJsonObject();
+                return matchingNetwork.get("id").getAsString().equals(networkId);
+            }});
+
+        if (matchingNetwork.isPresent()) {
+            return matchingNetwork.get().getAsJsonObject().get("vpcid").getAsString();
+        } else {
+            LOG.warn("matching VPC for network with id:{} is not found", networkId);
+            return null;
+        }
     }
 }
