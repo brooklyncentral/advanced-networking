@@ -1,10 +1,10 @@
 package brooklyn.networking.vclouddirector;
 
+import brooklyn.util.net.Protocol;
+
 import com.google.common.base.Predicate;
 import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
-
-import brooklyn.util.net.Protocol;
 
 public class NatPredicates {
 
@@ -16,6 +16,10 @@ public class NatPredicates {
         return new OriginalTargetEquals(ip, port);
     }
     
+    public static Predicate<NatRuleType> protocolMatches(Protocol protocol) {
+        return new ProtocolEquals(protocol);
+    }
+
     protected static class TranslatedTargetEquals implements Predicate<NatRuleType> {
         private final String ip;
         private final int port;
@@ -44,10 +48,6 @@ public class NatPredicates {
             GatewayNatRuleType rule = (input == null) ? null : input.getGatewayNatRule();
             return (rule != null) && ip.equals(rule.getOriginalIp()) && Integer.toString(port).equals(rule.getOriginalPort()); 
         }
-    }
-
-    public static Predicate<? super NatRuleType> protocolMatches(Protocol protocol) {
-        return new ProtocolEquals(protocol);
     }
 
     protected static class ProtocolEquals implements Predicate<NatRuleType> {

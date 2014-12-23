@@ -212,8 +212,9 @@ public class NatService {
                     subnetParticipations.addAll(gatewayInterfaceType.getSubnetParticipation());
                 }
             }
-            // check publicIp
             checkPublicIp(args.publicIp, subnetParticipations);
+            
+            // generate and add the new rule
             GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
                     args.protocol,
                     HostAndPort.fromParts(args.publicIp, args.publicPort),
@@ -224,7 +225,7 @@ public class NatService {
             NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
             natService.getNatRule().add(dnatRule);
 
-            // Execute task
+            // Execute task (i.e. make the actual change, and wait for completion)
             Task task = edgeGateway.configureServices(gatewayFeatures);
             waitForTask(task, "add dnat rule");
 
@@ -288,21 +289,19 @@ public class NatService {
 
     private HostAndPort closePortForwardingImpl(PortForwardingConfig args) throws VCloudException {
         // Remove DNAT rule from NAT service; retrieve the existing, modify it, and upload.
-        args.checkValid();
-        if (LOG.isDebugEnabled()) LOG.debug("Closing port forwarding at {}: {}", baseUrl, args);
-
+        
         EdgeGateway edgeGateway = getEdgeGateway();
         GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
-
         NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
-
         List<NatRuleType> rules = getNatRules(edgeGateway);
+
+        // Modify the NAT rules to remove the matching rule
         Iterable<NatRuleType> filtered = Iterables.filter(rules, Predicates.and(
                 NatPredicates.originalTargetEquals(args.publicIp, args.publicPort),
                 NatPredicates.translatedTargetEquals(args.target.getHostText(), args.target.getPort())));
         natService.getNatRule().removeAll(Lists.newArrayList(filtered));
 
-        // Execute task
+        // Execute task (i.e. make the actual change, and wait for completion)
         Task task = edgeGateway.configureServices(gatewayFeatures);
         waitForTask(task, "remove dnat rule");
 
@@ -358,9 +357,9 @@ public class NatService {
     private void checkPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
         boolean found = false;
         for (SubnetParticipationType subnetParticipation : subnetParticipations) {
-            Iterator<IpRangeType> i = subnetParticipation.getIpRanges().getIpRange().iterator();
-            while (!found && i.hasNext()) {
-                IpRangeType ipRangeType = i.next();
+            Iterator<IpRangeType> iter = subnetParticipation.getIpRanges().getIpRange().iterator();
+            while (!found && iter.hasNext()) {
+                IpRangeType ipRangeType = iter.next();
                 long ipLo = ipToLong(InetAddresses.forString(ipRangeType.getStartAddress()));
                 long ipHi = ipToLong(InetAddresses.forString(ipRangeType.getEndAddress()));
                 long ipToTest = ipToLong(InetAddresses.forString(publicIp));
@@ -378,8 +377,8 @@ public class NatService {
                     builder.append(", ");
                 }
             }
-            LOG.error(builder.toString());
-            throw new IllegalStateException(builder.toString());
+            LOG.error(builder.toString()+" (rethrowing)");
+            throw new IllegalArgumentException(builder.toString());
         }
     }
 

@@ -18,10 +18,6 @@ package brooklyn.networking.vclouddirector;
 import java.util.List;
 import java.util.Map;
 
-import org.jclouds.compute.ComputeService;
-import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
-import org.jclouds.vcloud.director.v1_5.compute.util.VCloudDirectorComputeUtils;
-import org.jclouds.vcloud.director.v1_5.domain.network.Network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,19 +32,17 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.vclouddirector.NatService.PortForwardingConfig;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
@@ -194,8 +188,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
                     .publicPort(publicPort));
             LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
             return result;
-        } catch (IllegalStateException e) {
-            throw Throwables.propagate(e);
+        } catch (IllegalArgumentException e) {
+            // Can get this if the publicIp is not valid for this network.
+            throw Exceptions.propagate(e);
         } catch (Exception e) {
             LOG.error("Failed creating port forwarding rule on "+this+" to "+target, e);
             // it might already be created, so don't crash and burn too hard!
@@ -203,7 +198,12 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
     }
 
-    public void closePortForwarding(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort) {
+    /**
+     * Deletes the NAT rule for the given port.
+     * 
+     * Expects caller to call {@link PortForwardManager#forgetPortMapping(String, int)}
+     */
+    public void closePortForwarding(EntityAndAttribute<Integer> privatePort, int publicPort) {
         Entity entity = privatePort.getEntity();
         Integer targetPort = privatePort.getValue();
         MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
@@ -212,39 +212,19 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             throw new IllegalStateException("Failed to close port-forwarding for machine " + machine + " because its location has no target ip: " + machine);
         }
         HostAndPort target = HostAndPort.fromParts(targetIp, targetPort);
-
-        PortForwardManager pfw = getPortForwardManager();
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
-
-        int publicPort;
-        if (optionalPublicPort.isPresent()) {
-            publicPort = optionalPublicPort.get();
-        } else {
-            publicPort = pfw.acquirePublicPort(publicIp);
-        }
-
+        
         try {
             HostAndPort result = getService().closePortForwarding(new PortForwardingConfig()
                     .publicIp(publicIp)
                     .protocol(Protocol.TCP)
                     .target(target)
                     .publicPort(publicPort));
-            LOG.debug("Disabled port-forwarding for {}, via {}, on ", new Object[]{target, result, subnetTier});
-        } catch (IllegalStateException e) {
-            throw Throwables.propagate(e);
+            LOG.debug("Deleted port-forwarding for {}, via {}, on ", new Object[]{target, result, subnetTier});
         } catch (Exception e) {
-            LOG.error("Failed disabling port forwarding rule on " + this + " to " + target, e);
+            LOG.error("Failed deleting port forwarding rule on " + this + " to " + target, e);
             // it might not be created, so don't crash and burn too hard!
         }
-    }
-
-    private String getNetworkIdFromNetworkName(String networkName) {
-        if (Strings.isBlank(networkName)) return null;
-        ComputeService computeService = JcloudsUtil.findComputeService(jcloudsLocation.getAllConfigBag());
-        VCloudDirectorApi api = computeService.getContext().unwrapApi(VCloudDirectorApi.class);
-        Optional<Network> optionaNetwork = VCloudDirectorComputeUtils.tryFindNetworkNamedInCurrentOrg(api, networkName);
-        if (!optionaNetwork.isPresent()) return null;
-        return optionaNetwork.get().getId();
     }
 
     @Override
