@@ -15,36 +15,31 @@
  */
 package brooklyn.networking.vclouddirector;
 
-import static com.google.common.base.Objects.firstNonNull;
-
 import java.util.List;
 import java.util.Map;
 
-import org.jclouds.compute.ComputeService;
-import org.jclouds.vcloud.director.v1_5.VCloudDirectorApi;
-import org.jclouds.vcloud.director.v1_5.compute.util.VCloudDirectorComputeUtils;
-import org.jclouds.vcloud.director.v1_5.domain.network.Network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.networking.vclouddirector.NatService.OpenPortForwardingConfig;
+import brooklyn.networking.vclouddirector.NatService.PortForwardingConfig;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -174,10 +169,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         // TODO should associate ip:port with PortForwardManager; but that takes location param
         //      getPortForwardManager().associate(publicIp, publicPort, targetVm, targetPort);
         // TODO Could check old mapping, and re-use that public port
-        // TODO Given the VM, could look up to find the network (rather than hard-coding!)
         // TODO Pass cidr in vcloud-director call
         PortForwardManager pfw = getPortForwardManager();
-        String networkId = firstNonNull(subnetTier.getConfig(NETWORK_ID), getNetworkIdFromNetworkName(subnetTier.getConfig(NETWORK_NAME)));
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
 
         int publicPort;
@@ -188,14 +181,16 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
         
         try {
-            HostAndPort result = getService().openPortForwarding(new OpenPortForwardingConfig()
-                    .networkId(networkId)
+            HostAndPort result = getService().openPortForwarding(new PortForwardingConfig()
                     .publicIp(publicIp)
                     .protocol(Protocol.TCP)
                     .target(target)
                     .publicPort(publicPort));
             LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
             return result;
+        } catch (IllegalArgumentException e) {
+            // Can get this if the publicIp is not valid for this network.
+            throw Exceptions.propagate(e);
         } catch (Exception e) {
             LOG.error("Failed creating port forwarding rule on "+this+" to "+target, e);
             // it might already be created, so don't crash and burn too hard!
@@ -203,13 +198,33 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
     }
 
-    private String getNetworkIdFromNetworkName(String networkName) {
-        if (Strings.isBlank(networkName)) return null;
-        ComputeService computeService = JcloudsUtil.findComputeService(jcloudsLocation.getAllConfigBag());
-        VCloudDirectorApi api = computeService.getContext().unwrapApi(VCloudDirectorApi.class);
-        Optional<Network> optionaNetwork = VCloudDirectorComputeUtils.tryFindNetworkNamedInCurrentOrg(api, networkName);
-        if (!optionaNetwork.isPresent()) return null;
-        return optionaNetwork.get().getId();
+    /**
+     * Deletes the NAT rule for the given port.
+     * 
+     * Expects caller to call {@link PortForwardManager#forgetPortMapping(String, int)}
+     */
+    public void closePortForwarding(EntityAndAttribute<Integer> privatePort, int publicPort) {
+        Entity entity = privatePort.getEntity();
+        Integer targetPort = privatePort.getValue();
+        MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
+        String targetIp = Iterables.getFirst(Iterables.concat(machine.getPrivateAddresses(), machine.getPublicAddresses()), null);
+        if (targetIp == null) {
+            throw new IllegalStateException("Failed to close port-forwarding for machine " + machine + " because its location has no target ip: " + machine);
+        }
+        HostAndPort target = HostAndPort.fromParts(targetIp, targetPort);
+        String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
+        
+        try {
+            HostAndPort result = getService().closePortForwarding(new PortForwardingConfig()
+                    .publicIp(publicIp)
+                    .protocol(Protocol.TCP)
+                    .target(target)
+                    .publicPort(publicPort));
+            LOG.debug("Deleted port-forwarding for {}, via {}, on ", new Object[]{target, result, subnetTier});
+        } catch (Exception e) {
+            LOG.error("Failed deleting port forwarding rule on " + this + " to " + target, e);
+            // it might not be created, so don't crash and burn too hard!
+        }
     }
 
     @Override

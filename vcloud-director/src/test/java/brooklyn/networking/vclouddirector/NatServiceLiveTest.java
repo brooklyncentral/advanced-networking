@@ -14,8 +14,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.vclouddirector.NatService.OpenPortForwardingConfig;
+import brooklyn.networking.vclouddirector.NatService.PortForwardingConfig;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
@@ -54,7 +56,6 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
     protected JcloudsLocation loc;
-    private String networkId;
     private String publicIp;
     
     protected ListeningExecutorService executor;
@@ -64,7 +65,6 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     public void setUp() throws Exception {
         super.setUp();
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
-        networkId = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.id"), "network.id");
         publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
         
         executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
@@ -101,8 +101,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     public void testAddNatRule() throws Exception {
         
         NatService service = NatService.builder().location(loc).build();
-        HostAndPort result = service.openPortForwarding(new OpenPortForwardingConfig()
-                .networkId(networkId)
+        HostAndPort result = service.openPortForwarding(new PortForwardingConfig()
                 .publicIp(publicIp)
                 .protocol(Protocol.TCP)
                 .target(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1235))
@@ -119,7 +118,11 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
             assertEquals(rule.getGatewayNatRule().getTranslatedIp(), INTERNAL_MACHINE_IP);
             assertEquals(rule.getGatewayNatRule().getTranslatedPort(), "1235");
         } finally {
-            // TODO Delete NAT rule
+            service.closePortForwarding(new PortForwardingConfig()
+                    .publicIp(publicIp)
+                    .protocol(Protocol.TCP)
+                    .target(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1235))
+                    .publicPort(5679));
         }
     }
 
@@ -127,7 +130,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
         NatService service = NatService.builder().location(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         Optional<NatRuleType> rule = Iterables.tryFind(rules, NatPredicates.translatedTargetEquals(INTERNAL_MACHINE_IP, internalPort));
-        assertFalse(rule.isPresent(), "rule="+rule);
+        assertFalse(rule.isPresent(), "rule=" + rule);
     }
     
     @Test(groups="Live")
@@ -142,16 +145,18 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
                     int internalPort = 1236 + counter;
                     int externalPort = 5680 + counter;
                     NatService service = NatService.builder().location(loc).mutex(sharedMutex).build();
-                    HostAndPort result = service.openPortForwarding(new OpenPortForwardingConfig()
-                            .networkId(networkId)
+                    HostAndPort result = service.openPortForwarding(new PortForwardingConfig()
                             .publicIp(publicIp)
                             .protocol(Protocol.TCP)
                             .target(HostAndPort.fromParts(INTERNAL_MACHINE_IP, internalPort))
-                            .publicPort(5679));
+                            .publicPort(externalPort));
                     try {
                         assertEquals(result, HostAndPort.fromParts(publicIp, externalPort));
                     } finally {
-                        // TODO Delete NAT rule
+                        service.closePortForwarding(new PortForwardingConfig().publicIp(publicIp)
+                                .protocol(Protocol.TCP)
+                                .target(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1235))
+                                .publicPort(externalPort));
                     }
                     return null;
                 }});
