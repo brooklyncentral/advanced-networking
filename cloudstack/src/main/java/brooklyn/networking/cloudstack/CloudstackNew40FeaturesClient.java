@@ -57,12 +57,6 @@ import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.http.HttpToolResponse;
-import brooklyn.util.time.Time;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
@@ -79,6 +73,12 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.inject.Module;
 
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.http.HttpToolResponse;
+import brooklyn.util.time.Time;
+
 public class CloudstackNew40FeaturesClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(CloudstackNew40FeaturesClient.class);
@@ -86,7 +86,8 @@ public class CloudstackNew40FeaturesClient {
     private final String endpoint;
     private final String apiKey;
     //context knows it and gives us the signer; included for completeness only
-    @SuppressWarnings("unused") private final String secretKey;
+    @SuppressWarnings("unused")
+    private final String secretKey;
 
     private final CloudStackContext context;
 
@@ -100,15 +101,15 @@ public class CloudstackNew40FeaturesClient {
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
 
         ContextBuilder builder = ContextBuilder
-            .newBuilder("cloudstack")
-            .endpoint(endpoint)
-            .apiVersion("3.0.5")
-            .credentials(apiKey, secretKey)
-            .modules(ImmutableSet.<Module>builder()
-                            .add(new SLF4JLoggingModule())
-                            .build()
-            )
-            .overrides(overrides);
+                .newBuilder("cloudstack")
+                .endpoint(endpoint)
+                .apiVersion("3.0.5")
+                .credentials(apiKey, secretKey)
+                .modules(ImmutableSet.<Module>builder()
+                                .add(new SLF4JLoggingModule())
+                                .build()
+                )
+                .overrides(overrides);
 
         CloudStackContext context = builder.buildView(CloudStackContext.class);
         return new CloudstackNew40FeaturesClient(endpoint, apiKey, secretKey, context);
@@ -181,14 +182,14 @@ public class CloudstackNew40FeaturesClient {
         List<String> result = new ArrayList<String>();
 
         JsonArray jr = listVpcsJson();
-        if (jr==null) return result;
+        if (jr == null) return result;
 
         Iterator<JsonElement> jvii = jr.iterator();
 
         while (jvii.hasNext()) {
             JsonObject jvo = jvii.next().getAsJsonObject();
             String name = jvo.get("name").getAsString();
-            if (name!=null && name.matches(regex))
+            if (name != null && name.matches(regex))
                 result.add(jvo.get("id").getAsString());
         }
         LOG.debug("VPC's matching {}: {}, ", regex, result);
@@ -198,13 +199,13 @@ public class CloudstackNew40FeaturesClient {
 
     public String findVpcIdWithCidr(String cidr) {
         JsonArray jr = listVpcsJson();
-        if (jr==null) return null;
+        if (jr == null) return null;
         Iterator<JsonElement> jvii = jr.iterator();
         List<String> cidrs = new ArrayList<String>();
         while (jvii.hasNext()) {
             JsonObject jvo = jvii.next().getAsJsonObject();
             String cidrV = jvo.get("cidr").getAsString();
-            if (cidrV!=null && cidrV.equals(cidr)) {
+            if (cidrV != null && cidrV.equals(cidr)) {
                 String vpcId = jvo.get("id").getAsString();
                 LOG.debug("found vpcId {} matching CIDR {}", vpcId, cidr);
                 return vpcId;
@@ -223,11 +224,11 @@ public class CloudstackNew40FeaturesClient {
         params.put("response", "json");
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -237,7 +238,7 @@ public class CloudstackNew40FeaturesClient {
         LOG.debug(pretty(jr));
 
         JsonElement vpcs = jr.getAsJsonObject().get("listvpcsresponse").getAsJsonObject().get("vpc");
-        return vpcs==null ? null : vpcs.getAsJsonArray();
+        return vpcs == null ? null : vpcs.getAsJsonArray();
     }
 
     public String createVpc(String cidr, String displayText, String name, String vpcOfferingId, String zoneId) {
@@ -253,11 +254,11 @@ public class CloudstackNew40FeaturesClient {
         params.put("response", "json");
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -280,11 +281,11 @@ public class CloudstackNew40FeaturesClient {
         params.put("response", "json");
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -297,7 +298,10 @@ public class CloudstackNew40FeaturesClient {
             throw Exceptions.propagate(e);
         }
     }
-    /** gets the ID of the thing whose job we were waiting on, if applicable */
+
+    /**
+     * gets the ID of the thing whose job we were waiting on, if applicable
+     */
     protected String waitForJobCompletion(HttpToolResponse response) throws InterruptedException {
         // FIXME response.getMessage(), to do something like httpUrlConnection.getResponseMessage()
         return waitForJobCompletion(response.getResponseCode(), new ByteArrayInputStream(response.getContent()), "HTTP response");
@@ -317,16 +321,16 @@ public class CloudstackNew40FeaturesClient {
 
         JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
         JsonElement responseIdJson = jobfields.get("id");
-        String responseId = responseIdJson!=null ? responseIdJson.getAsString() : null;
+        String responseId = responseIdJson != null ? responseIdJson.getAsString() : null;
         String jobId = jobfields.get("jobid").getAsString();
 
         do {
             AsyncJob<Object> job = getAsyncJobClient().getAsyncJob(jobId);
-            LOG.debug("waiting: "+job);
-            if (job.hasFailed()) throw new IllegalStateException("Failed job: "+job);
+            LOG.debug("waiting: " + job);
+            if (job.hasFailed()) throw new IllegalStateException("Failed job: " + job);
             if (job.hasSucceed()) {
                 Status status = job.getStatus();
-                if (Status.FAILED.equals(status)) throw new IllegalStateException("Failed job: "+job);
+                if (Status.FAILED.equals(status)) throw new IllegalStateException("Failed job: " + job);
                 if (Status.SUCCEEDED.equals(status)) return responseId;
             }
             Thread.sleep(1000);
@@ -363,21 +367,21 @@ public class CloudstackNew40FeaturesClient {
 
     protected static Gson gson() {
         return new GsonBuilder()
-            .setPrettyPrinting()
-            .create();
+                .setPrettyPrinting()
+                .create();
     }
 
     private Set<Zone> zones = null;
 
     public Zone findZoneMatchingName(String name) {
-        if (zones==null) zones = getZoneClient().listZones();
-        for (Zone z: zones) if (name.equals(z.getName())) return z;
+        if (zones == null) zones = getZoneClient().listZones();
+        for (Zone z : zones) if (name.equals(z.getName())) return z;
         return null;
     }
 
     public Zone findZoneMatchingRegex(String regex) {
-        if (zones==null) zones = getZoneClient().listZones();
-        for (Zone z: zones) if (z.getName()!=null && z.getName().matches(regex)) return z;
+        if (zones == null) zones = getZoneClient().listZones();
+        for (Zone z : zones) if (z.getName() != null && z.getName().matches(regex)) return z;
         return null;
     }
 
@@ -388,29 +392,29 @@ public class CloudstackNew40FeaturesClient {
         params.put("response", "json");
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
         HttpToolResponse response = HttpUtil.invoke(request);
         JsonElement offers = json(response);
-        LOG.debug("LIST VPC OFFERS\n"+pretty(offers));
+        LOG.debug("LIST VPC OFFERS\n" + pretty(offers));
 
         String id = offers.getAsJsonObject().get("listvpcofferingsresponse").
-            getAsJsonObject().get("vpcoffering").getAsJsonArray().
-            get(0).getAsJsonObject().get("id").getAsString();
-        LOG.debug("  using first VPC offering ID: "+id);
+                getAsJsonObject().get("vpcoffering").getAsJsonArray().
+                get(0).getAsJsonObject().get("id").getAsString();
+        LOG.debug("  using first VPC offering ID: " + id);
         return id;
     }
 
     public String createVpcTier(String name, String displayText,
-            String networkOfferingId,
-            String zoneId, String vpcId,
-            String gateway, String netmask) {
+                                String networkOfferingId,
+                                String zoneId, String vpcId,
+                                String gateway, String netmask) {
 
         //vpcid
         Multimap<String, String> params = ArrayListMultimap.create();
@@ -427,14 +431,14 @@ public class CloudstackNew40FeaturesClient {
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("createVpcTier GET "+params);
+        LOG.debug("createVpcTier GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -442,7 +446,7 @@ public class CloudstackNew40FeaturesClient {
         // TODO does non-2xx response need to be handled separately ?
 
         JsonElement jr = json(response);
-        LOG.debug("createVpcTier GOT "+jr);
+        LOG.debug("createVpcTier GOT " + jr);
 
         // seems this is created immediately
         return jr.getAsJsonObject().get("createnetworkresponse")
@@ -454,8 +458,8 @@ public class CloudstackNew40FeaturesClient {
     public Network findNetworkNameMatchingRegex(String regex) {
         Set<Network> networks = getNetworkClient().listNetworks();
         LOG.debug("NETWORKS: ");
-        for (Network nw: networks) {
-            LOG.debug("  "+nw);
+        for (Network nw : networks) {
+            LOG.debug("  " + nw);
             if (nw.getName().matches(regex)) {
                 LOG.debug("  ^^^");
                 return nw;
@@ -473,57 +477,59 @@ public class CloudstackNew40FeaturesClient {
         } catch (InterruptedException e1) {
             throw Exceptions.propagate(e1);
         }
-        for (String vpcId: vpcIds) {
+        for (String vpcId : vpcIds) {
             try {
-                LOG.debug("deleting VPC "+vpcId);
+                LOG.debug("deleting VPC " + vpcId);
                 deleteVpc(vpcId);
                 delCount++;
             } catch (Exception e) {
-                LOG.info("not allowed to delete "+vpcId+": "+e);
+                LOG.info("not allowed to delete " + vpcId + ": " + e);
             }
         }
-        if (delCount>0) LOG.info("deleted "+delCount+" vpc's");
+        if (delCount > 0) LOG.info("deleted " + delCount + " vpc's");
     }
 
-    /** returns the count of matching items which could not be deleted */
+    /**
+     * returns the count of matching items which could not be deleted
+     */
     public int deleteVmsWhereNameMatchesRegex(String regex, boolean waitForExpunged) {
         // as needed, delete them:
         CloudstackNew40FeaturesClient client = this;
         int delCount = 0, nonDelCount = 0;
         Set<VirtualMachine> vms = client.getVirtualMachineClient().listVirtualMachines();
         List<String> jobs = new ArrayList<String>();
-        for (VirtualMachine vm: vms) {
+        for (VirtualMachine vm : vms) {
             try {
                 if (vm.getName().matches(regex)) {
-                    LOG.debug("deleting "+vm);
+                    LOG.debug("deleting " + vm);
                     String job = client.getVirtualMachineClient().destroyVirtualMachine(vm.getId());
-                    LOG.debug("deleting "+vm+" - job "+job);
-                    if (job!=null) jobs.add(job);
+                    LOG.debug("deleting " + vm + " - job " + job);
+                    if (job != null) jobs.add(job);
                     delCount++;
                 } else {
-                    LOG.debug("skipping deletion of (non-matched) "+vm);
+                    LOG.debug("skipping deletion of (non-matched) " + vm);
                 }
             } catch (Exception e) {
                 nonDelCount++;
-                LOG.info("not allowed to delete "+vm+": "+e);
+                LOG.info("not allowed to delete " + vm + ": " + e);
             }
         }
         waitForJobs(jobs);
-        if (delCount>0) LOG.info("deleted "+delCount+" VM's");
-        if (nonDelCount==0 && waitForExpunged) {
+        if (delCount > 0) LOG.info("deleted " + delCount + " VM's");
+        if (nonDelCount == 0 && waitForExpunged) {
             int loops = 0;
             while (true) {
                 boolean match = false;
                 vms = client.getVirtualMachineClient().listVirtualMachines();
-                for (VirtualMachine vm: vms) {
+                for (VirtualMachine vm : vms) {
                     match |= vm.getName().matches(regex);
                 }
                 if (!match) {
-                    if (loops>0)
+                    if (loops > 0)
                         LOG.info("VM's now all expunged");
                     break;
                 }
-                if (loops==0)
+                if (loops == 0)
                     LOG.info("waiting for VM's to be expunged");
                 else
                     LOG.debug("still waiting for VM's to be expunged");
@@ -534,7 +540,9 @@ public class CloudstackNew40FeaturesClient {
         return nonDelCount;
     }
 
-    /** returns false if any failed or were unknown */
+    /**
+     * returns false if any failed or were unknown
+     */
     public boolean waitForJobsSuccess(Iterable<String> jobs) {
         List<AsyncJob<Object>> result = waitForJobsDone(jobs);
         List<AsyncJob<Object>> failures = Lists.newArrayList();
@@ -546,29 +554,33 @@ public class CloudstackNew40FeaturesClient {
         if (failures.isEmpty()) {
             return true;
         } else {
-            throw new IllegalStateException("job(s) failed: "+failures);
+            throw new IllegalStateException("job(s) failed: " + failures);
         }
     }
 
-    /** returns false if any failed or were unknown */
+    /**
+     * returns false if any failed or were unknown
+     */
     public boolean waitForJobs(Iterable<String> jobs) {
         List<AsyncJob<Object>> result = waitForJobsDone(jobs);
         boolean failure = false;
         for (AsyncJob<Object> r : result) {
             if (!r.hasSucceed()) {
                 failure = true;
-                LOG.warn("job failed: "+r);
+                LOG.warn("job failed: " + r);
             }
         }
         return !failure;
     }
 
-    /** returns all jobs */
+    /**
+     * returns all jobs
+     */
     public List<AsyncJob<Object>> waitForJobsDone(Iterable<String> jobs) {
         List<AsyncJob<Object>> result = Lists.newArrayList();
-        for (String job: jobs) {
+        for (String job : jobs) {
             AsyncJob<Object> j = waitForJob(job);
-            LOG.debug("job completed with status: "+j);
+            LOG.debug("job completed with status: " + j);
             result.add(j);
         }
         return result;
@@ -578,7 +590,7 @@ public class CloudstackNew40FeaturesClient {
         do {
             AsyncJob<Object> j = getAsyncJobClient().getAsyncJob(job);
             if (j.getStatus() != Status.IN_PROGRESS) return j;
-            LOG.debug("cloudstack waiting on job "+job+": "+j);
+            LOG.debug("cloudstack waiting on job " + job + ": " + j);
         } while (true);
     }
 
@@ -599,45 +611,47 @@ public class CloudstackNew40FeaturesClient {
         }
     }
 
-    /** returns the count of matching networks which could not be deleted */
+    /**
+     * returns the count of matching networks which could not be deleted
+     */
     public int deleteNetworksWhereNameMatchesRegex(String regex, boolean waitForExpunged) {
         // as needed, delete them:
         CloudstackNew40FeaturesClient client = this;
         int delCount = 0, nonDelCount = 0;
         Set<Network> nws = client.getNetworkClient().listNetworks();
         List<String> jobs = new ArrayList<String>();
-        for (Network nwi: nws) {
+        for (Network nwi : nws) {
             try {
                 if (nwi.getName().matches(regex)) {
-                    LOG.debug("deleting "+nwi);
+                    LOG.debug("deleting " + nwi);
                     String job = client.getNetworkClient().deleteNetwork(nwi.getId());
-                    LOG.debug("deleting "+nwi+" - job "+job);
-                    if (job!=null) jobs.add(job);
+                    LOG.debug("deleting " + nwi + " - job " + job);
+                    if (job != null) jobs.add(job);
                     delCount++;
                 } else {
-                    LOG.debug("skipping deletion of (non-matched) "+nwi);
+                    LOG.debug("skipping deletion of (non-matched) " + nwi);
                 }
             } catch (Exception e) {
                 nonDelCount++;
-                LOG.info("not allowed to delete "+nwi+" (may have un-expunged VM's): "+e);
+                LOG.info("not allowed to delete " + nwi + " (may have un-expunged VM's): " + e);
             }
         }
         waitForJobs(jobs);
-        if (delCount>0) LOG.info("deleted "+delCount+" networks");
-        if (nonDelCount==0 && waitForExpunged) {
+        if (delCount > 0) LOG.info("deleted " + delCount + " networks");
+        if (nonDelCount == 0 && waitForExpunged) {
             int loops = 0;
             while (true) {
                 boolean match = false;
                 nws = client.getNetworkClient().listNetworks();
-                for (Network nw: nws) {
+                for (Network nw : nws) {
                     match |= nw.getName().matches(regex);
                 }
                 if (!match) {
-                    if (loops>0)
+                    if (loops > 0)
                         LOG.info("Networks now all expunged");
                     break;
                 }
-                if (loops==0)
+                if (loops == 0)
                     LOG.info("waiting for networks to be expunged");
                 else
                     LOG.debug("still waiting for networks to be expunged");
@@ -651,7 +665,7 @@ public class CloudstackNew40FeaturesClient {
     public String getNetworkOfferingWithName(String name) {
         Set<NetworkOffering> offerings = getOfferingClient().listNetworkOfferings(ListNetworkOfferingsOptions.Builder.name(name));
         // above match is _containment_ not exact, so do further filtering
-        for (NetworkOffering n: offerings)
+        for (NetworkOffering n : offerings)
             if (name.equals(n.getName())) return n.getId();
         return null;
     }
@@ -661,8 +675,8 @@ public class CloudstackNew40FeaturesClient {
             createNetworkAclAllEgress(networkid, cidrlist);
             return true;
         } catch (Exception e) {
-            LOG.warn("Unable to create egress ACL for network "+networkid+" (may already be in place)");
-            LOG.debug("Reason couldn't create egress ACL: "+e, e);
+            LOG.warn("Unable to create egress ACL for network " + networkid + " (may already be in place)");
+            LOG.debug("Reason couldn't create egress ACL: " + e, e);
             Exceptions.propagateIfFatal(e);
             return false;
         }
@@ -674,13 +688,13 @@ public class CloudstackNew40FeaturesClient {
     }
 
     public void createNetworkAclEgressTcpAndUdp(String networkid,
-            String cidrlist, Integer startport, Integer endport) {
+                                                String cidrlist, Integer startport, Integer endport) {
         createVpcNetworkAcl(networkid, "TCP", cidrlist, startport, endport, null, null, "Egress");
         createVpcNetworkAcl(networkid, "UDP", cidrlist, startport, endport, null, null, "Egress");
     }
 
     public void createNetworkAclEdgressTcpOrUdp(String networkid, String protocol,
-            String cidrlist, Integer startport, Integer endport) {
+                                                String cidrlist, Integer startport, Integer endport) {
         createVpcNetworkAcl(networkid, protocol, cidrlist, startport, endport, null, null, "Egress");
     }
 
@@ -696,24 +710,24 @@ public class CloudstackNew40FeaturesClient {
 
         params.put("networkid", networkid);
         params.put("protocol", protocol);
-        if (cidrlist!=null) params.put("cidrlist", cidrlist);
-        if (startport!=null) params.put("startport", ""+startport);
-        if (endport!=null) params.put("endport", ""+endport);
-        if (icmpcode!=null) params.put("icmpcode", ""+icmpcode);
-        if (icmptype!=null) params.put("icmptype", ""+icmptype);
-        if (traffictype!=null) params.put("traffictype", traffictype);
+        if (cidrlist != null) params.put("cidrlist", cidrlist);
+        if (startport != null) params.put("startport", "" + startport);
+        if (endport != null) params.put("endport", "" + endport);
+        if (icmpcode != null) params.put("icmpcode", "" + icmpcode);
+        if (icmptype != null) params.put("icmptype", "" + icmptype);
+        if (traffictype != null) params.put("traffictype", traffictype);
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("createNetworkAcl GET "+params);
+        LOG.debug("createNetworkAcl GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -738,14 +752,14 @@ public class CloudstackNew40FeaturesClient {
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("associateIpAddress GET "+params);
+        LOG.debug("associateIpAddress GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -770,11 +784,11 @@ public class CloudstackNew40FeaturesClient {
         params.put("response", "json");
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -790,19 +804,19 @@ public class CloudstackNew40FeaturesClient {
         JsonElement je = listPublicIpAddressesAtVpc(vpcId);
         LOG.debug(pretty(je));
 
-        int i=0;
+        int i = 0;
         for (JsonElement jei : je.getAsJsonObject().get("publicipaddress").getAsJsonArray()) {
             String id = jei.getAsJsonObject().get("id").getAsString();
-            LOG.debug("deleting IP "+id);
+            LOG.debug("deleting IP " + id);
             getCloudstackGlobalClient().getAddressApi().disassociateIPAddress(id);
             i++;
         }
-        if (i>0) LOG.info("deleted "+i+" IP's at VPC "+vpcId);
+        if (i > 0) LOG.info("deleted " + i + " IP's at VPC " + vpcId);
     }
 
     /**
      * Create port-forward rule for a VPC.
-     * <p>
+     * <p/>
      * Does <em>NOT</em> open any firewall.
      *
      * @return job id, like jclouds version but takes the network/tier ID.
@@ -815,22 +829,22 @@ public class CloudstackNew40FeaturesClient {
         params.put("networkid", vpcTierId);
         params.put("ipaddressid", ipAddressId);
         params.put("protocol", protocol.toString());
-        params.put("publicport", ""+publicPort);
+        params.put("publicport", "" + publicPort);
         params.put("virtualmachineid", targetVmId);
-        params.put("privateport", ""+privatePort);
-        params.put("openfirewall", ""+false);
+        params.put("privateport", "" + privatePort);
+        params.put("openfirewall", "" + false);
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("createPortForwardingRule GET "+params);
+        LOG.debug("createPortForwardingRule GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
@@ -838,7 +852,7 @@ public class CloudstackNew40FeaturesClient {
         // TODO does non-2xx response need to be handled separately ?
 
         JsonElement jr = json(response);
-        LOG.debug("createPortForwardingRule GOT "+jr);
+        LOG.debug("createPortForwardingRule GOT " + jr);
 
         JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
         String jobId = jobfields.get("jobid").getAsString();
@@ -847,7 +861,7 @@ public class CloudstackNew40FeaturesClient {
 
     /**
      * Create port-forward rule for a VM.
-     * <p>
+     * <p/>
      * Does <em>NOT</em> open any firewall.
      */
     public String createPortForwardRuleForVm(String publicIpId, Protocol protocol, int publicPort, String targetVmId, int privatePort) {
@@ -862,33 +876,33 @@ public class CloudstackNew40FeaturesClient {
 
         params.put("ipaddressid", publicIpId);
         params.put("protocol", protocol.toString());
-        params.put("publicport", ""+publicPort);
+        params.put("publicport", "" + publicPort);
         params.put("virtualmachineid", targetVmId);
-        params.put("privateport", ""+privatePort);
-        params.put("openfirewall", ""+false);
+        params.put("privateport", "" + privatePort);
+        params.put("openfirewall", "" + false);
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("createPortForwardingRule GET "+params);
+        LOG.debug("createPortForwardingRule GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
-        request.getEndpoint().toString().replace("+",  "%2B");
+        request.getEndpoint().toString().replace("+", "%2B");
         //request = request.toBuilder().endpoint(uriBuilder(request.getEndpoint()).query(decodedParams).build()).build();
 
         HttpToolResponse response = HttpUtil.invoke(request);
         // TODO does non-2xx response need to be handled separately ?
 
         JsonElement jr = json(response);
-        LOG.debug("createPortForwardingRule GOT "+jr);
+        LOG.debug("createPortForwardingRule GOT " + jr);
 
         JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
         String jobId = jobfields.get("jobid").getAsString();
@@ -928,18 +942,18 @@ public class CloudstackNew40FeaturesClient {
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
-        LOG.debug("createEgressFirewallRule GET "+params);
+        LOG.debug("createEgressFirewallRule GET " + params);
 
         HttpRequest request = HttpRequest.builder()
-            .method("GET")
-            .endpoint(this.endpoint)
-            .addQueryParams(params)
-            .addHeader("Accept", "application/json")
-            .build();
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
 
         request = getQuerySigner().filter(request);
 
-        request.getEndpoint().toString().replace("+",  "%2B");
+        request.getEndpoint().toString().replace("+", "%2B");
         //request = request.toBuilder().endpoint(uriBuilder(request.getEndpoint()).query(decodedParams).build()).build();
 
         HttpToolResponse response = HttpUtil.invoke(request);
@@ -959,7 +973,7 @@ public class CloudstackNew40FeaturesClient {
         }));
     }
 
-    public String findVpcIdFromNetworkId(final String networkId) {
+    public Maybe<String> findVpcIdFromNetworkId(final String networkId) {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listNetworks");
         params.put("apiKey", this.apiKey);
@@ -984,13 +998,8 @@ public class CloudstackNew40FeaturesClient {
             public boolean apply(JsonElement jsonElement) {
                 JsonObject matchingNetwork = jsonElement.getAsJsonObject();
                 return matchingNetwork.get("id").getAsString().equals(networkId);
-            }});
-
-        if (matchingNetwork.isPresent()) {
-            return matchingNetwork.get().getAsJsonObject().get("vpcid").getAsString();
-        } else {
-            LOG.warn("matching VPC for network with id:{} is not found", networkId);
-            return null;
-        }
+            }
+        });
+        return Maybe.of(matchingNetwork.get().getAsJsonObject().get("vpcid").getAsString());
     }
 }
