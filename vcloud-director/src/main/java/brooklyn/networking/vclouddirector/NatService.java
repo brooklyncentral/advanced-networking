@@ -21,7 +21,7 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
 
-import com.google.api.client.repackaged.com.google.common.base.Objects;
+import com.google.common.base.Objects;
 import com.google.api.client.util.Lists;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicates;
