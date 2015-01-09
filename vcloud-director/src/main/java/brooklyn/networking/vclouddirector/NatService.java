@@ -22,11 +22,11 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Objects;
-import com.google.api.client.util.Lists;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;

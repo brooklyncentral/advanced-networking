@@ -18,7 +18,7 @@ import brooklyn.util.net.Networking;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.time.Duration;
 
-import com.google.api.client.util.Beta;
+import com.google.common.annotations.Beta;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
