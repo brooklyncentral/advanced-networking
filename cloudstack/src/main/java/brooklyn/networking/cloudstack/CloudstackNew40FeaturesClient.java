@@ -32,8 +32,10 @@ import org.jclouds.cloudstack.CloudStackContext;
 import org.jclouds.cloudstack.CloudStackGlobalApi;
 import org.jclouds.cloudstack.domain.AsyncJob;
 import org.jclouds.cloudstack.domain.AsyncJob.Status;
+import org.jclouds.cloudstack.domain.IPForwardingRule;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.domain.NetworkOffering;
+import org.jclouds.cloudstack.domain.PortForwardingRule;
 import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
 import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.domain.VirtualMachine;
@@ -989,10 +991,10 @@ public class CloudstackNew40FeaturesClient {
         request = getQuerySigner().filter(request);
 
         HttpToolResponse response = HttpUtil.invoke(request);
-        JsonElement offers = json(response);
-        LOG.debug("LIST NETWORKS\n" + pretty(offers));
+        JsonElement networks = json(response);
+        LOG.debug("LIST NETWORKS\n" + pretty(networks));
         //get the first network object
-        Optional<JsonElement> matchingNetwork = Iterables.tryFind(offers.getAsJsonObject().get("listnetworksresponse")
+        Optional<JsonElement> matchingNetwork = Iterables.tryFind(networks.getAsJsonObject().get("listnetworksresponse")
                 .getAsJsonObject().get("network").getAsJsonArray(), new Predicate<JsonElement>() {
             @Override
             public boolean apply(JsonElement jsonElement) {
@@ -1002,4 +1004,19 @@ public class CloudstackNew40FeaturesClient {
         });
         return Maybe.of(matchingNetwork.get().getAsJsonObject().get("vpcid").getAsString());
     }
+
+    public Maybe<PublicIPAddress> findPublicIpAddressByVmId(final String vmId) {
+        Set<PortForwardingRule> portForwardingRules = getCloudstackGlobalClient().getFirewallApi().listPortForwardingRules();
+            Optional<PortForwardingRule> pfr = Iterables.tryFind(portForwardingRules, new Predicate<PortForwardingRule>() {
+                @Override
+                public boolean apply(PortForwardingRule portForwardingRule) {
+                    return portForwardingRule.getVirtualMachineId().equals(vmId);
+                }
+            });
+            if (pfr.isPresent()) {
+                return Maybe.of(getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(pfr.get().getIPAddressId()));
+            } else {
+                return Maybe.absent();
+            }
+        }
 }
