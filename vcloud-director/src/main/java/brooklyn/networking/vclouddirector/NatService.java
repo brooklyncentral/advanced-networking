@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
@@ -50,7 +52,7 @@ import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 /**
  * For adding/removing NAT rules to vcloud-director.
  * 
- * The threading model is that inernally all access (to update DNAT rules) is synchronized.
+ * The threading model is that internally all access (to update DNAT rules) is synchronized.
  * The mutex to synchronize on can be passed in (see {@link NatService.Builder#mutex(Object)}).
  * The intent is that the same mutex be passed in for everything accessing the same Edge Gateway.
  * It is extremely important to synchronize because adding NAT rule involves:
@@ -135,15 +137,25 @@ public class NatService {
         }
     }
     
-	private final VcloudClient client;
 	private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
-	private final Object mutex;
-	
+    private final String credential;
+    private final String identity;
+    private final String trustStore;
+    private final String trustStorePassword;
+    private final Level logLevel;
+    private final Object mutex;
+
+    private volatile VcloudClient client;
+
     public NatService(Builder builder) {
-    	client = newVcloudClient(checkNotNull(builder.endpoint, "endpoint"), checkNotNull(builder.identity, "identity"), 
-    			checkNotNull(builder.credential, "credential"), builder.trustStore, builder.trustStorePassword, builder.logLevel);
-    	baseUrl = checkNotNull(builder.endpoint, "endpoint");
-    	mutex = checkNotNull(builder.mutex, "mutex");
+        baseUrl = checkNotNull(builder.endpoint, "endpoint");
+        identity = checkNotNull(builder.identity, "identity");
+        credential = checkNotNull(builder.credential, "credential");
+        trustStore = builder.trustStore;
+        trustStorePassword = builder.trustStorePassword;
+        logLevel = builder.logLevel;
+        mutex = checkNotNull(builder.mutex, "mutex");
+        client = newVcloudClient();
     }
 
     public HostAndPort openPortForwarding(PortForwardingConfig args) throws VCloudException {
@@ -175,11 +187,14 @@ public class NatService {
     }
     
     public void updatePortForwarding(Delta delta) throws VCloudException {
+        final int MAX_CONSECUTIVE_FORBIDDEN_REQUESTS = 10;
+        
         if (delta.isEmpty()) return;
         
         delta.checkValid();
         if (LOG.isDebugEnabled()) LOG.debug("Updating port forwarding at {}: {}", baseUrl, delta);
 
+        int consecutiveForbiddenCount = 0;
         int iteration = 0;
         do {
             iteration++;
@@ -196,13 +211,28 @@ public class NatService {
                 if (e.toString().contains("is busy completing an operation")) {
                     if (LOG.isDebugEnabled()) LOG.debug("Retrying after iteration {} failed (server busy), updating port forwarding at {}: {} - {}", 
                             new Object[] {iteration, baseUrl, delta, e});
+                    consecutiveForbiddenCount = 0;
+                } else if (e.toString().contains("Access is forbidden")) {
+                    // See https://issues.apache.org/jira/browse/BROOKLYN-116
+                    consecutiveForbiddenCount++;
+                    if (consecutiveForbiddenCount > MAX_CONSECUTIVE_FORBIDDEN_REQUESTS) {
+                        throw e;
+                    } else {
+                        if (LOG.isDebugEnabled()) LOG.debug("Retrying after iteration {} failed (access is forbidden - {} consecutive), updating port forwarding at {}: {} - {}", 
+                                new Object[] {iteration, consecutiveForbiddenCount, baseUrl, delta, e});
+                        synchronized (getMutex()) {
+                            client = newVcloudClient();
+                        }
+                        Duration initialDelay = Duration.millis(10);
+                        Duration delay = initialDelay.multiply(Math.pow(1.2, consecutiveForbiddenCount-1));
+                        Time.sleep(delay);
+                    }
                 } else {
                     throw e;
                 }
             }
         } while (true);
     }
-
     private void updatePortForwardingImpl(Delta delta) throws VCloudException {
         // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
         // If instead we create new objects then risk those having different config - this is *not* a delta!
@@ -425,6 +455,10 @@ public class NatService {
         ExtensionQueryService queryService = adminExtension.getExtensionQueryService();
         ReferenceResult referenceResult = queryService.queryReferences(QueryReferenceType.EDGEGATEWAY);
         return referenceResult.getReferences();
+    }
+
+    protected VcloudClient newVcloudClient() {
+        return newVcloudClient(baseUrl, identity, credential, trustStore, trustStorePassword, logLevel);
     }
 
     // FIXME Don't set sysprop as could affect all other activities of the JVM!
