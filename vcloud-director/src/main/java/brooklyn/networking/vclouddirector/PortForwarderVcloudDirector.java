@@ -15,6 +15,8 @@
  */
 package brooklyn.networking.vclouddirector;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +37,6 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.networking.vclouddirector.NatService.PortForwardingConfig;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
@@ -242,6 +243,21 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     
     private NatService newService() {
         String endpoint = jcloudsLocation.getEndpoint();
-        return NatService.builder().location(jcloudsLocation).mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint)).build();
+
+        // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api"
+        String convertedUri;
+        try {
+            URI uri = URI.create(endpoint);
+            convertedUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
+        } catch (URISyntaxException e) {
+            throw Exceptions.propagate(e);
+        } 
+
+        return NatService.builder()
+                .identity(jcloudsLocation.getIdentity())
+                .credential(jcloudsLocation.getCredential())
+                .endpoint(convertedUri)
+                .mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint))
+                .build();
     }
 }

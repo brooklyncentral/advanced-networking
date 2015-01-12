@@ -5,6 +5,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -14,10 +16,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.vclouddirector.NatService.PortForwardingConfig;
-import brooklyn.util.net.Cidr;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
@@ -84,7 +84,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     @Test(groups="Live")
     public void testGetNatRulesAtTai() throws Exception {
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_SPEC);
-        NatService service = NatService.builder().location(loc).build();
+        NatService service = newServiceBuilder(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         assertNotNull(rules);
     }
@@ -92,7 +92,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     // Simple test that just checks no errors (e.g. can authenticate etc)
     @Test(groups="Live")
     public void testGetNatRules() throws Exception {
-        NatService service = NatService.builder().location(loc).build();
+        NatService service = newServiceBuilder(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         assertNotNull(rules);
     }
@@ -100,7 +100,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     @Test(groups="Live")
     public void testAddNatRule() throws Exception {
         
-        NatService service = NatService.builder().location(loc).build();
+        NatService service = newServiceBuilder(loc).build();
         HostAndPort result = service.openPortForwarding(new PortForwardingConfig()
                 .publicIp(publicIp)
                 .protocol(Protocol.TCP)
@@ -110,7 +110,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
             assertEquals(result, HostAndPort.fromParts(publicIp, 5679));
     
             // Confirm the rule exists
-            NatService service2 = NatService.builder().location(loc).build();
+            NatService service2 = newServiceBuilder(loc).build();
             List<NatRuleType> rules = service2.getNatRules(service2.getEdgeGateway());
             NatRuleType rule = Iterables.find(rules, NatPredicates.translatedTargetEquals(INTERNAL_MACHINE_IP, 1235));
             assertEquals(rule.getGatewayNatRule().getOriginalIp(), publicIp);
@@ -127,7 +127,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
     }
 
     protected void assertNoRuleForTranslatedTarget(int internalPort) throws Exception {
-        NatService service = NatService.builder().location(loc).build();
+        NatService service = newServiceBuilder(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         Optional<NatRuleType> rule = Iterables.tryFind(rules, NatPredicates.translatedTargetEquals(INTERNAL_MACHINE_IP, internalPort));
         assertFalse(rule.isPresent(), "rule=" + rule);
@@ -144,7 +144,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
                 public Void call() throws Exception {
                     int internalPort = 1236 + counter;
                     int externalPort = 5680 + counter;
-                    NatService service = NatService.builder().location(loc).mutex(sharedMutex).build();
+                    NatService service = newServiceBuilder(loc).mutex(sharedMutex).build();
                     HostAndPort result = service.openPortForwarding(new PortForwardingConfig()
                             .publicIp(publicIp)
                             .protocol(Protocol.TCP)
@@ -166,7 +166,7 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
         Futures.allAsList(futures).get();
         
         // Confirm the rules exist
-        NatService service = NatService.builder().location(loc).build();
+        NatService service = newServiceBuilder(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         for (int i = 0; i < 3; i++) {
             int internalPort = 1236 + i;
@@ -177,5 +177,23 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
             assertEquals(rule.getGatewayNatRule().getTranslatedIp(), INTERNAL_MACHINE_IP);
             assertEquals(rule.getGatewayNatRule().getTranslatedPort(), ""+internalPort);
         }
+    }
+    
+    private NatService.Builder newServiceBuilder(JcloudsLocation loc) {
+        String endpoint = loc.getEndpoint();
+
+        // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api"
+        String convertedUri;
+        try {
+        	URI uri = URI.create(endpoint);
+            convertedUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
+        } catch (URISyntaxException e) {
+            throw Exceptions.propagate(e);
+        } 
+
+        return NatService.builder()
+        		.identity(loc.getIdentity())
+        		.credential(loc.getCredential())
+        		.endpoint(convertedUri);
     }
 }
