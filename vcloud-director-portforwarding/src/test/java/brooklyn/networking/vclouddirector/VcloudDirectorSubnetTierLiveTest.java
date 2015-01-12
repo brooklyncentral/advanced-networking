@@ -1,7 +1,13 @@
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+
+import java.io.File;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -21,6 +27,8 @@ import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
+import brooklyn.test.Asserts;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestEntity;
 import brooklyn.util.net.Cidr;
@@ -28,6 +36,7 @@ import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions. 
@@ -44,21 +53,54 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
      */
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
-    protected JcloudsLocation provisioningLoc;
-
+    protected JcloudsLocation loc;
+    
     private String publicIp;
+    private String microserviceUrl;
+    private ExecutorService executor;
+    private File endpointsPropertiesFile;
     
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
+        NatMicroServiceMain.StaticRefs.service = null;
+        
         super.setUp();
-        provisioningLoc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
-        publicIp = (String) checkNotNull(provisioningLoc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
+        publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        
+        // Create the NAT Micro-service
+        String endpointsProperties = "my-vcloud.endpoint="+NatDirectClient.transformEndpoint(loc.getEndpoint()) + "\n"
+                + "my-vcloud.trustStore=\n"
+                + "my-vcloud.trustStorePassword=\n";
+        endpointsPropertiesFile = File.createTempFile("endpoints", "properties");
+        Files.write(endpointsProperties.getBytes(), endpointsPropertiesFile);
+        
+        executor = Executors.newCachedThreadPool();
+        executor.submit(new Runnable() {
+           public void run() {
+//               Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("help");
+//               command.call();
+
+               NatMicroServiceMain.main("launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
+           }
+        });
+        Asserts.succeedsEventually(new Runnable() {
+            public void run() {
+                assertNotNull(NatMicroServiceMain.StaticRefs.service);
+            }});
+        microserviceUrl = NatMicroServiceMain.StaticRefs.service.getRootUrl();
     }
     
     @AfterMethod(alwaysRun=true)
     @Override
     public void tearDown() throws Exception {
+        if (endpointsPropertiesFile != null) endpointsPropertiesFile.delete();
+        if (NatMicroServiceMain.StaticRefs.service != null) {
+            NatMicroServiceMain.StaticRefs.service.stop();
+            NatMicroServiceMain.StaticRefs.service = null;
+        }
+        if (executor != null) executor.shutdownNow();
         super.tearDown();
     }
     
@@ -72,11 +114,12 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
 
         SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
-                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp));
+                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp)
+                .configure(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl));
         final Entity entity = subnetTier.addChild(EntitySpec.create(MachineEntity.class));
         try {
             Entities.manage(subnetTier);
-            app.start(ImmutableList.of(provisioningLoc));
+            app.start(ImmutableList.of(loc));
             
             ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
@@ -122,12 +165,14 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         
         SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
-                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp));
+                .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp)
+                .configure(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl));
+
         final Entity entity = subnetTier.addChild(EntitySpec.create(TestEntity.class)
                 .location(pseudoMachineLoc));
         try {
             Entities.manage(subnetTier);
-            app.start(ImmutableList.of(provisioningLoc));
+            app.start(ImmutableList.of(loc));
             
             ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
