@@ -44,11 +44,6 @@
             <version>${brooklyn.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.brooklyn.networking</groupId>
-            <artifactId>brooklyn-networking-cloudstack</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-locations-jclouds</artifactId>
             <version>${brooklyn.version}</version>

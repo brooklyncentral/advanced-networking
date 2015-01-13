@@ -1,4 +1,4 @@
-package brooklyn.networking.portforwarding;
+package brooklyn.networking.cloudstack.portforwarding;
 
 import static java.lang.String.format;
 
