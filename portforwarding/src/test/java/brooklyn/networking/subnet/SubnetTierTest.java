@@ -177,7 +177,7 @@ public class SubnetTierTest {
         }
         @Override public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
                 Protocol protocol, Cidr accessingCidr) {
-        	String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
+            String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
             HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
             return checkNotNull(mapping.get(targetSide), "no mapping for %s", targetSide);
         }

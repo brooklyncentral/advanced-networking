@@ -23,18 +23,18 @@ import org.apache.http.conn.ssl.TrustStrategy;
 
 public class FakeSSLSocketFactory {
 
-	private FakeSSLSocketFactory() {
-	}
+    private FakeSSLSocketFactory() {
+    }
 
-	public static SSLSocketFactory getInstance() throws KeyManagementException,
-			UnrecoverableKeyException, NoSuchAlgorithmException,
-			KeyStoreException {
-		return new SSLSocketFactory(new TrustStrategy() {
-			public boolean isTrusted(final X509Certificate[] chain,
-					final String auth) throws CertificateException {
-				return true;
-			}
+    public static SSLSocketFactory getInstance() throws KeyManagementException,
+            UnrecoverableKeyException, NoSuchAlgorithmException,
+            KeyStoreException {
+        return new SSLSocketFactory(new TrustStrategy() {
+            public boolean isTrusted(final X509Certificate[] chain,
+                    final String auth) throws CertificateException {
+                return true;
+            }
 
-		}, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-	}
+        }, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+    }
 }

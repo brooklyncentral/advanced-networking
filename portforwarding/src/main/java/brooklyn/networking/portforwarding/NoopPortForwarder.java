@@ -91,16 +91,16 @@ public class NoopPortForwarder implements PortForwarder {
     @Override
     public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
-    	// Prefer hostname (because within AWS that resolves correctly to private ip, whereas public ip is not reachable)
+        // Prefer hostname (because within AWS that resolves correctly to private ip, whereas public ip is not reachable)
         String targetIp = null;
         String hostname = targetMachine.getHostname();
         if (hostname != null) {
-        	try {
-        		InetAddress.getByName(hostname).getAddress();
-        		targetIp = hostname;
-        	} catch (UnknownHostException e) {
+            try {
+                InetAddress.getByName(hostname).getAddress();
+                targetIp = hostname;
+            } catch (UnknownHostException e) {
                 if (log.isDebugEnabled()) log.debug("Unable to resolve host "+hostname+"; falling back to IPs");
-        	}
+            }
         }
         if (targetIp == null) {
             Iterable<String> addresses = Iterables.concat(targetMachine.getPublicAddresses(), targetMachine.getPrivateAddresses());
