@@ -37,6 +37,7 @@ import com.vmware.vcloud.api.rest.schema.IpRangeType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatServiceType;
 import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
+import com.vmware.vcloud.api.rest.schema.ObjectFactory;
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
 import com.vmware.vcloud.api.rest.schema.SubnetParticipationType;
 import com.vmware.vcloud.sdk.ReferenceResult;
@@ -233,6 +234,7 @@ public class NatService {
             }
         } while (true);
     }
+
     private void updatePortForwardingImpl(Delta delta) throws VCloudException {
         // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
         // If instead we create new objects then risk those having different config - this is *not* a delta!
@@ -282,8 +284,13 @@ public class NatService {
                 natService.getNatRule().removeAll(Lists.newArrayList(filtered));
             }
 
+            // Create a minimal gateway-feature-set to be reconfigured (i.e. just the NAT Service)
+            GatewayFeaturesType modifiedGatewayFeatures = new GatewayFeaturesType();
+            JAXBElement<NetworkServiceType> modifiedNatService = new ObjectFactory().createNetworkService(natService);
+            modifiedGatewayFeatures.getNetworkService().add(modifiedNatService);
+
             // Execute task (i.e. make the actual change, and wait for completion)
-            Task task = edgeGateway.configureServices(gatewayFeatures);
+            Task task = edgeGateway.configureServices(modifiedGatewayFeatures);
             waitForTask(task, "update NAT rules");
 
             // Confirm the updates have been applied.
