@@ -185,15 +185,15 @@ public class NatServiceLiveTest extends BrooklynAppLiveTestSupport {
         // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api"
         String convertedUri;
         try {
-        	URI uri = URI.create(endpoint);
+            URI uri = URI.create(endpoint);
             convertedUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
         } catch (URISyntaxException e) {
             throw Exceptions.propagate(e);
         } 
 
         return NatService.builder()
-        		.identity(loc.getIdentity())
-        		.credential(loc.getCredential())
-        		.endpoint(convertedUri);
+                .identity(loc.getIdentity())
+                .credential(loc.getCredential())
+                .endpoint(convertedUri);
     }
 }

@@ -66,13 +66,13 @@ import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 @Beta
 public class NatService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(NatService.class);
-	
+    private static final Logger LOG = LoggerFactory.getLogger(NatService.class);
+    
     private static final List<Version> VCLOUD_VERSIONS = ImmutableList.of(Version.V5_5, Version.V5_1, Version.V1_5);
 
-	public static Builder builder() {
-		return new Builder();
-	}
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static class Builder {
         private String identity;
@@ -84,19 +84,19 @@ public class NatService {
         private Object mutex = new Object();
         
         public Builder identity(String val) {
-        	this.identity = val; return this;
+            this.identity = val; return this;
         }
         public Builder credential(String val) {
-        	this.credential = val; return this;
+            this.credential = val; return this;
         }
         public Builder endpoint(String val) {
-        	this.endpoint = checkNotNull(val, "endpoint"); return this;
+            this.endpoint = checkNotNull(val, "endpoint"); return this;
         }
         public Builder trustStore(String val) {
-        	this.trustStore = val; return this;
+            this.trustStore = val; return this;
         }
         public Builder trustStorePassword(String val) {
-        	this.trustStorePassword = val; return this;
+            this.trustStorePassword = val; return this;
         }
         public Builder logLevel(java.util.logging.Level val) {
             this.logLevel = val; return this;
@@ -104,9 +104,9 @@ public class NatService {
         public Builder mutex(Object mutex) {
             this.mutex = checkNotNull(mutex, "mutex"); return this;
         }
-    	public NatService build() {
-    		return new NatService(this);
-    	}
+        public NatService build() {
+            return new NatService(this);
+        }
     }
     
     public static class Delta {
@@ -137,7 +137,7 @@ public class NatService {
         }
     }
     
-	private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
+    private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
     private final String credential;
     private final String identity;
     private final String trustStore;
@@ -463,14 +463,14 @@ public class NatService {
 
     // FIXME Don't set sysprop as could affect all other activities of the JVM!
     protected VcloudClient newVcloudClient(String endpoint, String identity, String credential, String trustStore, String trustStorePassword, Level logLevel) {
-    	try {
-    	    if (logLevel != null) {
-    	        // Logging is extremely verbose at INFO - it logs in full every http request/response (including payload).
-    	        // Consider setting this to WARN; leaving as default is not explicitly set
-    	        VcloudClient.setLogLevel(logLevel);
-    	    }
-    	    
-    		// Client login
+        try {
+            if (logLevel != null) {
+                // Logging is extremely verbose at INFO - it logs in full every http request/response (including payload).
+                // Consider setting this to WARN; leaving as default is not explicitly set
+                VcloudClient.setLogLevel(logLevel);
+            }
+            
+            // Client login
             VcloudClient vcloudClient = null;
             boolean versionFound = false;
             for (Version version : VCLOUD_VERSIONS) {
@@ -490,19 +490,19 @@ public class NatService {
             }
             
             // Performing Certificate Validation
-			if (trustStore != null) {
-				System.setProperty("javax.net.ssl.trustStore", trustStore);
-				System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-				vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
+            if (trustStore != null) {
+                System.setProperty("javax.net.ssl.trustStore", trustStore);
+                System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+                vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
 
-			} else {
+            } else {
                 LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
                 vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
-			}
-			return vcloudClient;
-    	} catch (Exception e) {
-    		throw Exceptions.propagate(e);
-    	}
+            }
+            return vcloudClient;
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
+        }
     }
 
     private GatewayNatRuleType generateGatewayNatRule(Protocol protocol, HostAndPort original,
