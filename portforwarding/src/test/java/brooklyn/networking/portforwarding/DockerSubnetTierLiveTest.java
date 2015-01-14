@@ -30,7 +30,7 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
-import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.subnet.SubnetTier;
 import brooklyn.test.Asserts;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.subnet;
+package brooklyn.networking.portforwarding.subnet;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -29,6 +29,8 @@ import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.subnet.PortForwarderAsync;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;

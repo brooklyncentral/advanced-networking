@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.subnet;
+package brooklyn.networking.portforwarding.subnet;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,7 +43,10 @@ import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
 import brooklyn.management.internal.CollectionChangeListener;
 import brooklyn.management.internal.ManagementContextInternal;
 import brooklyn.networking.AttributeMunger;
-import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.subnet.PortForwarderAsync;
+import brooklyn.networking.subnet.PortForwarderAsyncImpl;
+import brooklyn.networking.subnet.PortForwarderClient;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.javalang.Reflections;
