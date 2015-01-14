@@ -108,9 +108,8 @@ public class CloudstackNew40FeaturesClient {
                 .apiVersion("3.0.5")
                 .credentials(apiKey, secretKey)
                 .modules(ImmutableSet.<Module>builder()
-                                .add(new SLF4JLoggingModule())
-                                .build()
-                )
+                        .add(new SLF4JLoggingModule())
+                        .build())
                 .overrides(overrides);
 
         CloudStackContext context = builder.buildView(CloudStackContext.class);
