@@ -35,7 +35,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.LocalhostMachineProvisioningLocation;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.subnet.SubnetTier;
 import brooklyn.test.Asserts;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.util.net.Cidr;

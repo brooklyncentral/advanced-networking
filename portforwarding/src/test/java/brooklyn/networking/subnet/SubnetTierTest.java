@@ -42,6 +42,8 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.portforwarding.NoopPortForwarder;
+import brooklyn.networking.portforwarding.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.subnet.SubnetTierImpl;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.test.entity.TestEntity;

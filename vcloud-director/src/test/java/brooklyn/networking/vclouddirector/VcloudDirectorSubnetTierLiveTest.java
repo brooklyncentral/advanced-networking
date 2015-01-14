@@ -20,7 +20,7 @@ import brooklyn.location.LocationSpec;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.subnet.SubnetTier;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestEntity;
 import brooklyn.util.net.Cidr;

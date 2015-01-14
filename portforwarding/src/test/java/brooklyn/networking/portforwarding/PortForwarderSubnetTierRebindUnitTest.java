@@ -32,7 +32,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortMapping;
 import brooklyn.management.ManagementContext;
 import brooklyn.management.internal.LocalManagementContext;
-import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.portforwarding.subnet.SubnetTier;
 import brooklyn.test.entity.TestEntity;
 import brooklyn.util.net.Cidr;
 
