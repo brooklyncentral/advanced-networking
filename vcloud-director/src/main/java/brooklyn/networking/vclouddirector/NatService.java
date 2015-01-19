@@ -366,6 +366,14 @@ public class NatService {
     protected void waitForTask(Task task, String summary) throws VCloudException {
         checkNotNull(task, "task null for %s", summary);
         try {
+            /*
+                Occasionally when deploying to a vcloud-air target, the following line would hang for an extremely
+                long time when getting the http response in the http code.
+                The issue appears to be related to https://issues.apache.org/jira/browse/BROOKLYN-106
+                If the resolution to BROOKLYN-106 does not resolve the issue of the following line hanging, then
+                an alternative workaround would be to put the call to waitForTask(2*60*1000) inside a thread so that
+                we can time it out ourselves, with a while loop around it for retry
+             */
             task.waitForTask(0);
         } catch (TimeoutException e) {
             throw Exceptions.propagate(e);
