@@ -202,11 +202,11 @@ public class DockerPortForwarder implements PortForwarder {
 
         DockerApi api = context.unwrapApi(DockerApi.class);
         String containerId = ((JcloudsSshMachineLocation) targetMachine).getJcloudsId();
-        Container container = api.getRemoteApi().inspectContainer(containerId);
+        Container container = api.getContainerApi().inspectContainer(containerId);
         context.close();
         Map<Integer, Integer> portMappings = Maps.newLinkedHashMap();
-        if(container.getNetworkSettings() == null) return portMappings;
-        for(Map.Entry<String, List<Map<String, String>>> entrySet : container.getNetworkSettings().getPorts().entrySet()) {
+        if(container.networkSettings() == null) return portMappings;
+        for(Map.Entry<String, List<Map<String, String>>> entrySet : container.networkSettings().ports().entrySet()) {
             String containerPort = Iterables.get(Splitter.on("/").split(entrySet.getKey()), 0);
             String hostPort = Iterables.getOnlyElement(Iterables.transform(entrySet.getValue(),
                     new Function<Map<String, String>, String>() {
