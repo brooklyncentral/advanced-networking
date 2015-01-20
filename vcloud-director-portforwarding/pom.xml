@@ -36,6 +36,28 @@
     </properties>
     
      <dependencies>
+        <!-- For vcloud integration -->
+        <dependency>
+            <groupId>io.brooklyn.networking</groupId>
+            <artifactId>brooklyn-networking-vcloud-director</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>rest-api-schemas</artifactId>
+            <version>{$vcloud.director.api.version}</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/rest-api-schemas-5.5.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>vcloud-java-sdk</artifactId>
+            <version>{$vcloud.director.api.version}</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
+        </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>brooklyn-networking-common</artifactId>
