@@ -29,7 +29,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <name>Brooklyn network support for Vcloud Director</name>
+    <name>Brooklyn network support for Vcloud Director - portforwarding</name>
 
     <properties>
         <vcloud.director.api.version>5.5.0</vcloud.director.api.version>
@@ -99,16 +99,16 @@
         <dependency>
             <groupId>com.vmware</groupId>
             <artifactId>rest-api-schemas</artifactId>
-            <version>{$vcloud.director.api.version}</version>
+            <version>${vcloud.director.api.version}</version>
             <scope>system</scope>
-            <systemPath>${basedir}/lib/rest-api-schemas-5.5.0.jar</systemPath>
+            <systemPath>${basedir}/../vcloud-director/lib/rest-api-schemas-5.5.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.vmware</groupId>
             <artifactId>vcloud-java-sdk</artifactId>
-            <version>{$vcloud.director.api.version}</version>
+            <version>${vcloud.director.api.version}</version>
             <scope>system</scope>
-            <systemPath>${basedir}/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
+            <systemPath>${basedir}/../vcloud-director/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
         </dependency>
         
          <dependency>
