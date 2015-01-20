@@ -1,5 +1,6 @@
 Advanced Networking
 ===================
+[![Build Status](https://api.travis-ci.org/brooklyncentral/advanced-networking.svg?branch=master)](https://travis-ci.org/brooklyncentral/advanced-networking)
 
 ### Brooklyn Advanced Networking Support
 
