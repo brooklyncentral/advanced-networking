@@ -46,12 +46,29 @@
     </properties>
     
      <dependencies>
+        <!-- For vcloud integration -->
         <dependency>
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-vcloud-director</artifactId>
             <version>${project.version}</version>
         </dependency>
         
+        <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>rest-api-schemas</artifactId>
+            <version>{$vcloud.director.api.version}</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/rest-api-schemas-5.5.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware</groupId>
+            <artifactId>vcloud-java-sdk</artifactId>
+            <version>{$vcloud.director.api.version}</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
+        </dependency>
+
+        <!-- Utilities from Brooklyn -->
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-utils-common</artifactId>
@@ -68,12 +85,7 @@
             <version>${brooklyn.version}</version>
         </dependency>
  
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
-        
+        <!-- For CLI -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>airline</artifactId>
@@ -84,21 +96,6 @@
                     <artifactId>guava</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.vmware</groupId>
-            <artifactId>rest-api-schemas</artifactId>
-            <version>{$vcloud.director.api.version}</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/rest-api-schemas-5.5.0.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>com.vmware</groupId>
-            <artifactId>vcloud-java-sdk</artifactId>
-            <version>{$vcloud.director.api.version}</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
         </dependency>
         
         <!-- For exposing as web-service -->
@@ -200,12 +197,26 @@
             <artifactId>jsr311-api</artifactId>
             <version>${jsr311-api.version}</version>
         </dependency>
-<!-- 
+        
+        <!-- For tests -->
         <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+            <scope>test</scope>
         </dependency>
- -->
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-utils-test-support</artifactId>
+            <version>${brooklyn.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey.jersey-test-framework</groupId>
+            <artifactId>jersey-test-framework-inmemory</artifactId>
+            <version>${jersey.version}</version>
+            <scope>test</scope>
+        </dependency>
         
         <!-- For retrieving cloud credentials from brooklyn.properites, for live tests -->
         <dependency>
@@ -234,26 +245,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- For tests -->
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>${testng.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.brooklyn</groupId>
-            <artifactId>brooklyn-utils-test-support</artifactId>
-            <version>${brooklyn.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey.jersey-test-framework</groupId>
-            <artifactId>jersey-test-framework-inmemory</artifactId>
-            <version>${jersey.version}</version>
-            <scope>test</scope>
-        </dependency>
-        
     </dependencies>
 
 </project>

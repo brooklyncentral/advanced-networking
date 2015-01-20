@@ -110,8 +110,8 @@ public class NatMicroService {
     
     public void start() throws Exception {
         server = new Server();
-        https();
-        servlet();
+        addHttpsConnector();
+        addServlet();
         server.start();
     }
 
@@ -127,7 +127,7 @@ public class NatMicroService {
         return rootUrl;
     }
     
-    protected void https() throws KeyStoreException {
+    protected void addHttpsConnector() throws KeyStoreException {
         SslContextFactory sslContextFactory = new SslContextFactory();
 
         if (keystorePath!=null) {
@@ -173,7 +173,7 @@ public class NatMicroService {
         rootUrl = "https://" + (sslSocketConnector.getHost() == null ? Networking.getLocalHost().getHostAddress() : sslSocketConnector.getHost()) + ":" + port;
     }
     
-    protected void servlet() {
+    protected void addServlet() {
         ResourceConfig config = new DefaultResourceConfig();
         // load all our REST API modules, JSON, and Swagger
         for (Object r: NatServiceRestApi.getAllResources())
@@ -189,33 +189,14 @@ public class NatMicroService {
         config.getFeatures().put(ServletContainer.FEATURE_FILTER_FORWARD_ON_404, true);
         
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        ServletContainer servletContainer = new ServletContainer(config);
-        ServletHolder servletHolder = new ServletHolder(servletContainer);
+        ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
         servletHolder.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE.toString());
         context.addServlet(servletHolder,"/*");
         context.setContextPath("/");
         context.setAttribute(AbstractRestResource.NAT_SERVICE_DISPATCHER, dispatcher);
-//        context.setAttribute(JSONConfiguration.FEATURE_POJO_MAPPING, true);
         server.setHandler(context);
     }
 
-//    public class HelloServlet extends HttpServlet {
-//        private String greeting="Hello World";
-//        
-//        public HelloServlet() {
-//        }
-//        
-//        public HelloServlet(String greeting) {
-//            this.greeting=greeting;
-//        }
-//        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-//            response.setContentType("text/html");
-//            response.setStatus(HttpServletResponse.SC_OK);
-//            response.getWriter().println("<h1>"+greeting+"</h1>");
-//            response.getWriter().println("session=" + request.getSession(true).getId());
-//        }
-//    }
-//    
     private String checkFileExists(String path, String name) {
         if(!new File(path).exists()){
             throw new IllegalArgumentException("Could not find "+name+": "+path);

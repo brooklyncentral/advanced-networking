@@ -45,7 +45,6 @@ public interface NatServiceApi {
             ) ;
 
     @PUT
-//    @Path("/")
     @ApiOperation(value = "Opens port forwarding",
             notes="Returns the return value (status 200) on success")
     @ApiErrors(value = {
@@ -73,7 +72,6 @@ public interface NatServiceApi {
             );
     
     @DELETE
-//    @Path("/")
     @ApiOperation(value = "Deletes the given port forwarding rule",
             notes="Returns the return value (status 200) on success")
     @ApiErrors(value = {

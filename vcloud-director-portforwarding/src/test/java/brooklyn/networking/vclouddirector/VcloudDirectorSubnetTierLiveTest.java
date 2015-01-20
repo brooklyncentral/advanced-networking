@@ -9,12 +9,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
@@ -31,6 +34,7 @@ import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
 import brooklyn.test.Asserts;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestEntity;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
 
@@ -44,7 +48,9 @@ import com.google.common.io.Files;
 public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport {
 
     // TODO Also need to improve and test error handling (e.g. the port is already assigned).
-    
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractEntity.class);
+
     private static final String LOCATION_SPEC = "canopy-vCHS";
 
     /**
@@ -79,12 +85,17 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         executor = Executors.newCachedThreadPool();
         executor.submit(new Runnable() {
            public void run() {
-//               Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("help");
-//               command.call();
-
-               NatMicroServiceMain.main("launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
-           }
-        });
+               // Don't use NatMicroServiceMain.main directly, because that will do System.exit at the end
+               try {
+                   Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse(
+                           "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
+                   command.call();
+               } catch (Exception e) {
+                   LOG.error("Launch NAT micro-service failed", e);
+                   throw Exceptions.propagate(e);
+               }
+           }});
+        
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
                 assertNotNull(NatMicroServiceMain.StaticRefs.service);

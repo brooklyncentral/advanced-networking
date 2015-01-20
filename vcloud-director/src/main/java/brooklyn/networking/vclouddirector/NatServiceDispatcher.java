@@ -53,17 +53,17 @@ public class NatServiceDispatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(NatServiceDispatcher.class);
 
-	public static Builder builder() {
-		return new Builder();
-	}
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static class Builder {
         private Level logLevel;
         private Map<String, TrustConfig> endpoints = Maps.newLinkedHashMap();
         
         public Builder endpoint(String endpoint, TrustConfig trustConfig) {
-        	endpoints.put(checkNotNull(endpoint, "endpoint"), checkNotNull(trustConfig, "trustConfig"));
-        	return this;
+            endpoints.put(checkNotNull(endpoint, "endpoint"), checkNotNull(trustConfig, "trustConfig"));
+            return this;
         }
         public Builder endpoints(Map<String, TrustConfig> vals) {
             this.endpoints.putAll(vals); return this;
@@ -71,9 +71,9 @@ public class NatServiceDispatcher {
         public Builder logLevel(java.util.logging.Level val) {
             this.logLevel = val; return this;
         }
-    	public NatServiceDispatcher build() {
-    		return new NatServiceDispatcher(this);
-    	}
+        public NatServiceDispatcher build() {
+            return new NatServiceDispatcher(this);
+        }
     }
     
     public static class TrustConfig {
@@ -169,11 +169,11 @@ public class NatServiceDispatcher {
 
     private final Map<String, SingleThreadedScheduler> workers = Maps.newLinkedHashMap();
     private final Multimap<Credentials, NatServiceAction> actionQueues = ArrayListMultimap.create(); 
-	private final Map<Credentials, NatService> clients = Maps.newLinkedHashMap();
-	private final Map<String, Object> mutexes = Maps.newConcurrentMap(); // keyed by endpoint URL
+    private final Map<Credentials, NatService> clients = Maps.newLinkedHashMap();
+    private final Map<String, Object> mutexes = Maps.newConcurrentMap(); // keyed by endpoint URL
     
     public NatServiceDispatcher(Builder builder) {
-    	endpoints = ImmutableMap.copyOf(builder.endpoints );
+        endpoints = ImmutableMap.copyOf(builder.endpoints );
         logLevel = builder.logLevel;
         
         executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
@@ -296,25 +296,25 @@ public class NatServiceDispatcher {
             }
         }
         
-    	synchronized (clients) {
-    	    NatService result = clients.get(creds);
-    	    if (result == null) {
-    	        TrustConfig trustConfig = endpoints.get(creds.endpoint);
-    	        if (trustConfig == null) {
-    	            throw new IllegalArgumentException("Unknown endpoint "+creds.endpoint+" (identity "+creds.identity+")");
-    	        }
-    	    	result = NatService.builder()
-    			    	.identity(creds.identity)
-    			    	.credential(creds.credential)
-    			    	.endpoint(creds.endpoint)
-    			    	.trustStore(trustConfig.trustStore)
-    			    	.trustStorePassword(trustConfig.trustStorePassword)
-    			    	.logLevel(logLevel)
-    			    	.mutex(mutex)
-    			    	.build();
-    	    	clients.put(creds, result);
-    	    }
-	    	return result;
-    	}
+        synchronized (clients) {
+            NatService result = clients.get(creds);
+            if (result == null) {
+                TrustConfig trustConfig = endpoints.get(creds.endpoint);
+                if (trustConfig == null) {
+                    throw new IllegalArgumentException("Unknown endpoint "+creds.endpoint+" (identity "+creds.identity+")");
+                }
+                result = NatService.builder()
+                        .identity(creds.identity)
+                        .credential(creds.credential)
+                        .endpoint(creds.endpoint)
+                        .trustStore(trustConfig.trustStore)
+                        .trustStorePassword(trustConfig.trustStorePassword)
+                        .logLevel(logLevel)
+                        .mutex(mutex)
+                        .build();
+                clients.put(creds, result);
+            }
+            return result;
+        }
     }
 }

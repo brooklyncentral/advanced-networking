@@ -54,7 +54,8 @@ public class NatMicroServiceMain {
         new NatMicroServiceMain().execCli(args);
     }
 
-    protected CliBuilder<Callable<?>> cliBuilder() {
+    @VisibleForTesting
+    public CliBuilder<Callable<?>> cliBuilder() {
         CliBuilder<Callable<?>> builder = Cli.<Callable<?>>builder(cliScriptName())
                 .withDescription("Brooklyn Management Service")
                 .withDefaultCommand(InfoCommand.class)
