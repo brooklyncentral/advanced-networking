@@ -7,15 +7,10 @@ import com.google.common.base.Objects;
 import com.google.common.net.HostAndPort;
 
 public class PortForwardingConfig {
-    private String networkId;
     Protocol protocol;
     String publicIp;
     Integer publicPort;
     HostAndPort target;
-    
-    public PortForwardingConfig networkId(String val) {
-        this.networkId = val; return this;
-    }
     
     public PortForwardingConfig protocol(Protocol val) {
         this.protocol = val; return this;
@@ -44,19 +39,19 @@ public class PortForwardingConfig {
     public boolean equals(Object obj) {
         if (!(obj instanceof PortForwardingConfig)) return false;
         PortForwardingConfig o = (PortForwardingConfig) obj;
-        return Objects.equal(networkId, o.networkId) && Objects.equal(protocol, o.protocol) 
+        return Objects.equal(protocol, o.protocol) 
                 && Objects.equal(publicIp, o.publicIp) && Objects.equal(publicPort, o.publicPort)
                 && Objects.equal(target, o.target);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(networkId, protocol, publicIp, publicPort, target);
+        return Objects.hashCode(protocol, publicIp, publicPort, target);
     }
     
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("networkId", networkId).add("protocol", protocol).add("target", target)
+        return Objects.toStringHelper(this).add("protocol", protocol).add("target", target)
                 .add("publicIp", publicIp).add("publicPort", publicPort).toString();
     }
 }

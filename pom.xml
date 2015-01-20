@@ -87,9 +87,11 @@
 
     <modules>
         <module>common</module>
+        <module>portforwarding</module>
         <module>cloudstack</module>
         <module>vcloud-director</module>
-        <module>portforwarding</module>
+        <module>vcloud-director-portforwarding</module>
+        <module>vcloud-director-nat-microservice</module>
     </modules>
 
     <build>

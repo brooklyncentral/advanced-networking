@@ -15,10 +15,7 @@
  */
 package brooklyn.networking.vclouddirector;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +42,6 @@ import brooklyn.util.net.Protocol;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
@@ -70,25 +66,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             "advancednetworking.vcloud.network.publicip",
             "Optionally specify an existing public IP associated with the network");
 
-    /**
-     * Returns the mutex to be synchronized on whenever accessing/editing the DNAT rules for a given endpoint.
-     */
-    private static enum MutexRegistry {
-        INSTANCE;
-        
-        private final Map<String, Object> mutexes = Maps.newLinkedHashMap();
-        
-        public Object getMutexFor(String endpoint) {
-            synchronized (mutexes) {
-                Object mutex = mutexes.get(endpoint);
-                if (mutex == null) {
-                    mutex = new Object();
-                    mutexes.put(endpoint, mutex);
-                }
-                return mutex;
-            }
-        }
-    }
+    public static final ConfigKey<String> NAT_MICROSERVICE_ENDPOINT = ConfigKeys.newStringConfigKey(
+            "advancednetworking.vcloud.network.microservice.endpoint",
+            "URL for the NAT micro-service, to be used for updating the Edge Gateway; if absent, will use vcloud directly");
     
     private PortForwardManager portForwardManager;
 
@@ -96,8 +76,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
 
     private JcloudsLocation jcloudsLocation;
 
-    // Always access via #getService(), to support rebind
-    private volatile transient NatService service;
+    // Always access via #getClient(), to support rebind
+    private volatile transient NatClient client;
 
     public PortForwarderVcloudDirector() {
     }
@@ -122,7 +102,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     public void inject(Entity owner, List<Location> locations) {
         subnetTier = (SubnetTier) owner;
         jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
-        service = newService();
+        getClient(); // force load of client: fail fast if configuration is missing
     }
 
     @Override
@@ -182,7 +162,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
         
         try {
-            HostAndPort result = getService().openPortForwarding(new PortForwardingConfig()
+            HostAndPort result = getClient().openPortForwarding(new PortForwardingConfig()
                     .publicIp(publicIp)
                     .protocol(Protocol.TCP)
                     .target(target)
@@ -216,7 +196,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
         
         try {
-            HostAndPort result = getService().closePortForwarding(new PortForwardingConfig()
+            HostAndPort result = getClient().closePortForwarding(new PortForwardingConfig()
                     .publicIp(publicIp)
                     .protocol(Protocol.TCP)
                     .target(target)
@@ -234,30 +214,14 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     }
 
     // For rebind, always access via getter so can recreate the service after rebind
-    private NatService getService() {
-        if (service == null) {
-            service = newService();
+    private NatClient getClient() {
+        if (client == null) {
+            if (subnetTier.getConfig(NAT_MICROSERVICE_ENDPOINT) == null) {
+                client = new NatDirectClient(jcloudsLocation);
+            } else {
+                client = new NatMicroserviceClient(subnetTier.getConfig(NAT_MICROSERVICE_ENDPOINT), jcloudsLocation);
+            }
         }
-        return service;
-    }
-    
-    private NatService newService() {
-        String endpoint = jcloudsLocation.getEndpoint();
-
-        // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api"
-        String convertedUri;
-        try {
-            URI uri = URI.create(endpoint);
-            convertedUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
-        } catch (URISyntaxException e) {
-            throw Exceptions.propagate(e);
-        } 
-
-        return NatService.builder()
-                .identity(jcloudsLocation.getIdentity())
-                .credential(jcloudsLocation.getCredential())
-                .endpoint(convertedUri)
-                .mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint))
-                .build();
+        return client;
     }
 }
