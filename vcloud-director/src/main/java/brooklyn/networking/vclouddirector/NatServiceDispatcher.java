@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.task.SingleThreadedScheduler;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -87,7 +87,7 @@ public class NatServiceDispatcher {
         
         @Override
         public int hashCode() {
-            return Objects.hash(trustStore, trustStorePassword);
+            return Objects.hashCode(trustStore, trustStorePassword);
         }
         
         @Override
@@ -115,7 +115,7 @@ public class NatServiceDispatcher {
         
         @Override
         public int hashCode() {
-            return Objects.hash(endpoint, identity, credential);
+            return Objects.hashCode(endpoint, identity, credential);
         }
         
         @Override
