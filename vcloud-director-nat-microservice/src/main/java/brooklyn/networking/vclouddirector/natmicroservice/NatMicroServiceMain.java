@@ -155,7 +155,7 @@ public class NatMicroServiceMain {
                 description = "local property file, giving the endpoints and trust-store details for each")
         public String endpointProperties;
 
-        @Option(name = { "--bindAddress" }, required = true, title = "Bind address",
+        @Option(name = { "--bindAddress" }, title = "Bind address",
                 description = "Interface(s) to listen on")
         public String bindAddress = null;
 
