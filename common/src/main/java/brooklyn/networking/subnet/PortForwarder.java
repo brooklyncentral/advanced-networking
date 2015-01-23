@@ -121,7 +121,17 @@ public interface PortForwarder extends ManagementContextInjectable {
      */
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, 
             Protocol protocol, Cidr accessingCidr);
-    
+
+    /**
+     * Tears down the port-forwarding for this machine's given port, via the public gateway.
+     */
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol);
+
+    /**
+     * Tears down the port-forwarding for this machine's given port, via the public gateway.
+     */
+    public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol);
+
     /** true if the underlying instance is a client pointing at an authority whose persistence is managed elsewhere */ 
     public boolean isClient();
 

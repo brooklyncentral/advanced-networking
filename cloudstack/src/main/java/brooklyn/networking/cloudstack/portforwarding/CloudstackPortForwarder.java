@@ -143,6 +143,18 @@ public class CloudstackPortForwarder implements PortForwarder {
     }
 
     @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        // TODO Need support for client.deletePortForwardRuleForVpc(...)
+        // Until then, no-op
+        return false;
+    }
+
+    @Override
     public boolean isClient() {
         return false;
     }

@@ -157,12 +157,29 @@ public class PortForwarderIptables implements PortForwarder {
             publicPort = pfw.acquirePublicPort(forwarderIp);
         }
 
-        systemCreatePortForwarding(HostAndPort.fromParts(forwarderIp, publicPort), targetSide, accessingCidr);
+        systemCreatePortForwarding(targetSide, HostAndPort.fromParts(forwarderIp, publicPort), accessingCidr);
 
         return HostAndPort.fromParts(forwarderIp, publicPort);
     }
 
-    protected boolean systemCreatePortForwarding(HostAndPort publicSide, Location targetVm, int targetPort, Cidr cidr) {
+    @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        return systemDeletePortForwarding(targetSide, publicSide);
+    }
+
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses targetMachine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
+        if (targetIp==null) {
+            log.warn("No IP for {}, so cannot close port-forwarding in {}: {} -> {}", new Object[] {targetMachine, this, targetPort, publicSide});
+            return false;
+        }
+
+        HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
+        return closePortForwarding(targetSide, publicSide, protocol);
+    }
+
+    protected boolean systemCreatePortForwarding(Location targetVm, int targetPort, HostAndPort publicSide, Cidr cidr) {
         String targetIp = ((MachineLocation)targetVm).getAddress().getHostAddress();
         if (targetIp==null) {
             log.warn("Skipping creation of port forward rule for "+targetVm+" port "+targetPort+" because location's IP cannot be resolved");
@@ -170,13 +187,13 @@ public class PortForwarderIptables implements PortForwarder {
             return false;
         }
 
-        return systemCreatePortForwarding(publicSide, HostAndPort.fromParts(targetIp, targetPort), cidr);
+        return systemCreatePortForwarding(HostAndPort.fromParts(targetIp, targetPort), publicSide, cidr);
     }
 
-    protected boolean systemCreatePortForwarding(HostAndPort publicSide, HostAndPort targetSide, Cidr cidr) {
+    protected boolean systemCreatePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Cidr cidr) {
+        checkNotNull(targetSide, "targetSide");
         checkNotNull(publicSide, "publicSide");
         checkArgument(publicSide.getHostText().equals(forwarderIp), "publicSide %s should match forwarderIp %s", publicSide, forwarderIp);
-        checkNotNull(targetSide, "targetSide");
 
         try {
             List<String> commands = ImmutableList.of(
@@ -206,6 +223,12 @@ public class PortForwarderIptables implements PortForwarder {
         }
 
         return true;
+    }
+
+    protected boolean systemDeletePortForwarding(HostAndPort targetSide, HostAndPort publicSide) {
+        // FIXME Not yet implemented!
+        log.warn("Deletion of forwarding port not support for {}: {} -> {}", new Object[] {this, publicSide, targetSide});
+        return false;
     }
 
     protected boolean systemOpenFirewall(String publicIp, int lowerBoundPort, int upperBoundPort, Protocol protocol, Cidr cidr) {

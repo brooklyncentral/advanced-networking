@@ -157,6 +157,16 @@ public class PortForwarderClient implements PortForwarder {
     }
 
     @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        return getDelegate().closePortForwarding(targetSide, publicSide, protocol);
+    }
+
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        return getDelegate().closePortForwarding(machine, targetPort, publicSide, protocol);
+    }
+
+    @Override
     public boolean isClient() {
         return true;
     }

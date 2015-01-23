@@ -179,6 +179,20 @@ public class DockerPortForwarder implements PortForwarder {
         }
     }
 
+    @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        // no-op; we leave the port-forwarding in place.
+        // This is symmetrical with openPortForwarding, which doesn't actually open it - that just returns the existing open mapping.
+        return false;
+    }
+
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        // no-op; we leave the port-forwarding in place.
+        // This is symmetrical with openPortForwarding, which doesn't actually open it - that just returns the existing open mapping.
+        return false;
+    }
+
     public Map<Integer, Integer> getPortMappings(MachineLocation targetMachine) {
         ComputeServiceContext context = ContextBuilder.newBuilder("docker")
                 .endpoint(dockerEndpoint)
