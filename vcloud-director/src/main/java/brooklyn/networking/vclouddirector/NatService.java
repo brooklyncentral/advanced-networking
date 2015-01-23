@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
 
@@ -497,7 +498,7 @@ public class NatService {
             }
             
             // Performing Certificate Validation
-            if (trustStore != null) {
+            if (Strings.isNonBlank(trustStore)) {
                 System.setProperty("javax.net.ssl.trustStore", trustStore);
                 System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
                 vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());

@@ -7,6 +7,7 @@ import java.util.Map;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.exceptions.Exceptions;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
@@ -33,6 +34,11 @@ public class NatDirectClient implements NatClient {
     }
 
     private final NatService client;
+
+    @VisibleForTesting
+    public NatService getClient() {
+        return client;
+    }
     
     public NatDirectClient(JcloudsLocation loc) {
         String endpoint = transformEndpoint(loc.getEndpoint());
