@@ -187,10 +187,35 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                     hasNetworkAddresses,
                     node.getLoginPort(),
                     optionalPublicPort,
-                    Protocol.TCP,
+                    protocol,
                     Cidr.UNIVERSAL);
             pfm.associate(node.getId(), result, targetPort);
             return result;
+        }
+
+        @Override
+        public void closePortForwarding(final NodeMetadata node, int targetPort, HostAndPort publicSide, Protocol protocol) {
+            HasNetworkAddresses hasNetworkAddresses = new HasNetworkAddresses() {
+                @Override public String getHostname() {
+                    return node.getHostname();
+                }
+                @Override public Set<String> getPublicAddresses() {
+                    return node.getPublicAddresses();
+                }
+                @Override public Set<String> getPrivateAddresses() {
+                    return node.getPrivateAddresses();
+                }
+                @Override
+                public String toString() {
+                    return node.toString();
+                }
+            };
+            pf.closePortForwarding(
+                    hasNetworkAddresses,
+                    targetPort,
+                    publicSide,
+                    protocol);
+            pfm.forgetPortMapping(node.getId(), publicSide.getPort());
         }
     }
 

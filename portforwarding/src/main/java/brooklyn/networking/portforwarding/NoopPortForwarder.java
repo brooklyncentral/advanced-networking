@@ -129,6 +129,18 @@ public class NoopPortForwarder implements PortForwarder {
     }
 
     @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        if (log.isDebugEnabled()) log.debug("no-op in {} for closePortForwarding({}, {}, {})", new Object[] {this, targetSide, publicSide, protocol});
+        return false;
+    }
+
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        if (log.isDebugEnabled()) log.debug("no-op in {} for closePortForwarding({}, {}, {}, {})", new Object[] {this, machine, targetPort, publicSide, protocol});
+        return false;
+    }
+
+    @Override
     public PortForwardManager getPortForwardManager() {
         return portForwardManager;
     }

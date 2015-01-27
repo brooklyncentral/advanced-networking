@@ -179,6 +179,34 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         }
     }
 
+    @Override
+    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+        try {
+            HostAndPort result = getClient().closePortForwarding(new PortForwardingConfig()
+                    .publicIp(publicSide.getHostText())
+                    .publicPort(publicSide.getPort())
+                    .target(targetSide)
+                    .protocol(Protocol.TCP));
+            LOG.debug("Deleted port-forwarding for {}, via {}, on {}", new Object[]{targetSide, result, subnetTier});
+            return true;
+        } catch (Exception e) {
+            LOG.warn("Failed to close port-forwarding rule on " + this + " to " + targetSide, e);
+            return false;
+        }
+
+    }
+    
+    @Override
+    public boolean closePortForwarding(HasNetworkAddresses targetMachine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+        String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
+        if (targetIp==null) {
+            LOG.warn("Failed to close port-forwarding rule because no IP in {}, on {}: {} -> {}", new Object[] {targetMachine, this, targetPort, publicSide});
+            return false;
+        }
+
+        return closePortForwarding(HostAndPort.fromParts(targetIp, targetPort), publicSide, protocol);
+    }
+
     /**
      * Deletes the NAT rule for the given port.
      * 
@@ -192,20 +220,10 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         if (targetIp == null) {
             throw new IllegalStateException("Failed to close port-forwarding for machine " + machine + " because its location has no target ip: " + machine);
         }
-        HostAndPort target = HostAndPort.fromParts(targetIp, targetPort);
-        String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
+        HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
+        HostAndPort publicSide = HostAndPort.fromParts(subnetTier.getConfig(NETWORK_PUBLIC_IP), publicPort);
         
-        try {
-            HostAndPort result = getClient().closePortForwarding(new PortForwardingConfig()
-                    .publicIp(publicIp)
-                    .protocol(Protocol.TCP)
-                    .target(target)
-                    .publicPort(publicPort));
-            LOG.debug("Deleted port-forwarding for {}, via {}, on ", new Object[]{target, result, subnetTier});
-        } catch (Exception e) {
-            LOG.error("Failed deleting port forwarding rule on " + this + " to " + target, e);
-            // it might not be created, so don't crash and burn too hard!
-        }
+        closePortForwarding(targetSide, publicSide, Protocol.TCP);
     }
 
     @Override

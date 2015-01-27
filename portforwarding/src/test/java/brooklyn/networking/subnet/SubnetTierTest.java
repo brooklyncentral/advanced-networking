@@ -184,6 +184,12 @@ public class SubnetTierTest {
         @Override public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
             return checkNotNull(mapping.get(targetSide), "no mapping for %s", targetSide);
         }
+        @Override public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+            return true;
+        }
+        @Override public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+            return true;
+        }
         @Override public void openFirewallPort(Entity entity, int port, Protocol protocol, Cidr accessingCidr) {
             throw new UnsupportedOperationException();
         }
