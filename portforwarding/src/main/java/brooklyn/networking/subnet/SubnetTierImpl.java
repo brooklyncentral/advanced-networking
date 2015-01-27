@@ -43,6 +43,10 @@ import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
 import brooklyn.management.internal.CollectionChangeListener;
 import brooklyn.management.internal.ManagementContextInternal;
 import brooklyn.networking.AttributeMunger;
+import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarderAsync;
+import brooklyn.networking.common.subnet.PortForwarderAsyncImpl;
+import brooklyn.networking.common.subnet.PortForwarderClient;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
@@ -152,7 +156,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 
     protected JcloudsPortForwarderExtension newJcloudsPortForwarderExtension() {
         return new SubnetTierJcloudsPortForwarderExtension(
-                PortForwarderClient.fromMethodOnEntity(this, "getPortForwarder"), 
+                PortForwarderClient.fromMethodOnEntity(this, "getPortForwarder"),
                 getPortForwardManager());
     }
 

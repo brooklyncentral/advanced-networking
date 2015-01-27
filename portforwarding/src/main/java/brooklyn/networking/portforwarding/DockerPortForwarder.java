@@ -38,7 +38,7 @@ import brooklyn.location.access.PortMapping;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;

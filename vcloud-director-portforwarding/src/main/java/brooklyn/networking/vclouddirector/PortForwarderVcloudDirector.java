@@ -32,7 +32,7 @@ import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;

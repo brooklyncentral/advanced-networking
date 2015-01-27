@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.subnet;
+package brooklyn.networking.common.subnet;
 
 import java.util.List;
 

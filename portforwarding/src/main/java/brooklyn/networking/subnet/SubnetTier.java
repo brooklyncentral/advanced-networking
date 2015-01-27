@@ -29,6 +29,8 @@ import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerClient;
 import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarderAsync;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;

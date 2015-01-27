@@ -29,7 +29,7 @@ import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.management.ManagementContext;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
