@@ -15,6 +15,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.GenericType;
+
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.jclouds.JcloudsLocation;
@@ -25,23 +30,24 @@ import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
 import brooklyn.test.entity.LocalManagementContextForTests;
 import brooklyn.util.exceptions.Exceptions;
 
-import com.google.common.escape.Escaper;
-import com.google.common.net.UrlEscapers;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-
 public class NatServiceMicroserviceLiveTest extends AbstractRestApiTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(NatServiceMicroserviceLiveTest.class);
 
     private ManagementContext mgmt;
     private JcloudsLocation loc;
+
+    private String trustStore;
+    private String trustStorePassword;
     
     @BeforeClass(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
         mgmt = new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve("canopy-vCHS");
+        trustStore = (String) loc.getAllConfigBag().getStringKey("trustStore");
+        trustStorePassword = (String) loc.getAllConfigBag().getStringKey("trustStorePassword");
+
         super.setUp();
     }
 
@@ -54,7 +60,7 @@ public class NatServiceMicroserviceLiveTest extends AbstractRestApiTest {
 
     protected NatServiceDispatcher newNatServiceDispatcher() {
         return NatServiceDispatcher.builder()
-                .endpoint(endpoint(loc), new TrustConfig(null, null))
+                .endpoint(endpoint(loc), new TrustConfig(trustStore, trustStorePassword))
                 .build();
     }
     

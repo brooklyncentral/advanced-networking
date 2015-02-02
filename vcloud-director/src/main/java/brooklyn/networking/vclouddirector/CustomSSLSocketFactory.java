@@ -26,43 +26,42 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.http.conn.ssl.SSLSocketFactory;
 
+import com.google.common.base.Throwables;
+
 public class CustomSSLSocketFactory {
 
     private CustomSSLSocketFactory() {
     }
 
-    public static SSLSocketFactory getInstance()
-            throws NoSuchAlgorithmException, KeyStoreException,
-            CertificateException, KeyManagementException, IOException {
-
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory
-                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try{
-            String trustStore = System.getProperty("javax.net.ssl.trustStore");
-            String trustStorePassword = System.getProperty("javax.net.ssl.trustStorePassword");
-            if(trustStore == null || trustStorePassword == null){
-                throw new IOException("javax.net.ssl.trustStore/javax.net.ssl.trustStorePassword property - not set");
-            }
+    public static SSLSocketFactory getInstance(String trustStore, String trustStorePassword) {
+        try {
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             FileInputStream keystoreStream = new FileInputStream(trustStore);
-            try{
-                keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            try {
                 keystore.load(keystoreStream, trustStorePassword.toCharArray());
-            } finally{
+            } finally {
                 keystoreStream.close();
             }
-        } catch(FileNotFoundException e){
-            e.printStackTrace();
+            trustManagerFactory.init(keystore);
+            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagers, null);
+            SSLContext.setDefault(sslContext);
+            return new SSLSocketFactory(sslContext, SSLSocketFactory.STRICT_HOSTNAME_VERIFIER);
+        } catch (CertificateException e) {
+            throw Throwables.propagate(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw Throwables.propagate(e);
+        } catch (KeyStoreException e) {
+            throw Throwables.propagate(e);
+        } catch (KeyManagementException e) {
+            throw Throwables.propagate(e);
+        } catch (FileNotFoundException e) {
+            throw Throwables.propagate(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw Throwables.propagate(e);
         }
-        trustManagerFactory.init(keystore);
-        TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, trustManagers, null);
-        SSLContext.setDefault(sslContext);
-
-        return new SSLSocketFactory(sslContext,
-                SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
     }
+
 }

@@ -15,13 +15,6 @@ import javax.xml.bind.JAXBElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
-
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
@@ -50,6 +43,12 @@ import com.vmware.vcloud.sdk.admin.extensions.ExtensionQueryService;
 import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
+
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
 
 /**
  * For adding/removing NAT rules to vcloud-director.
@@ -477,7 +476,6 @@ public class NatService {
         return newVcloudClient(baseUrl, identity, credential, trustStore, trustStorePassword, logLevel);
     }
 
-    // FIXME Don't set sysprop as could affect all other activities of the JVM!
     protected VcloudClient newVcloudClient(String endpoint, String identity, String credential, String trustStore, String trustStorePassword, Level logLevel) {
         try {
             if (logLevel != null) {
@@ -494,6 +492,15 @@ public class NatService {
                     vcloudClient = new VcloudClient(endpoint, version);
                     LOG.debug("VCloudClient - trying login to {} using {}", endpoint, version);
                     vcloudClient.login(identity, credential);
+
+                    // Performing Certificate Validation
+                    if (trustStore != null && trustStorePassword != null) {
+                        vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance(trustStore, trustStorePassword));
+                    } else {
+                        LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
+                        vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                    }
+
                     versionFound = true;
                     LOG.info("VCloudClient - Logged into {} using version {}", endpoint, version);
                     break;
@@ -503,17 +510,6 @@ public class NatService {
             }
             if (!versionFound) {
                 throw new IllegalStateException("Cannot login to " + endpoint + " using any of " + VCLOUD_VERSIONS);
-            }
-            
-            // Performing Certificate Validation
-            if (Strings.isNonBlank(trustStore)) {
-                System.setProperty("javax.net.ssl.trustStore", trustStore);
-                System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-                vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
-
-            } else {
-                LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
-                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
             }
             return vcloudClient;
         } catch (Exception e) {
