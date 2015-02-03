@@ -25,7 +25,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;

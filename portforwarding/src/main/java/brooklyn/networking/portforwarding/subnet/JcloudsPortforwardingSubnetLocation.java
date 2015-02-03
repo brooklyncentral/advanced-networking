@@ -37,7 +37,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsUtil;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.config.ConfigBag;

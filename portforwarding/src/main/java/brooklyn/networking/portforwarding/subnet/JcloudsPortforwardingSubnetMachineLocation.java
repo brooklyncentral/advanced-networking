@@ -21,7 +21,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
-import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
 
