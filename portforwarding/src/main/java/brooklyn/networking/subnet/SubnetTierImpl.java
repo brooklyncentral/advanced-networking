@@ -33,8 +33,10 @@ import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.basic.ServiceStateLogic.ServiceProblemsLogic;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
@@ -53,6 +55,7 @@ import brooklyn.networking.common.subnet.PortForwarderClient;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.javalang.Reflections;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
@@ -261,18 +264,54 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         pfw.recordPublicIpHostname(gatewayIp, gatewayIp);
     }
 
+    // Code is modelled on AbstractApplication.start(locs)
     public void start(Collection<? extends Location> locations) {
         PortForwarder portForwarder = getPortForwarder();
         portForwarder.inject(getProxy(), ImmutableList.copyOf(locations));
         
         addLocations(locations);
-        Location origLoc = Iterables.getOnlyElement(locations);
-        Location customizedLoc = customizeLocation(origLoc);
+        
+        ServiceProblemsLogic.clearProblemsIndicator(this, START);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
+        ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL, "Application starting");
+        try {
+            Location origLoc = Iterables.getOnlyElement(locations);
+            Location customizedLoc = customizeLocation(origLoc);
+    
+            Collection<Location> customizedLocations = ImmutableList.of(customizedLoc);
+            openAndRegisterGateway();
 
-        Collection<Location> customizedLocations = ImmutableList.of(customizedLoc);
-        openAndRegisterGateway();
+            preStart(customizedLocations);
+            // if there are other items which should block service_up, they should be done in preStart
+            ServiceStateLogic.ServiceNotUpLogic.clearNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL);
 
-        StartableMethods.start(this, customizedLocations);
+            doStart(customizedLocations);
+            postStart(customizedLocations);
+        } catch (Exception e) {
+            // TODO See comments in AbstractApplication.start's catch block
+            // no need to log here; the effector invocation should do that
+            throw Exceptions.propagate(e);
+        } finally {
+            ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+        }
+    }
+
+    protected void doStart(Collection<? extends Location> locations) {
+        StartableMethods.start(this, locations);        
+    }
+
+    /**
+     * Default is no-op. Subclasses can override.
+     * */
+    public void preStart(Collection<? extends Location> locations) {
+        //no-op
+    }
+
+    /**
+     * Default is no-op. Subclasses can override.
+     * */
+    public void postStart(Collection<? extends Location> locations) {
+        //no-op
     }
 
     @Override
