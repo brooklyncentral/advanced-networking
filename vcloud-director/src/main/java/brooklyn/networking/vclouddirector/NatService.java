@@ -502,11 +502,10 @@ public class NatService {
 
                     // Performing Certificate Validation
                     if (Strings.isNonBlank(trustStorePassword)) {
-                        LOG.debug("Registering HTTPS scheme using trustStore ='{}' with trustStorePassword = '{}'", trustStore, trustStorePassword);
+                        LOG.debug("Registering HTTPS scheme using trustStore ='{}'", trustStore);
                         vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance(trustStore, trustStorePassword));
                     } else {
-                        LOG.warn("Registering HTTPS scheme using FakeSSLSocketFactory, as trustStore ='{}' with trustorePassword = '{}' are not valid.",
-                                trustStore, Strings.isBlank(trustStorePassword) ? "empty" : trustStorePassword);
+                        LOG.warn("Registering HTTPS scheme using FakeSSLSocketFactory, as trustStore ='{}' and/or trustStorePassword are not valid.", trustStore);
                                 vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
                     }
 
