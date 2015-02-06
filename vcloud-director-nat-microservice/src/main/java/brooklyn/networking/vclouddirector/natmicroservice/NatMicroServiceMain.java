@@ -165,6 +165,7 @@ public class NatMicroServiceMain {
 
         @Override
         public Void call() throws Exception {
+            log.info("Starting NAT micro-service");
             InputStream in = ResourceUtils.create(NatMicroServiceMain.class).getResourceFromUrl(endpointProperties);
             Map<String, TrustConfig> endpoints;
             try {
