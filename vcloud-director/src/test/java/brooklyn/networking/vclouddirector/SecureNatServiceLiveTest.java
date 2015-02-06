@@ -5,14 +5,10 @@ import static org.testng.Assert.assertNotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.concurrent.Executors;
 
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
@@ -36,7 +32,10 @@ import brooklyn.util.exceptions.Exceptions;
  * brooklyn.location.named.canopy-TAI.credential=pa55w0rd
  * brooklyn.location.named.canopy-TAI.trustStore=/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/jre/lib/security/cacerts
  * brooklyn.location.named.canopy-TAI.trustStorePassword=changeit
- * </pre> 
+ * </pre>
+ *
+ * Notice `trustStore` will be automatically inferred as in canopy-vCHS location, but it can be overridden by using
+ * `trustStore` as in canopy-TAI location
  */
 public class SecureNatServiceLiveTest extends BrooklynAppLiveTestSupport {
 
@@ -47,25 +46,11 @@ public class SecureNatServiceLiveTest extends BrooklynAppLiveTestSupport {
 
     protected JcloudsLocation loc;
 
-    protected ListeningExecutorService executor;
-    
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
         super.setUp();
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
-
-        executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-    }
-    
-    @AfterMethod(alwaysRun=true)
-    @Override
-    public void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            executor.shutdownNow();
-        }
     }
     
     // TAI (as at 2014-12-16) is running vcloud-director version 5.1
