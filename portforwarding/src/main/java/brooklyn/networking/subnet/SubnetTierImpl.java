@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.event.AttributeSensor;
@@ -128,6 +130,16 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         rescanDescendants();
     }
     
+    /** as {@link AbstractEntity#initEnrichers()} but also adding default service not-up and problem indicators from children */
+    @Override
+    protected void initEnrichers() {
+        super.initEnrichers();
+        
+        // default app logic; easily overridable by adding a different enricher with the same tag
+        addEnricher(ServiceStateLogic.newEnricherFromChildren().checkChildrenOnly());
+        ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL, "Subnet created but not yet started, at "+Time.makeDateString());
+    }
+
     private void rescanDescendants() {
         for (Entity descendant : Entities.descendants(this)) {
             if (!portMappedEntities.contains(descendant)) {
