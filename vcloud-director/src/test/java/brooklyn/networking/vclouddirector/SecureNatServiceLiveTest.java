@@ -29,7 +29,6 @@ import brooklyn.util.exceptions.Exceptions;
  * brooklyn.location.named.canopy-vCHS.credential=pa55w0rd
  * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.id=041e176a-befc-4b28-89e2-3c5343ff4d12
  * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.publicip=23.92.230.21
- * brooklyn.location.named.canopy-vCHS.trustStore=/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/jre/lib/security/cacerts
  * brooklyn.location.named.canopy-vCHS.trustStorePassword=changeit
  *
  * brooklyn.location.named.canopy-TAI=jclouds:vcloud-director:https://svdc.it-solutions.atos.net/api
@@ -98,8 +97,9 @@ public class SecureNatServiceLiveTest extends BrooklynAppLiveTestSupport {
             throw Exceptions.propagate(e);
         }
 
-        String trustStore = (String) loc.getAllConfigBag().getStringKey("trustStore");
+        String trustStore = (String) loc.getAllConfigBag().getStringKey("trustStore"); // if null, it will use default trustore
         String trustStorePassword = (String) loc.getAllConfigBag().getStringKey("trustStorePassword");
+        assertNotNull(trustStorePassword, "trustStorePassword not set on location " + loc);
 
         return NatService.builder()
                 .identity(loc.getIdentity())

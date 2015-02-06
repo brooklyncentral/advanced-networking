@@ -2,6 +2,7 @@ package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -47,6 +48,8 @@ import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.os.Os;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
 
@@ -477,6 +480,11 @@ public class NatService {
     }
 
     protected VcloudClient newVcloudClient(String endpoint, String identity, String credential, String trustStore, String trustStorePassword, Level logLevel) {
+
+        if (trustStore == null) {
+            trustStore = getDefaultTrustStore();
+        }
+
         try {
             if (logLevel != null) {
                 // Logging is extremely verbose at INFO - it logs in full every http request/response (including payload).
@@ -491,16 +499,18 @@ public class NatService {
                 try {
                     vcloudClient = new VcloudClient(endpoint, version);
                     LOG.debug("VCloudClient - trying login to {} using {}", endpoint, version);
-                    vcloudClient.login(identity, credential);
 
                     // Performing Certificate Validation
-                    if (trustStore != null && trustStorePassword != null) {
+                    if (Strings.isNonBlank(trustStorePassword)) {
+                        LOG.debug("Registering HTTPS scheme using trustStore ='{}' with trustStorePassword = '{}'", trustStore, trustStorePassword);
                         vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance(trustStore, trustStorePassword));
                     } else {
-                        LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
-                        vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                        LOG.warn("Registering HTTPS scheme using FakeSSLSocketFactory, as trustStore ='{}' with trustorePassword = '{}' are not valid.",
+                                trustStore, Strings.isBlank(trustStorePassword) ? "empty" : trustStorePassword);
+                                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
                     }
 
+                    vcloudClient.login(identity, credential);
                     versionFound = true;
                     LOG.info("VCloudClient - Logged into {} using version {}", endpoint, version);
                     break;
@@ -515,6 +525,23 @@ public class NatService {
         } catch (Exception e) {
             throw Exceptions.propagate(e);
         }
+    }
+
+    /**
+     * http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#InstallationAndCustomization
+     *
+     * @return the default truststore, jssecacerts, if it exists. Otherwise, cacerts
+     */
+    private String getDefaultTrustStore() {
+        String trustStore;
+        String trustStoreFolder = Os.mergePaths(System.getProperty("java.home"), "lib", "security");
+        trustStore = Os.mergePaths(trustStoreFolder, "jssecacerts");
+        if (!new File(trustStore).exists()) {
+            trustStore = Os.mergePaths(trustStoreFolder, "cacerts");
+        } else {
+            throw new IllegalStateException("Cannot find a valid default truststore (jssecacerts or cacerts) in " + trustStoreFolder);
+        }
+        return trustStore;
     }
 
     private GatewayNatRuleType generateGatewayNatRule(Protocol protocol, HostAndPort original,
