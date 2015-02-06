@@ -71,11 +71,11 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
 
         // Ensure the DNAT service has been used, prior to rebind
         origSubnetTier.openPortForwardingAndAdvertise(
-                EntityAndAttribute.supplier(origEntity, PRIVATE_PORT), 
+                EntityAndAttribute.create(origEntity, PRIVATE_PORT), 
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.supplier(origEntity, MAPPED_ENDPOINT));
+                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
 
         // Confirm that subnet tier (and port forwarding calls) still work
         origEntity.setAttribute(PRIVATE_PORT, 1234);
@@ -106,11 +106,11 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
         origApp.start(ImmutableList.of(origLoc));
         
         origSubnetTier.openPortForwardingAndAdvertise(
-                EntityAndAttribute.supplier(origEntity, PRIVATE_PORT), 
+                EntityAndAttribute.create(origEntity, PRIVATE_PORT), 
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.supplier(origEntity, MAPPED_ENDPOINT));
+                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
 
         // rebind
         rebind();
@@ -145,11 +145,11 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
         
         // Confirm that the port-forwarding is still usable
         newSubnetTier.openPortForwardingAndAdvertise(
-                EntityAndAttribute.supplier(origEntity, PRIVATE_PORT), 
+                EntityAndAttribute.create(origEntity, PRIVATE_PORT), 
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.supplier(origEntity, MAPPED_ENDPOINT));
+                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
 
         newEntity.setAttribute(PRIVATE_PORT, 1234);
         

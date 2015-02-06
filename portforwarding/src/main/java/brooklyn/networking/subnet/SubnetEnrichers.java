@@ -83,13 +83,14 @@ public class SubnetEnrichers {
         public void init() {
             SubnetTier subnetTier = getConfig(SUBNET_TIER);
             setConfig(TRANSFORMATION_FROM_EVENT, new UriTransformingFunction(subnetTier));
+            setConfig(SUPPRESS_DUPLICATES, true);
         }
     }
 
     private static class UriTransformingFunction implements Function<SensorEvent<Object>,String> {
 
         private final SubnetTier subnetTier;
-
+        
         public UriTransformingFunction(SubnetTier subnetTier) {
             this.subnetTier = Preconditions.checkNotNull(subnetTier, "subnetTier");
         }
@@ -104,6 +105,13 @@ public class SubnetEnrichers {
                 int port = uri.getPort();
                 if (port != -1) {
                     HostAndPort publicTarget = subnetTier.getPortForwardManager().lookup(machine.get(), port);
+                    if (publicTarget == null) {
+                        // TODO What if publicTarget is still null, but will be set soon? We're not subscribed to changes in the PortForwardManager!
+                        // TODO Should we return null or sensorVal? In this method we always return sensorVal;
+                        //      but in HostAndPortTransformingEnricher we always return null!
+                        log.debug("sensor mapper not transforming {} URI {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine.get()});
+                        return sensorVal;
+                    }
                     URI result;
                     try {
                         result = new URI(uri.getScheme(), uri.getUserInfo(), publicTarget.getHostText(), publicTarget.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());

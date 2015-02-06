@@ -26,6 +26,7 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.enricher.basic.Transformer;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.AbstractEntity;
@@ -57,6 +58,7 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.text.Strings;
+import brooklyn.util.time.Time;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -156,11 +158,11 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                 for (AttributeSensor<Integer> attribute : attributes) {
                     AttributeSensor<String> mappedAttribute = Sensors.newStringSensor("mapped."+attribute.getName());
                     openPortForwardingAndAdvertise(
-                            EntityAndAttribute.supplier(entity, attribute), 
+                            EntityAndAttribute.create(entity, attribute), 
                             Optional.<Integer>absent(), 
                             Protocol.TCP, 
                             Cidr.UNIVERSAL, 
-                            EntityAndAttribute.supplier(entity, mappedAttribute));
+                            EntityAndAttribute.create(entity, mappedAttribute));
                 }
             }
         }
@@ -353,6 +355,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             final EntityAndAttribute<String> targetToUpdate,
             final Optional<EntityAndAttribute<Integer>> optionalTargetPort,
             final EntityAndAttribute<String> replacementSource) {
+        // TODO Should we change this to not use an enricher?
         List<AttributeSensor<String>> targetsToMatch = ImmutableList.of(
                 SoftwareProcess.HOSTNAME,
                 SoftwareProcess.ADDRESS,
@@ -361,6 +364,26 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getAttributeMunger().transformSensorStringReplacingWithPublicAddressAndPort(targetToUpdate, optionalTargetPort, targetsToMatch, replacementSource);
     }
 
+    public void transformPort(EntityAndAttribute<Integer> original, EntityAndAttribute<String> destinationToPublish) {
+        // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        destinationToPublish.getEntity().addEnricher(hostAndPortTransformingEnricher(original, destinationToPublish.getAttribute()));
+    }
+    
+    public void transformUri(EntityAndAttribute<String> targetToUpdate) {
+        // TODO Should we change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        Entity entity = targetToUpdate.getEntity();
+        entity.addEnricher(uriTransformingEnricher(targetToUpdate, targetToUpdate.getAttribute())
+                .configure(Transformer.SUPPRESS_DUPLICATES, true));
+    }
+    
+    public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish) {
+        // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        destinationToPublish.getEntity().addEnricher(uriTransformingEnricher(original, destinationToPublish.getAttribute()));
+    }
+    
     @Override
     public EnricherSpec<?> uriTransformingEnricher(AttributeSensor<String> original, AttributeSensor<String> target) {
         return SubnetEnrichers.uriTransformingEnricher(this, original, target);
@@ -403,5 +426,4 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getPortForwarderAsync().openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr,
                 whereToAdvertiseEndpoint);
     }
-
 }

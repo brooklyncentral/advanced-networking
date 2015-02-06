@@ -149,11 +149,11 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             // Setup port-forwarding to port 22
             ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
-                    EntityAndAttribute.supplier(entity, PRIVATE_PORT),
+                    EntityAndAttribute.create(entity, PRIVATE_PORT),
                     Optional.of(expectedPort),
                     Protocol.TCP,
                     Cidr.UNIVERSAL,
-                    EntityAndAttribute.supplier(entity, MAPPED_ENDPOINT));
+                    EntityAndAttribute.create(entity, MAPPED_ENDPOINT));
 
             // Confirm the expected port is advertised
             EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, expectedEndpoint);
@@ -184,7 +184,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             // Just in case stop didn't delete it, do it here
             try {
                 if (Machines.findUniqueMachineLocation(entity.getLocations()).isPresent()) {
-                    ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.supplier(entity, PRIVATE_PORT), expectedPort);
+                    ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.create(entity, PRIVATE_PORT), expectedPort);
                 } else if (privateHostAndPort != null) {
                     new NatDirectClient(loc).closePortForwarding(new PortForwardingConfig()
                             .publicIp(publicIp)
@@ -234,11 +234,11 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             // Setup port-forwarding to port 22
             ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
-                    EntityAndAttribute.supplier(entity, PRIVATE_PORT),
+                    EntityAndAttribute.create(entity, PRIVATE_PORT),
                     Optional.of(expectedPort),
                     Protocol.TCP,
                     Cidr.UNIVERSAL,
-                    EntityAndAttribute.supplier(entity, MAPPED_ENDPOINT));
+                    EntityAndAttribute.create(entity, MAPPED_ENDPOINT));
 
             // Confirm the expected port is advertised
             EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, expectedEndpoint);
@@ -252,7 +252,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             assertTrue(rule.isPresent(), "rules="+natRules);
 
         } finally {
-            ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.supplier(entity, PRIVATE_PORT), expectedPort);
+            ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.create(entity, PRIVATE_PORT), expectedPort);
         }
     }
 }
