@@ -27,6 +27,8 @@ if [ -z "${JAVA_OPTS}" ] ; then
     JAVA_OPTS="-Xms256m -Xmx1g -XX:MaxPermSize=256m"
 fi
 
-CLASSPATH=${SCRIPT_DIR}/lib/*
+JAVA_OPTS=$JAVA_OPTS" -Djava.util.logging.config.file=${SCRIPT_DIR}/lib/conf/logging.properties"
+
+CLASSPATH=${SCRIPT_DIR}/lib/conf:${SCRIPT_DIR}/lib/patch/*:${SCRIPT_DIR}/lib/service/*:${SCRIPT_DIR}/lib/dropins/*
 MAIN_CLASS=brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain
 exec java ${JAVA_OPTS} -cp "${CLASSPATH}" $MAIN_CLASS "$@"

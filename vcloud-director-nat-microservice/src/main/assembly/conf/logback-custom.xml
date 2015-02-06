@@ -1,0 +1,38 @@
+<included>
+
+    <root level="INFO"/>
+
+    <!-- The vmware.vcloud logging is *very* chatty, so switch it off -->
+    <logger name="com.vmware.vcloud" level="OFF"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.dir:-./}${logging.basename:-dnatservice}.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d %-5level %logger{30} [%thread{15}]: %msg%n</pattern>
+        </encoder>
+
+        <!-- Truncate log at 100 MB, max history of 10 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${logging.dir:-./}${logging.basename:-dnatservice}.debug-%i.log.zip</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>100MB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d %-5level %logger{30} [%thread{15}]: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root>
+        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</included>

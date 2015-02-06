@@ -33,12 +33,17 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.sdk.VCloudException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NatServiceResource extends AbstractRestResource implements NatServiceApi {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NatServiceResource.class);
 
     @Override
     public List<NatRuleSummary> list(String endpoint, String identity, String credential) {
         try {
+            LOG.info("listing nat rules on " + endpoint);
             List<NatRuleType> rules = dispatcher().getNatRules(endpoint, identity, credential);
             return FluentIterable
                     .from(rules)
@@ -60,6 +65,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
             String original, String translated) {
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
+        LOG.info("creating nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
         try {
             dispatcher().openPortForwarding(endpoint, identity, credential, new PortForwardingConfig()
                     .protocol(Protocol.valueOf(protocol.toUpperCase()))
@@ -77,6 +83,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     public Response closePortForwarding(String endpoint,
             String identity, String credential, String protocol,
             String original, String translated) {
+        LOG.info("deleting nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
         // TODO throw 404 if not found
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
