@@ -35,6 +35,7 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensor;
+import brooklyn.event.basic.Sensors;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.PortRange;
@@ -154,6 +155,59 @@ public class SubnetTierTest {
         entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
+    public void testTransformUri() throws Exception {
+        final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+
+        EntityTestUtils.assertAttributeEqualsEventually(entity, ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
+    public void testTransformUriPublishingElsewhere() throws Exception {
+        final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "mapped.endpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT), new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+
+        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
+    public void testTransformPort() throws Exception {
+        final AttributeSensor<Integer> ENDPOINT = Sensors.newIntegerSensor("endpoint");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        subnetTier.transformPort(EntityAndAttribute.create(entity, ENDPOINT), EntityAndAttribute.create(app, PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, 80);
+
+        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     @Test

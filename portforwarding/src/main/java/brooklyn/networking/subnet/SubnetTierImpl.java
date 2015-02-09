@@ -26,12 +26,17 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.enricher.basic.Transformer;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.basic.ServiceStateLogic.ServiceProblemsLogic;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
@@ -50,11 +55,13 @@ import brooklyn.networking.common.subnet.PortForwarderClient;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.javalang.Reflections;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.text.Strings;
+import brooklyn.util.time.Time;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -128,6 +135,16 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         rescanDescendants();
     }
     
+    /** as {@link AbstractEntity#initEnrichers()} but also adding default service not-up and problem indicators from children */
+    @Override
+    protected void initEnrichers() {
+        super.initEnrichers();
+        
+        // default app logic; easily overridable by adding a different enricher with the same tag
+        addEnricher(ServiceStateLogic.newEnricherFromChildren().checkChildrenOnly());
+        ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL, "Subnet created but not yet started, at "+Time.makeDateString());
+    }
+
     private void rescanDescendants() {
         for (Entity descendant : Entities.descendants(this)) {
             if (!portMappedEntities.contains(descendant)) {
@@ -144,11 +161,11 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                 for (AttributeSensor<Integer> attribute : attributes) {
                     AttributeSensor<String> mappedAttribute = Sensors.newStringSensor("mapped."+attribute.getName());
                     openPortForwardingAndAdvertise(
-                            EntityAndAttribute.supplier(entity, attribute), 
+                            EntityAndAttribute.create(entity, attribute), 
                             Optional.<Integer>absent(), 
                             Protocol.TCP, 
                             Cidr.UNIVERSAL, 
-                            EntityAndAttribute.supplier(entity, mappedAttribute));
+                            EntityAndAttribute.create(entity, mappedAttribute));
                 }
             }
         }
@@ -247,18 +264,54 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         pfw.recordPublicIpHostname(gatewayIp, gatewayIp);
     }
 
+    // Code is modelled on AbstractApplication.start(locs)
     public void start(Collection<? extends Location> locations) {
         PortForwarder portForwarder = getPortForwarder();
         portForwarder.inject(getProxy(), ImmutableList.copyOf(locations));
         
         addLocations(locations);
-        Location origLoc = Iterables.getOnlyElement(locations);
-        Location customizedLoc = customizeLocation(origLoc);
+        
+        ServiceProblemsLogic.clearProblemsIndicator(this, START);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
+        ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL, "Application starting");
+        try {
+            Location origLoc = Iterables.getOnlyElement(locations);
+            Location customizedLoc = customizeLocation(origLoc);
+    
+            Collection<Location> customizedLocations = ImmutableList.of(customizedLoc);
+            openAndRegisterGateway();
 
-        Collection<Location> customizedLocations = ImmutableList.of(customizedLoc);
-        openAndRegisterGateway();
+            preStart(customizedLocations);
+            // if there are other items which should block service_up, they should be done in preStart
+            ServiceStateLogic.ServiceNotUpLogic.clearNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL);
 
-        StartableMethods.start(this, customizedLocations);
+            doStart(customizedLocations);
+            postStart(customizedLocations);
+        } catch (Exception e) {
+            // TODO See comments in AbstractApplication.start's catch block
+            // no need to log here; the effector invocation should do that
+            throw Exceptions.propagate(e);
+        } finally {
+            ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+        }
+    }
+
+    protected void doStart(Collection<? extends Location> locations) {
+        StartableMethods.start(this, locations);        
+    }
+
+    /**
+     * Default is no-op. Subclasses can override.
+     * */
+    public void preStart(Collection<? extends Location> locations) {
+        //no-op
+    }
+
+    /**
+     * Default is no-op. Subclasses can override.
+     * */
+    public void postStart(Collection<? extends Location> locations) {
+        //no-op
     }
 
     @Override
@@ -341,6 +394,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             final EntityAndAttribute<String> targetToUpdate,
             final Optional<EntityAndAttribute<Integer>> optionalTargetPort,
             final EntityAndAttribute<String> replacementSource) {
+        // TODO Should we change this to not use an enricher?
         List<AttributeSensor<String>> targetsToMatch = ImmutableList.of(
                 SoftwareProcess.HOSTNAME,
                 SoftwareProcess.ADDRESS,
@@ -349,6 +403,26 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getAttributeMunger().transformSensorStringReplacingWithPublicAddressAndPort(targetToUpdate, optionalTargetPort, targetsToMatch, replacementSource);
     }
 
+    public void transformPort(EntityAndAttribute<Integer> original, EntityAndAttribute<String> destinationToPublish) {
+        // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        destinationToPublish.getEntity().addEnricher(hostAndPortTransformingEnricher(original, destinationToPublish.getAttribute()));
+    }
+    
+    public void transformUri(EntityAndAttribute<String> targetToUpdate) {
+        // TODO Should we change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        Entity entity = targetToUpdate.getEntity();
+        entity.addEnricher(uriTransformingEnricher(targetToUpdate, targetToUpdate.getAttribute())
+                .configure(Transformer.SUPPRESS_DUPLICATES, true));
+    }
+    
+    public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish) {
+        // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
+        // to not use an enricher?
+        destinationToPublish.getEntity().addEnricher(uriTransformingEnricher(original, destinationToPublish.getAttribute()));
+    }
+    
     @Override
     public EnricherSpec<?> uriTransformingEnricher(AttributeSensor<String> original, AttributeSensor<String> target) {
         return SubnetEnrichers.uriTransformingEnricher(this, original, target);
@@ -391,5 +465,4 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getPortForwarderAsync().openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr,
                 whereToAdvertiseEndpoint);
     }
-
 }

@@ -117,6 +117,43 @@ public interface SubnetTier extends Entity, Startable {
             final EntityAndAttribute<String> replacementSource);
 
     /**
+     * Transforms the given {@code original} port, transformation it into a
+     * host:port with that returned by {@link PortForwardManager#lookup(brooklyn.location.Location, int)}.
+     *
+     * The result is published to {@code destinationToPublish} (not modifying the original).
+     * 
+     * It listens to the entity indicated in {@code targetToUpdate}, looking up its only {@link MachineLocation}.
+     * If there is not exactly one {@link MachineLocation} for the given entity, then it does no
+     * transformation.
+     *
+     * @param original
+     * @return
+     */
+    public void transformPort(EntityAndAttribute<Integer> original, EntityAndAttribute<String> destinationToPublish);
+
+    /**
+     * Similar to {@link #transformUri(EntityAndAttribute, EntityAndAttribute)}, but updates the
+     * given entity:sensor, rather than re-publishing it elsewhere.
+     */
+    public void transformUri(EntityAndAttribute<String> targetToUpdate);
+
+    /**
+     * Transforms the given {@code original} sensor, interpreting it as a URI, and
+     * transforms its value. Transformation involves replacing
+     * the host:port in the URI with that returned by {@link PortForwardManager#lookup(brooklyn.location.Location, int)}.
+     *
+     * The result is published to {@code destinationToPublish} (not modifying the original).
+     * 
+     * It listens to the entity indicated in {@code targetToUpdate}, looking up its only {@link MachineLocation}.
+     * If there is not exactly one {@link MachineLocation} for the given entity, then it does no
+     * transformation.
+     *
+     * @param original
+     * @return
+     */
+    public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish);
+
+    /**
      * Builds an enricher that takes the given {@code original} sensor, interprets it as a URI, and
      * transforms it to be published at the {@code target} sensor. Transformation involves replacing
      * the host:port in the URI with that returned by {@link PortForwardManager#lookup(brooklyn.location.Location, int)}.
