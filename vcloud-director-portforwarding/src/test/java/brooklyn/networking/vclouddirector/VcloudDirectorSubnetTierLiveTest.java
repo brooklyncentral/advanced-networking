@@ -1,6 +1,7 @@
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -65,6 +66,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
      */
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
+    public static final int STARTING_PORT = 19000;
+    
     protected JcloudsLocation loc;
     
     private String publicIp;
@@ -94,7 +97,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                // Don't use NatMicroServiceMain.main directly, because that will do System.exit at the end
                try {
                    Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse(
-                           "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
+                           "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath(),
+                           "--publicPortRange", STARTING_PORT+"+");
                    command.call();
                } catch (Exception e) {
                    LOG.error("Launch NAT micro-service failed", e);
@@ -120,21 +124,28 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         if (executor != null) executor.shutdownNow();
         super.tearDown();
     }
-    
+
     @Test(groups="Live")
     public void testOpenPortForwardingAndAdvertise() throws Exception {
+        runOpenPortForwardingAndAdvertise(null);
+    }
+    
+    @Test(groups="Live")
+    public void testOpenPortForwardingAndAdvertiseWithExplicitPublicPort() throws Exception {
+        runOpenPortForwardingAndAdvertise(STARTING_PORT+10);
+    }
+    
+    protected void runOpenPortForwardingAndAdvertise(Integer expectedPort) throws Exception {
         final AttributeSensor<Integer> PRIVATE_PORT = Sensors.newIntegerSensor("my.port");
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
         
-        final int expectedPort = 45678;
-        final String expectedEndpoint = publicIp +":"+expectedPort;
-
         SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
                 .configure(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP, publicIp)
                 .configure(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl));
         final MachineEntity entity = subnetTier.addChild(EntitySpec.create(MachineEntity.class));
         HostAndPort privateHostAndPort = null;
+        HostAndPort publicHostAndPort = null;
         
         Exception tothrow = null;
         try {
@@ -156,13 +167,21 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                     EntityAndAttribute.create(entity, MAPPED_ENDPOINT));
 
             // Confirm the expected port is advertised
-            EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, expectedEndpoint);
+            if (expectedPort != null) {
+                publicHostAndPort = HostAndPort.fromParts(publicIp, expectedPort);
+                EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, publicHostAndPort.toString());
+            } else {
+                String mappedEndpoint = EntityTestUtils.assertAttributeEventuallyNonNull(entity, MAPPED_ENDPOINT);
+                publicHostAndPort = HostAndPort.fromString(mappedEndpoint);
+                assertEquals(publicHostAndPort.getHostText(), publicIp);
+                assertTrue(publicHostAndPort.hasPort() && publicHostAndPort.getPort() >= STARTING_PORT, "port="+publicHostAndPort.getPort());
+            }
             
             // Confirm can ssh to the VM via our newly mapped port
             SshMachineLocation machineViaOtherPort = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                     .configure("user", machine.getUser())
-                    .configure("address", publicIp)
-                    .configure("port", expectedPort)
+                    .configure("address", publicHostAndPort.getHostText())
+                    .configure("port", publicHostAndPort.getPort())
                     .configure("privateKeyFile", machine.getConfig(SshMachineLocation.PRIVATE_KEY_FILE))
                     .configure("privateKeyData", machine.getConfig(SshMachineLocation.PRIVATE_KEY_DATA))
                     .configure("password", machine.getConfig(SshMachineLocation.PASSWORD)));
@@ -173,8 +192,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             entity.stop();
             List<NatRuleType> natRules = new NatDirectClient(loc).getClient().getNatRules();
             Optional<NatRuleType> rule = Iterables.tryFind(natRules, Predicates.<NatRuleType>and(
-                    NatPredicates.translatedTargetEquals(Iterables.get(machine.getPrivateAddresses(), 0), 22),
-                    NatPredicates.originalTargetEquals(publicIp, expectedPort),
+                    NatPredicates.translatedEndpointEquals(Iterables.get(machine.getPrivateAddresses(), 0), 22),
+                    NatPredicates.originalEndpointEquals(publicHostAndPort),
                     NatPredicates.protocolMatches(Protocol.TCP)));
             assertFalse(rule.isPresent(), "rule="+rule);
             
@@ -182,21 +201,23 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             tothrow = e;
         } finally {
             // Just in case stop didn't delete it, do it here
-            try {
-                if (Machines.findUniqueMachineLocation(entity.getLocations()).isPresent()) {
-                    ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.create(entity, PRIVATE_PORT), expectedPort);
-                } else if (privateHostAndPort != null) {
-                    new NatDirectClient(loc).closePortForwarding(new PortForwardingConfig()
-                            .publicIp(publicIp)
-                            .publicPort(expectedPort)
-                            .target(privateHostAndPort)
-                            .protocol(Protocol.TCP));
-                }
-            } catch (Exception e) {
-                if (tothrow != null) {
-                    LOG.warn("Problem closing port-forwarding in finally block for "+entity+", public port "+expectedPort+"; not propagating as will throw other exception from test", e);
-                } else {
-                    tothrow = e;
+            Integer publicPort = (expectedPort != null) ? expectedPort : (publicHostAndPort != null) ? publicHostAndPort.getPort() : null;
+            if (publicPort != null) {
+                try {
+                    if (Machines.findUniqueMachineLocation(entity.getLocations()).isPresent()) {
+                        ((PortForwarderVcloudDirector) subnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.create(entity, PRIVATE_PORT), publicPort);
+                    } else if (privateHostAndPort != null) {
+                        new NatDirectClient(loc).closePortForwarding(new PortForwardingConfig()
+                                .publicEndpoint(HostAndPort.fromParts(publicIp, publicPort))
+                                .targetEndpoint(privateHostAndPort)
+                                .protocol(Protocol.TCP));
+                    }
+                } catch (Exception e) {
+                    if (tothrow != null) {
+                        LOG.warn("Problem closing port-forwarding in finally block for "+entity+", public port "+publicPort+"; not propagating as will throw other exception from test", e);
+                    } else {
+                        tothrow = e;
+                    }
                 }
             }
         }
@@ -210,11 +231,21 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
      */
     @Test(groups={"Live", "Live-sanity"})
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVms() throws Exception {
+    }
+    
+    /**
+     * This is a duplicate of {@link #testOpenPortForwardingAndAdvertise}, but it does not provision a VM
+     * so is much faster to run.
+     */
+    @Test(groups={"Live", "Live-sanity"})
+    public void testOpenPortForwardingAndAdvertiseWithoutCreatingVms() throws Exception {
+    }
+    
+    protected void runOpenPortForwardingAndAdvertiseWithoutCreatingVms(Integer expectedPort) throws Exception {
         final AttributeSensor<Integer> PRIVATE_PORT = Sensors.newIntegerSensor("mapped.port");
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
         
-        final int expectedPort = 45678;
-        final String expectedEndpoint = publicIp +":"+expectedPort;
+        FIXME final String expectedEndpoint = publicIp +":"+expectedPort;
 
         SshMachineLocation pseudoMachineLoc = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("user", "myuser")
@@ -246,8 +277,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             // Confirm the port-mapping exists
             List<NatRuleType> natRules = new NatDirectClient(loc).getClient().getNatRules();
             Optional<NatRuleType> rule = Iterables.tryFind(natRules, Predicates.<NatRuleType>and(
-                    NatPredicates.translatedTargetEquals(INTERNAL_MACHINE_IP, 22),
-                    NatPredicates.originalTargetEquals(publicIp, expectedPort),
+                    NatPredicates.translatedEndpointEquals(INTERNAL_MACHINE_IP, 22),
+                    NatPredicates.originalEndpointEquals(publicIp, expectedPort),
                     NatPredicates.protocolMatches(Protocol.TCP)));
             assertTrue(rule.isPresent(), "rules="+natRules);
 

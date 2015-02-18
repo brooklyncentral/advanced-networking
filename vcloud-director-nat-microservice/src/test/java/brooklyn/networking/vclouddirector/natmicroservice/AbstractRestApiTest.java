@@ -39,7 +39,7 @@ public abstract class AbstractRestApiTest {
     // See brooklyn.rest.testing.BrooklynRestApiTest and brooklyn.rest.testing.BrooklynRestResourceTest.
     // This is a cut-down version of those two classes.
     
-    private NatServiceDispatcher dispatcher;
+    protected NatServiceDispatcher dispatcher;
     protected boolean useLocalScannedCatalog = false;
     
     private JerseyTest jerseyTest;

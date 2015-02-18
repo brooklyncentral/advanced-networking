@@ -1,11 +1,15 @@
 package brooklyn.networking.vclouddirector.natmicroservice;
 
+import static org.testng.Assert.assertTrue;
 import io.airlift.command.ParseOptionMissingException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -24,26 +28,61 @@ public class NatMicroServiceMainTest {
     
     @Test
     public void testHelp() throws Exception {
-        // Visual inspection test, that displayed correctly (without throwing exceptions)
-        Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("help");
-        command.call();
+        PrintStream outOrig = System.out;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream outCustom = new PrintStream(baos, true);
+        System.setOut(outCustom);
+        try {
+            Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("help");
+            command.call();
+            
+            String out = new String(baos.toByteArray());
+            assertTrue(out.contains("usage: nat-microservice"), "out="+out);
+        } finally {
+            System.setOut(outOrig);
+        }
     }
     
     @Test
     public void testInfo() throws Exception {
-        // Visual inspection test, that displayed correctly (without throwing exceptions)
-        Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("info");
-        command.call();
+        PrintStream outOrig = System.out;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream outCustom = new PrintStream(baos, true);
+        System.setOut(outCustom);
+        try {
+            Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("info");
+            command.call();
+            
+            String out = new String(baos.toByteArray());
+            assertTrue(out.contains("Version:"), "out="+out);
+            assertTrue(out.contains("Website:"), "out="+out);
+            assertTrue(out.contains("Source:"), "out="+out);
+        } finally {
+            System.setOut(outOrig);
+        }
     }
     
     @Test
     public void testLaunchFailsIfNoEndpointsFile() throws Exception {
-        // Visual inspection test, that help was displayed
         try {
             Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("launch");
             command.call();
         } catch (ParseOptionMissingException e) {
-            // success
+            if (!e.toString().contains("Required option '--endpointsProperties' is missing")) throw e;
+        }
+    }
+    
+    @Test
+    public void testLaunchFailsIfInvalidPortRange() throws Exception {
+        try {
+            // range is too big; expect failure
+            Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("launch", 
+                    "--endpointsProperties", "classpath://endpoints.properties", 
+                    "--publicPortRange", "1024-100000");
+            command.call();
+            Assert.fail();
+        } catch (IllegalArgumentException e) {
+            if (!e.toString().contains("out of range")) throw e;
         }
     }
 }

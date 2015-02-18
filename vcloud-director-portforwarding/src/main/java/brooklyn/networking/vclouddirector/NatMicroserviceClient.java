@@ -3,14 +3,12 @@ package brooklyn.networking.vclouddirector;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.http.HttpTool;
 import brooklyn.util.http.HttpToolResponse;
 import brooklyn.util.net.Urls;
@@ -65,8 +63,8 @@ public class NatMicroserviceClient implements NatClient {
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + args.protocol
-                + "&original=" + args.publicIp + ":" + args.publicPort
-                + "&translated=" + args.target.getHostText() + ":" + args.target.getPort()));
+                + "&original=" + args.publicEndpoint
+                + "&translated=" + args.targetEndpoint));
 
         HttpToolResponse response = HttpTool.httpPut(client, uri, ImmutableMap.<String, String>of(), new byte[0]);
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
@@ -74,7 +72,7 @@ public class NatMicroserviceClient implements NatClient {
             LOG.info(msg+"; rethrowing");
             throw new RuntimeException(msg);
         }
-        return HostAndPort.fromParts(args.publicIp, args.publicPort);
+        return HostAndPort.fromString(response.getContentAsString());
     }
     
     @Override
@@ -90,8 +88,8 @@ public class NatMicroserviceClient implements NatClient {
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + args.protocol
-                + "&original=" + args.publicIp + ":" + args.publicPort
-                + "&translated=" + args.target.getHostText() + ":" + args.target.getPort()));
+                + "&original=" + args.publicEndpoint
+                + "&translated=" + args.targetEndpoint));
 
         HttpToolResponse response = HttpTool.httpDelete(client, uri, ImmutableMap.<String, String>of());
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
@@ -99,6 +97,6 @@ public class NatMicroserviceClient implements NatClient {
             LOG.info(msg+"; rethrowing");
             throw new RuntimeException(msg);
         }
-        return HostAndPort.fromParts(args.publicIp, args.publicPort);
+        return args.publicEndpoint;
     }
 }

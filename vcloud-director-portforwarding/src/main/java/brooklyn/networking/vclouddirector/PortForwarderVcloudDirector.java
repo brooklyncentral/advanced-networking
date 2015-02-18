@@ -163,10 +163,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         
         try {
             HostAndPort result = getClient().openPortForwarding(new PortForwardingConfig()
-                    .publicIp(publicIp)
                     .protocol(Protocol.TCP)
-                    .target(target)
-                    .publicPort(publicPort));
+                    .publicEndpoint(HostAndPort.fromParts(publicIp, publicPort))
+                    .targetEndpoint(target));
             LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
             return result;
         } catch (IllegalArgumentException e) {
@@ -183,9 +182,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
         try {
             HostAndPort result = getClient().closePortForwarding(new PortForwardingConfig()
-                    .publicIp(publicSide.getHostText())
-                    .publicPort(publicSide.getPort())
-                    .target(targetSide)
+                    .publicEndpoint(publicSide)
+                    .targetEndpoint(targetSide)
                     .protocol(Protocol.TCP));
             LOG.debug("Deleted port-forwarding for {}, via {}, on {}", new Object[]{targetSide, result, subnetTier});
             return true;

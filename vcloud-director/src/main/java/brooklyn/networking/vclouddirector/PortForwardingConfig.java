@@ -1,6 +1,9 @@
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import brooklyn.location.PortRange;
 import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Objects;
@@ -8,31 +11,35 @@ import com.google.common.net.HostAndPort;
 
 public class PortForwardingConfig {
     Protocol protocol;
-    String publicIp;
-    Integer publicPort;
-    HostAndPort target;
+    HostAndPort publicEndpoint;
+    HostAndPort targetEndpoint;
+    PortRange publicPortRange;
     
     public PortForwardingConfig protocol(Protocol val) {
         this.protocol = val; return this;
     }
     
-    public PortForwardingConfig publicIp(String val) {
-        this.publicIp = val; return this;
+    public PortForwardingConfig publicEndpoint(HostAndPort val) {
+        this.publicEndpoint = val;
+        return this;
     }
-    
-    public PortForwardingConfig publicPort(int val) {
-        this.publicPort = val; return this;
+
+    public PortForwardingConfig publicPortRange(PortRange val) {
+        this.publicPortRange = val;
+        return this;
     }
-    
-    public PortForwardingConfig target(HostAndPort val) {
-        this.target = val; return this;
+
+    public PortForwardingConfig targetEndpoint(HostAndPort val) {
+        this.targetEndpoint = val; return this;
     }
     
     public void checkValid() {
         checkNotNull(protocol, "protocol");
-        checkNotNull(publicIp, "publicIp");
-        checkNotNull(publicPort, publicPort);
-        checkNotNull(target, "target");
+        checkNotNull(publicEndpoint, "publicEndpoint");
+        checkNotNull(targetEndpoint, "targetEndpoint");
+        checkState(!(publicEndpoint.hasPort() && publicPortRange != null), 
+                "Must not specify port range (%s) and also port in public endpoint (%s)", 
+                publicPortRange, publicEndpoint);
     }
     
     @Override
@@ -40,18 +47,19 @@ public class PortForwardingConfig {
         if (!(obj instanceof PortForwardingConfig)) return false;
         PortForwardingConfig o = (PortForwardingConfig) obj;
         return Objects.equal(protocol, o.protocol) 
-                && Objects.equal(publicIp, o.publicIp) && Objects.equal(publicPort, o.publicPort)
-                && Objects.equal(target, o.target);
+                && Objects.equal(publicEndpoint, o.publicEndpoint) 
+                && Objects.equal(publicPortRange, o.publicPortRange) 
+                && Objects.equal(targetEndpoint, o.targetEndpoint);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(protocol, publicIp, publicPort, target);
+        return Objects.hashCode(protocol, publicEndpoint, publicPortRange, targetEndpoint);
     }
     
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("protocol", protocol).add("target", target)
-                .add("publicIp", publicIp).add("publicPort", publicPort).toString();
+        return Objects.toStringHelper(this).add("protocol", protocol).add("targetEndpoint", targetEndpoint)
+                .add("publicEndpoint", publicEndpoint).add("publicPortRange", publicPortRange).toString();
     }
 }

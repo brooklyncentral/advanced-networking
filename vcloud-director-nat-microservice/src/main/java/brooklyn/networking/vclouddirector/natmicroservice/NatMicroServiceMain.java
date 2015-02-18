@@ -23,8 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.BrooklynVersion;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
-import brooklyn.networking.vclouddirector.NatServiceDispatcher.TrustConfig;
+import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.util.ResourceUtils;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.exceptions.FatalConfigurationRuntimeException;
@@ -155,6 +156,10 @@ public class NatMicroServiceMain {
                 description = "local property file, giving the endpoints and trust-store details for each")
         public String endpointProperties;
 
+        @Option(name = { "--publicPortRange" }, required = false, title = "Public port range",
+                description = "Range of ports for auto-assigning the public port side (i.e. lookup what is free in that range and pick one automatically)")
+        public String publicPortRange;
+
         @Option(name = { "--bindAddress" }, title = "Bind address",
                 description = "Interface(s) to listen on")
         public String bindAddress = null;
@@ -167,7 +172,7 @@ public class NatMicroServiceMain {
         public Void call() throws Exception {
             log.info("Starting NAT micro-service");
             InputStream in = ResourceUtils.create(NatMicroServiceMain.class).getResourceFromUrl(endpointProperties);
-            Map<String, TrustConfig> endpoints;
+            Map<String, EndpointConfig> endpoints;
             try {
                 endpoints = PropertiesParser.parseProperties(in);
             } finally {
@@ -176,6 +181,7 @@ public class NatMicroServiceMain {
             
             NatServiceDispatcher dispatcher = NatServiceDispatcher.builder()
                     .endpoints(endpoints)
+                    .portRange(publicPortRange == null ? PortRanges.ANY_HIGH_PORT : PortRanges.fromString(publicPortRange))
                     .build();
             
             final NatMicroService service = NatMicroService.builder()

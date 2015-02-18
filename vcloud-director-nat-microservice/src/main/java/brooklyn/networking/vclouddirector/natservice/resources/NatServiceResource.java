@@ -22,19 +22,23 @@ import java.util.List;
 
 import javax.ws.rs.core.Response;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.vclouddirector.PortForwardingConfig;
 import brooklyn.networking.vclouddirector.natservice.api.NatServiceApi;
 import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.sdk.VCloudException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class NatServiceResource extends AbstractRestResource implements NatServiceApi {
 
@@ -60,20 +64,21 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     }
 
     @Override
-    public Response openPortForwarding(String endpoint,
+    public String openPortForwarding(String endpoint,
             String identity, String credential, String protocol,
-            String original, String translated) {
+            String original, String originalPortRange, String translated) {
+        LOG.info("creating nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
-        LOG.info("creating nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
+        Preconditions.checkArgument(translatedHostAndPort.hasPort(), "translated %s must include port", translated);
         try {
-            dispatcher().openPortForwarding(endpoint, identity, credential, new PortForwardingConfig()
+            HostAndPort result = dispatcher().openPortForwarding(endpoint, identity, credential, new PortForwardingConfig()
                     .protocol(Protocol.valueOf(protocol.toUpperCase()))
-                    .publicIp(originalHostAndPort.getHostText())
-                    .publicPort(originalHostAndPort.getPort())
-                    .target(translatedHostAndPort));
+                    .publicEndpoint(originalHostAndPort)
+                    .publicPortRange(Strings.isBlank(originalPortRange) ? null : PortRanges.fromString(originalPortRange))
+                    .targetEndpoint(translatedHostAndPort));
             
-            return Response.status(Response.Status.OK).build();
+            return result.toString();
         } catch (Exception e) {
             throw Exceptions.propagate(e);
         }
@@ -87,12 +92,13 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
         // TODO throw 404 if not found
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
+        Preconditions.checkArgument(originalHostAndPort.hasPort(), "original %s must include port", original);
+        Preconditions.checkArgument(translatedHostAndPort.hasPort(), "translated %s must include port", translated);
         try {
             dispatcher().closePortForwarding(endpoint, identity, credential, new PortForwardingConfig()
                     .protocol(Protocol.valueOf(protocol.toUpperCase()))
-                    .publicIp(originalHostAndPort.getHostText())
-                    .publicPort(originalHostAndPort.getPort())
-                    .target(translatedHostAndPort));
+                    .publicEndpoint(originalHostAndPort)
+                    .targetEndpoint(translatedHostAndPort));
             
             return Response.status(Response.Status.OK).build();
         } catch (Exception e) {
