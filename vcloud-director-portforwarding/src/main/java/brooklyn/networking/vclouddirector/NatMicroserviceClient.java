@@ -64,6 +64,7 @@ public class NatMicroserviceClient implements NatClient {
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + args.protocol
                 + "&original=" + args.publicEndpoint
+                + (args.publicPortRange == null ? "" : "&originalPortRange="+args.publicPortRange.toString())
                 + "&translated=" + args.targetEndpoint));
 
         HttpToolResponse response = HttpTool.httpPut(client, uri, ImmutableMap.<String, String>of(), new byte[0]);

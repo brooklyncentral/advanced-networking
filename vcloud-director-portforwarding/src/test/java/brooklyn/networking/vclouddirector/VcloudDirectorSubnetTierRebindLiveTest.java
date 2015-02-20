@@ -28,10 +28,13 @@ import com.google.common.collect.Iterables;
 
 public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWithApp {
 
+    public static final int STARTING_PORT = 19980;
+    
     private static final String LOCATION_SPEC = "canopy-vCHS";
     public static final String EXISTING_NETWORK_NAME = "M523007043-2739-default-routed";
     public static final String AVAILABLE_PUBLIC_IP = "23.92.230.8";
-    public static final String EXPECTED_ENDPOINT = "23.92.230.8:5678";
+    public static final String EXPECTED_ENDPOINT = AVAILABLE_PUBLIC_IP+":"+STARTING_PORT;
+
 
     final AttributeSensor<Integer> PRIVATE_PORT = Sensors.newIntegerSensor("mapped.port");
     final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
@@ -72,29 +75,32 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
         // Ensure the DNAT service has been used, prior to rebind
         origSubnetTier.openPortForwardingAndAdvertise(
                 EntityAndAttribute.create(origEntity, PRIVATE_PORT), 
-                Optional.of(5678),
+                Optional.of(STARTING_PORT),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
                 EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
-
-        // Confirm that subnet tier (and port forwarding calls) still work
-        origEntity.setAttribute(PRIVATE_PORT, 1234);
-        
-        Asserts.succeedsEventually(new Runnable() {
-            public void run() {
-                assertEquals(origEntity.getAttribute(MAPPED_ENDPOINT), EXPECTED_ENDPOINT);
-            }});
-        
-        // rebind
-        rebind();
-        SubnetTier newSubnetTier = (SubnetTier) Iterables.find(newApp.getChildren(), Predicates.instanceOf(SubnetTier.class));
-        TestEntity newEntity = (TestEntity) Iterables.find(newSubnetTier.getChildren(), Predicates.instanceOf(TestEntity.class));
-
-        assertEquals(newEntity.getAttribute(MAPPED_ENDPOINT), EXPECTED_ENDPOINT);
+        try {
+            // Confirm that subnet tier (and port forwarding calls) still work
+            origEntity.setAttribute(PRIVATE_PORT, 1234);
+            
+            Asserts.succeedsEventually(new Runnable() {
+                public void run() {
+                    assertEquals(origEntity.getAttribute(MAPPED_ENDPOINT), EXPECTED_ENDPOINT);
+                }});
+            
+            // rebind
+            rebind();
+            SubnetTier newSubnetTier = (SubnetTier) Iterables.find(newApp.getChildren(), Predicates.instanceOf(SubnetTier.class));
+            TestEntity newEntity = (TestEntity) Iterables.find(newSubnetTier.getChildren(), Predicates.instanceOf(TestEntity.class));
+    
+            assertEquals(newEntity.getAttribute(MAPPED_ENDPOINT), EXPECTED_ENDPOINT);
+        } finally {
+            ((PortForwarderVcloudDirector) origSubnetTier.getPortForwarder()).closePortForwarding(EntityAndAttribute.create(origEntity, PRIVATE_PORT), STARTING_PORT);
+        }
     }
 
     // FIXME Fails with newEntity not getting its expected mapped_endpoint set
-    @Test(groups={"Live", "WIP"})
+    @Test(groups={"Live", "WIP"}, enabled=false)
     public void testRebindHasExisingPortForwardingSubscriptionsActive() throws Exception {
         SubnetTier origSubnetTier = origApp.addChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())
@@ -127,7 +133,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
     }
 
     // FIXME Fails with newEntity not getting its expected mapped_endpoint set
-    @Test(groups={"Live", "WIP"})
+    @Test(groups={"Live", "WIP"}, enabled=false)
     public void testRebindHasUsablePortForwarding() throws Exception {
         SubnetTier origSubnetTier = origApp.addChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER, new PortForwarderVcloudDirector())

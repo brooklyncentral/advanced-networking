@@ -17,6 +17,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
 import brooklyn.test.Asserts;
@@ -41,7 +43,8 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
     public static final int STARTING_PORT = 19980;
-    
+    public static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString("19980-19999");
+
     protected JcloudsLocation loc;
     
     private String publicIp;
@@ -121,14 +124,17 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
     }
     
     @Test(groups="Live")
-    public void testOpenPortForwarding() throws Exception {
+    public void testOpenPortForwardingWithExplicitPortRange() throws Exception {
+        PortRange portRange = PortRanges.fromString((STARTING_PORT+5)+"-"+(STARTING_PORT+10));
+        
         HostAndPort result = client.openPortForwarding(new PortForwardingConfig()
                 .protocol(Protocol.TCP)
                 .publicEndpoint(HostAndPort.fromString(publicIp))
+                .publicPortRange(portRange)
                 .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
         try {
             assertEquals(result.getHostText(), publicIp, "result="+result);
-            assertTrue(result.getPort() >= STARTING_PORT, "result="+result);
+            assertTrue(contains(portRange, result.getPort()), "result="+result);
         } finally {
             if (result != null) {
                 client.closePortForwarding(new PortForwardingConfig()
@@ -137,5 +143,31 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
                         .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
             }
         }
+    }
+    
+    @Test(groups="Live")
+    public void testOpenPortForwarding() throws Exception {
+        HostAndPort result = client.openPortForwarding(new PortForwardingConfig()
+                .protocol(Protocol.TCP)
+                .publicEndpoint(HostAndPort.fromString(publicIp))
+                .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
+        try {
+            assertEquals(result.getHostText(), publicIp, "result="+result);
+            assertTrue(contains(DEFAULT_PORT_RANGE, result.getPort()), "result="+result);
+        } finally {
+            if (result != null) {
+                client.closePortForwarding(new PortForwardingConfig()
+                        .protocol(Protocol.TCP)
+                        .publicEndpoint(result)
+                        .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
+            }
+        }
+    }
+    
+    protected boolean contains(PortRange range, int port) {
+        for (int contender : range) {
+            if (contender == port) return true;
+        }
+        return false;
     }
 }
