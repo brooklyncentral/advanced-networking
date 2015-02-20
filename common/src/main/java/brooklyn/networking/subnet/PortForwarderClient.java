@@ -9,7 +9,10 @@ import brooklyn.util.exceptions.Exceptions;
 import com.google.common.base.Supplier;
 
 /** 
- * Kept for persisted state backwards compatibility
+ * Kept for persisted state backwards compatibility.
+ * 
+ * The inner classes are also preserved, along with the naming of anonymous inner classes (which
+ * by default will be $1, $2 etc in the order they are declared).
  * 
  * @deprecated since 0.7.0; use {@link brooklyn.networking.common.subnet.PortForwarderClient}
  */
@@ -19,6 +22,10 @@ public class PortForwarderClient extends brooklyn.networking.common.subnet.PortF
         super(supplier);
     }
     
+    /**
+     * This method will never be called. It is purely to contain the inner class for backwards compatibility, 
+     * preserving the parameter names etc.
+     */
     private static PortForwarder innerClass_fromMethodOnEntity(final Entity entity, final String getterMethodOnEntity) {
         return new PortForwarderClient(new Supplier<PortForwarder>() {
             @Override
@@ -37,6 +44,10 @@ public class PortForwarderClient extends brooklyn.networking.common.subnet.PortF
         });
     }
     
+    /**
+     * This method will never be called. It is purely to contain the inner class for backwards compatibility, 
+     * preserving the parameter names etc.
+     */
     private static PortForwarder innerClass_fromConfigOnEntity(final Entity entity, final ConfigKey<PortForwarder> configOnEntity) {
         return new PortForwarderClient(new Supplier<PortForwarder>() {
             @Override
@@ -49,6 +60,10 @@ public class PortForwarderClient extends brooklyn.networking.common.subnet.PortF
         });
     }
     
+    /**
+     * This method will never be called. It is purely to contain the inner class for backwards compatibility, 
+     * preserving the parameter names etc.
+     */
     private static PortForwarder innerClass_fromAttributeOnEntity(final Entity entity, final AttributeSensor<PortForwarder> attributeOnEntity) {
         return new PortForwarderClient(new Supplier<PortForwarder>() {
             @Override

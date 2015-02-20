@@ -15,7 +15,10 @@ import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
 /** 
- * Kept for persisted state backwards compatibility
+ * Kept for persisted state backwards compatibility.
+ * 
+ * The inner classes are also preserved, along with the naming of anonymous inner classes (which
+ * by default will be $1, $2 etc in the order they are declared).
  * 
  * @deprecated since 0.7.0; use {@link brooklyn.networking.common.subnet.PortForwarderAsyncImpl}
  */
@@ -30,6 +33,10 @@ public class PortForwarderAsyncImpl extends brooklyn.networking.common.subnet.Po
         this.portForwarder = portForwarder;
     }
 
+    /**
+     * This method will never be called. It is purely to contain the inner class for backwards compatibility, 
+     * preserving the parameter names etc.
+     */
     private void innerClass_openFirewallPortRangeAsync(final EntityAndAttribute<String> publicIp, final PortRange portRange, final Protocol protocol, final Cidr accessingCidr) {
         new Runnable() {
             public void run() {
@@ -37,6 +44,10 @@ public class PortForwarderAsyncImpl extends brooklyn.networking.common.subnet.Po
             }};
     }
 
+    /**
+     * This method will never be called. It is purely to contain the inner class for backwards compatibility, 
+     * preserving the parameter names etc.
+     */
     private void innerClass_openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> privatePort, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr, final EntityAndAttribute<String> whereToAdvertiseEndpoint) {
         new Runnable() {
@@ -53,6 +64,8 @@ public class PortForwarderAsyncImpl extends brooklyn.networking.common.subnet.Po
     }
 
     /**
+     * Kept for persisted state backwards compatibility.
+     * 
      * @deprecated since 0.7.0; use {@link brooklyn.networking.common.subnet.PortForwarderAsyncImpl.DeferredExecutor}
      */
     protected class DeferredExecutor<T> extends brooklyn.networking.common.subnet.PortForwarderAsyncImpl.DeferredExecutor<T> {
