@@ -47,6 +47,8 @@ public class NatDirectClient implements NatClient {
                 .endpoint(endpoint)
                 .identity(loc.getIdentity())
                 .credential(loc.getCredential())
+                .trustStore((String) loc.getAllConfigBag().getStringKey("trustStore"))
+                .trustStorePassword((String) loc.getAllConfigBag().getStringKey("trustStorePassword"))
                 .mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint))
                 .build();
     }

@@ -2,6 +2,7 @@ package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,13 +15,6 @@ import javax.xml.bind.JAXBElement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
@@ -50,6 +44,14 @@ import com.vmware.vcloud.sdk.admin.extensions.ExtensionQueryService;
 import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
+
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.os.Os;
+import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
 
 /**
  * For adding/removing NAT rules to vcloud-director.
@@ -477,8 +479,12 @@ public class NatService {
         return newVcloudClient(baseUrl, identity, credential, trustStore, trustStorePassword, logLevel);
     }
 
-    // FIXME Don't set sysprop as could affect all other activities of the JVM!
     protected VcloudClient newVcloudClient(String endpoint, String identity, String credential, String trustStore, String trustStorePassword, Level logLevel) {
+
+        if (trustStore == null) {
+            trustStore = getDefaultTrustStore();
+        }
+
         try {
             if (logLevel != null) {
                 // Logging is extremely verbose at INFO - it logs in full every http request/response (including payload).
@@ -493,6 +499,16 @@ public class NatService {
                 try {
                     vcloudClient = new VcloudClient(endpoint, version);
                     LOG.debug("VCloudClient - trying login to {} using {}", endpoint, version);
+
+                    // Performing Certificate Validation
+                    if (Strings.isNonBlank(trustStorePassword)) {
+                        LOG.debug("Registering HTTPS scheme using trustStore ='{}'", trustStore);
+                        vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance(trustStore, trustStorePassword));
+                    } else {
+                        LOG.warn("Registering HTTPS scheme using FakeSSLSocketFactory, as trustStore ='{}' and/or trustStorePassword are not valid.", trustStore);
+                                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+                    }
+
                     vcloudClient.login(identity, credential);
                     versionFound = true;
                     LOG.info("VCloudClient - Logged into {} using version {}", endpoint, version);
@@ -504,21 +520,27 @@ public class NatService {
             if (!versionFound) {
                 throw new IllegalStateException("Cannot login to " + endpoint + " using any of " + VCLOUD_VERSIONS);
             }
-            
-            // Performing Certificate Validation
-            if (Strings.isNonBlank(trustStore)) {
-                System.setProperty("javax.net.ssl.trustStore", trustStore);
-                System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
-                vcloudClient.registerScheme("https", 443, CustomSSLSocketFactory.getInstance());
-
-            } else {
-                LOG.warn("Ignoring the Certificate Validation using FakeSSLSocketFactory");
-                vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
-            }
             return vcloudClient;
         } catch (Exception e) {
             throw Exceptions.propagate(e);
         }
+    }
+
+    /**
+     * http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#InstallationAndCustomization
+     *
+     * @return the default truststore, jssecacerts, if it exists. Otherwise, cacerts
+     */
+    private String getDefaultTrustStore() {
+        String trustStore;
+        String trustStoreFolder = Os.mergePaths(System.getProperty("java.home"), "lib", "security");
+        trustStore = Os.mergePaths(trustStoreFolder, "jssecacerts");
+        if (!new File(trustStore).exists()) {
+            trustStore = Os.mergePaths(trustStoreFolder, "cacerts");
+        } else {
+            throw new IllegalStateException("Cannot find a valid default truststore (jssecacerts or cacerts) in " + trustStoreFolder);
+        }
+        return trustStore;
     }
 
     private GatewayNatRuleType generateGatewayNatRule(Protocol protocol, HostAndPort original,
