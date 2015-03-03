@@ -16,7 +16,8 @@ public class PortForwardingConfig {
     PortRange publicPortRange;
     
     public PortForwardingConfig protocol(Protocol val) {
-        this.protocol = val; return this;
+        this.protocol = val;
+        return this;
     }
     
     public PortForwardingConfig publicEndpoint(HostAndPort val) {
@@ -30,7 +31,8 @@ public class PortForwardingConfig {
     }
 
     public PortForwardingConfig targetEndpoint(HostAndPort val) {
-        this.targetEndpoint = val; return this;
+        this.targetEndpoint = val;
+        return this;
     }
     
     public void checkValid() {

@@ -432,7 +432,7 @@ public class NatService {
                     result.add(Integer.parseInt(rule.getGatewayNatRule().getOriginalPort()));
                 } catch (NumberFormatException e) {
                     // e.g. could be "any"
-                    LOG.debug("Gateway NAT Rule "+rule+" does not numberic original port; ignoring");
+                    LOG.debug("Gateway NAT Rule "+rule+" original port is not a number; ignoring");
                 }
             }
         }
