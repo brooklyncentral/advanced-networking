@@ -73,6 +73,13 @@
                 <exclude>**/*</exclude>
             </excludes>
         </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>release-tags.txt</include>
+            </includes>
+        </fileSet>
     </fileSets>
 
 </assembly>
