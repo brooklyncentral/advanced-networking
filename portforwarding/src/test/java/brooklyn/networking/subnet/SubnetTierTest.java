@@ -158,6 +158,27 @@ public class SubnetTierTest {
     }
 
     @Test
+    public void testUriTransformingEnricherWithDelayedPortMapping() throws Exception {
+        final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "publicEndpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+
+        entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, "http://" + machineAddress + ":80");
+
+        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+machineAddress+":"+80);
+
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
     public void testTransformUri() throws Exception {
         final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
 
