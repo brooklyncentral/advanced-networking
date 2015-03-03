@@ -25,7 +25,7 @@
     <parent>
         <groupId>io.brooklyn.networking</groupId>
         <artifactId>brooklyn-networking-parent</artifactId>
-        <version>0.7.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
+        <version>0.7.0-ea-cloudsoft.1</version> <!-- BROOKLYN_VERSION -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -42,7 +42,7 @@
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.jclouds.labs</groupId>
+                    <groupId>${jclouds.groupId}.labs</groupId>
                     <artifactId>vcloud-director</artifactId>
                 </exclusion>
             </exclusions>
@@ -53,7 +53,7 @@
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.jclouds.labs</groupId>
+                    <groupId>${jclouds.groupId}.labs</groupId>
                     <artifactId>vcloud-director</artifactId>
                 </exclusion>
             </exclusions>
@@ -84,7 +84,7 @@
             <version>${brooklyn.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.jclouds.labs</groupId>
+                    <groupId>${jclouds.groupId}.labs</groupId>
                     <artifactId>vcloud-director</artifactId>
                 </exclusion>
             </exclusions>
@@ -93,7 +93,7 @@
         <dependency>
             <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>vcloud-director</artifactId>
-            <version>1.8.2-alpha-cloudsoft.8</version>
+            <version>1.9.0-ea-cloudsoft.1</version>
         </dependency>
 
         <dependency>
