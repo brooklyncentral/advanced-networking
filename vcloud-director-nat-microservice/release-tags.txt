@@ -1,0 +1,20 @@
+# Cloudsoft DNAT micro-service
+
+## Upstream versions
+
+brooklyn:
+    VERSION: 0.7.0-SNAPSHOT
+    BRANCH:  https://github.com/apache/incubator-brooklyn/tree/master
+    COMMIT:  21d9a91fc31bb4b4b93cc77800cbe6643642cb01
+
+advanced-networking:
+    VERSION: 0.7.0-SNAPSHOT
+    BRANCH:  https://github.com/brooklyncentral/advanced-networking/tree/master
+    COMMIT:  b424b60fd9ddc28ed733f4075c2edcdf15caf889
+
+### Additional libs
+
+rest-api-schemas-5.5.0.jar and vcloud-java-sdk-5.5.0.jar:
+    Required for advanced-networking's vcloud-director.
+    Downloaded from VMware.
+    These can also be obtained from: ~/repos/brooklyncentral/advanced-networking/vcloud-director/lib/
