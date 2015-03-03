@@ -21,8 +21,11 @@ import java.net.URISyntaxException;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.event.basic.BasicSensorEvent;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.access.PortForwardManager.AssociationMetadata;
+
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +33,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.enricher.basic.Transformer;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.SensorEvent;
@@ -86,6 +90,8 @@ public class SubnetEnrichers {
         @SetFromFlag("subnetTier")
         public static final ConfigKey<SubnetTier> SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.uriTransformer.subnetTier");
 
+        private PortForwardManager.AssociationListener listener;
+        
         @Override
         public void init() {
             SubnetTier subnetTier = getConfig(SUBNET_TIER);
@@ -97,23 +103,41 @@ public class SubnetEnrichers {
         public void setEntity(EntityLocal entity) {
             super.setEntity(entity);
             checkArgument(getConfig(SOURCE_SENSOR) instanceof AttributeSensor, "expected SOURCE_SENSOR to be AttributeSensor, found %s", getConfig(SOURCE_SENSOR));
-            PortForwardManager.AssociationListener listener = new PortForwardManager.AssociationListener() {
-                public void onEvent(PortForwardManager.AssociationMetadata metadata) {
+            
+            listener = new PortForwardManager.AssociationListener() {
+                @Override
+                public void onAssociationCreated(AssociationMetadata metadata) {
                     Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(ImmutableList.of(metadata.getLocation()));
-                    String sensorVal = producer.getAttribute((AttributeSensor)sourceSensor).toString();
+                    Object sensorVal = producer.getAttribute((AttributeSensor<?>)sourceSensor);
                     if (sensorVal != null) {
-                        URI uri = URI.create(sensorVal);
+                        URI uri = URI.create(sensorVal.toString());
                         int port = uri.getPort();
                         if (machine.isPresent() && port != -1) {
                             if (metadata.getLocation().equals(machine.get()) && metadata.getPrivatePort() == port) {
                                 log.debug("Simulating sensor-event on new port-association {}, to trigger URI transformation by {}", new Object[] {metadata, UriTransformingEnricher.this});
-                                UriTransformingEnricher.this.onEvent(new BasicSensorEvent<Object>(sourceSensor, producer, sensorVal);
+                                UriTransformingEnricher.this.onEvent(new BasicSensorEvent<Object>(sourceSensor, producer, sensorVal));
                             }
                         }
                     }
                 }
+                @Override
+                public void onAssociationDeleted(AssociationMetadata metadata) {
+                    // no-op
+                }
             };
             getConfig(SUBNET_TIER).getPortForwardManager().addAssociationListener(listener, Predicates.alwaysTrue());
+        }
+        
+        @Override
+        public void destroy() {
+            try {
+                SubnetTier subnetTier = getConfig(SUBNET_TIER);
+                if (listener != null && subnetTier != null) {
+                    subnetTier.getPortForwardManager().removeAssociationListener(listener);
+                }
+            } finally {
+                super.destroy();
+            }
         }
     }
 

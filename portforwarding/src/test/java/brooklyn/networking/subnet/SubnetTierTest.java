@@ -157,6 +157,13 @@ public class SubnetTierTest {
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
+    /**
+     * Tests that the transformed URI is published, even if the port-mapping is only set after the 
+     * transforming enricher has processed the original attribute-changed event.
+     * 
+     * Prior to the bug fix, there was no listener registered for new port-forwardings. Therefore the
+     * enricher was never kicked off again so it never got the transformed URI.
+     */
     @Test
     public void testUriTransformingEnricherWithDelayedPortMapping() throws Exception {
         final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
@@ -170,6 +177,8 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.setAttribute(ENDPOINT, "http://" + machineAddress + ":80");
 
+        // Waiting for original URI value to be set means that the transforming enricher has 
+        // definitely processed the attribute-changed event. 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+machineAddress+":"+80);
 
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
