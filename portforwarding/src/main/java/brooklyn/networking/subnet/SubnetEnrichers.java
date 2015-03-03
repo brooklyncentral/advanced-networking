@@ -15,16 +15,10 @@
  */
 package brooklyn.networking.subnet;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.event.basic.BasicSensorEvent;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManager.AssociationMetadata;
-
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +27,14 @@ import brooklyn.config.ConfigKey;
 import brooklyn.enricher.basic.Transformer;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.SensorEvent;
+import brooklyn.event.basic.BasicSensorEvent;
 import brooklyn.location.MachineLocation;
+import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.access.PortForwardManager.AssociationMetadata;
 import brooklyn.location.basic.Machines;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.util.exceptions.Exceptions;
@@ -47,9 +44,9 @@ import brooklyn.util.text.Strings;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 public class SubnetEnrichers {
 
@@ -85,20 +82,25 @@ public class SubnetEnrichers {
                 .configure(HostAndPortTransformingEnricher.TARGET_SENSOR, target);
     }
 
-    public static class UriTransformingEnricher extends Transformer<Object, String> {
+    public static abstract class AbstractNatTransformingEnricher<T,U> extends Transformer<T,U> {
 
+        // TODO Would like to just use SUBNET_TIER ConfigKey here, but for sub-types the persisted state 
+        // may use the old name (enricher.uriTransformer.subnetTier)!
+        
         @SetFromFlag("subnetTier")
-        public static final ConfigKey<SubnetTier> SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.uriTransformer.subnetTier");
+        public static final ConfigKey<SubnetTier> SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.transformer.subnetTier");
 
         private PortForwardManager.AssociationListener listener;
         
-        @Override
-        public void init() {
-            SubnetTier subnetTier = getConfig(SUBNET_TIER);
-            setConfig(TRANSFORMATION_FROM_EVENT, new UriTransformingFunction(subnetTier));
-            setConfig(SUPPRESS_DUPLICATES, true);
+        protected abstract Integer extractPrivatePort(T sensorVal);
+        
+        /**
+         * For overriding by sub-types for backwards compatibility of persisted state, where the config key may have been different.
+         */
+        protected SubnetTier getSubnetTier() {
+            return getConfig(SUBNET_TIER);
         }
-
+        
         @Override
         public void setEntity(EntityLocal entity) {
             super.setEntity(entity);
@@ -108,14 +110,13 @@ public class SubnetEnrichers {
                 @Override
                 public void onAssociationCreated(AssociationMetadata metadata) {
                     Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(ImmutableList.of(metadata.getLocation()));
-                    Object sensorVal = producer.getAttribute((AttributeSensor<?>)sourceSensor);
-                    if (sensorVal != null) {
-                        URI uri = URI.create(sensorVal.toString());
-                        int port = uri.getPort();
-                        if (machine.isPresent() && port != -1) {
+                    T sensorVal = producer.getAttribute((AttributeSensor<T>)sourceSensor);
+                    if (machine.isPresent() && sensorVal != null) {
+                        Integer port = extractPrivatePort(sensorVal);
+                        if (port != null && port != -1) {
                             if (metadata.getLocation().equals(machine.get()) && metadata.getPrivatePort() == port) {
-                                log.debug("Simulating sensor-event on new port-association {}, to trigger URI transformation by {}", new Object[] {metadata, UriTransformingEnricher.this});
-                                UriTransformingEnricher.this.onEvent(new BasicSensorEvent<Object>(sourceSensor, producer, sensorVal));
+                                log.debug("Simulating sensor-event on new port-association {}, to trigger transformation by {}", new Object[] {metadata, AbstractNatTransformingEnricher.this});
+                                AbstractNatTransformingEnricher.this.onEvent(new BasicSensorEvent<T>(sourceSensor, producer, sensorVal));
                             }
                         }
                     }
@@ -132,12 +133,40 @@ public class SubnetEnrichers {
         public void destroy() {
             try {
                 SubnetTier subnetTier = getConfig(SUBNET_TIER);
-                if (listener != null && subnetTier != null) {
+                if (listener != null && subnetTier != null && subnetTier.getPortForwardManager() != null) {
                     subnetTier.getPortForwardManager().removeAssociationListener(listener);
                 }
             } finally {
                 super.destroy();
             }
+        }
+    }
+
+
+    public static class UriTransformingEnricher extends AbstractNatTransformingEnricher<Object, String> {
+
+        public static final ConfigKey<SubnetTier> DEPRECATED_SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.uriTransformer.subnetTier");
+
+        @Override
+        protected SubnetTier getSubnetTier() {
+            SubnetTier result = super.getSubnetTier();
+            if (result == null) {
+                result = getConfig(DEPRECATED_SUBNET_TIER);
+            }
+            return result;
+        }
+        
+        @Override
+        protected Integer extractPrivatePort(Object sensorVal) {
+            URI uri = URI.create(sensorVal.toString());
+            return uri.getPort();
+        }
+        
+        @Override
+        public void init() {
+            SubnetTier subnetTier = getConfig(SUBNET_TIER);
+            config().set(TRANSFORMATION_FROM_EVENT, new UriTransformingFunction(subnetTier));
+            config().set(SUPPRESS_DUPLICATES, true);
         }
     }
 
@@ -185,14 +214,27 @@ public class SubnetEnrichers {
         }
     }
 
-    public static class HostAndPortTransformingEnricher extends Transformer<Object, String> {
+    public static class HostAndPortTransformingEnricher extends AbstractNatTransformingEnricher<Integer, String> {
 
-        @SetFromFlag("subnetTier")
-        public static final ConfigKey<SubnetTier> SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.uriTransformer.subnetTier");
+        public static final ConfigKey<SubnetTier> DEPRECATED_SUBNET_TIER = ConfigKeys.newConfigKey(SubnetTier.class, "enricher.uriTransformer.subnetTier");
+
+        @Override
+        protected SubnetTier getSubnetTier() {
+            SubnetTier result = super.getSubnetTier();
+            if (result == null) {
+                result = getConfig(DEPRECATED_SUBNET_TIER);
+            }
+            return result;
+        }
+        
+        @Override
+        protected Integer extractPrivatePort(Integer sensorVal) {
+            return sensorVal;
+        }
 
         public void init() {
             SubnetTier subnetTier = getConfig(SUBNET_TIER);
-            setConfig(TRANSFORMATION_FROM_EVENT, new HostAndPortTransformingFunction(subnetTier));
+            config().set(TRANSFORMATION_FROM_EVENT, new HostAndPortTransformingFunction(subnetTier));
         }
     }
 

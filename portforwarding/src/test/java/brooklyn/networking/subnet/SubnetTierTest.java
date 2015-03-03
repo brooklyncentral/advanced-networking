@@ -17,6 +17,7 @@ package brooklyn.networking.subnet;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.SensorEvent;
+import brooklyn.event.SensorEventListener;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.Location;
@@ -44,6 +47,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.portforwarding.NoopPortForwarder;
+import brooklyn.test.Asserts;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.test.entity.TestEntity;
@@ -51,10 +55,12 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.time.Duration;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
@@ -140,6 +146,33 @@ public class SubnetTierTest {
     }
 
     @Test
+    public void testHostAndPortTransformingEnricherWithDelayedPortMapping() throws Exception {
+        final AttributeSensor<Integer> TARGET_PORT = new BasicAttributeSensor<Integer>(Integer.class, "target.port");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "publicEndpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
+        entity.subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
+
+        entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
+                new EntityAndAttribute<Integer>(entity, TARGET_PORT),
+                PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(TARGET_PORT, 80);
+
+        // TODO It sets the sensor to null (!). We'll rely on that for now, but feels like it 
+        // shouldn't bother setting it at all!
+        sensorListener.assertEventEventually(Duration.THIRTY_SECONDS);
+
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+    }
+
+    @Test
     public void testUriTransformingEnricher() throws Exception {
         final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
         final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "publicEndpoint");
@@ -171,15 +204,18 @@ public class SubnetTierTest {
 
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
+        RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
+        entity.subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
 
         entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.setAttribute(ENDPOINT, "http://" + machineAddress + ":80");
 
-        // Waiting for original URI value to be set means that the transforming enricher has 
-        // definitely processed the attribute-changed event. 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+machineAddress+":"+80);
+        // TODO It sets the sensor to the original (unmapped) value. However, that is different
+        // behaviour from transformPort or transformHostAndPortEnricher which both just set the
+        // propagated sensor to null.
+        sensorListener.assertEventEventually(Duration.THIRTY_SECONDS);
 
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
@@ -223,6 +259,29 @@ public class SubnetTierTest {
     }
 
     @Test
+    public void testTransformUriWithDelayedPortMapping() throws Exception {
+        final AttributeSensor<String> ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "mapped.endpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
+        entity.subscribe(app, PUBLIC_ENDPOINT, sensorListener);
+
+        subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT), new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+
+        sensorListener.assertEventEventually(Duration.THIRTY_SECONDS);
+
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+    }
+
+    @Test
     public void testTransformPort() throws Exception {
         final AttributeSensor<Integer> ENDPOINT = Sensors.newIntegerSensor("endpoint");
         final AttributeSensor<String> PUBLIC_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
@@ -241,6 +300,31 @@ public class SubnetTierTest {
     }
 
     @Test
+    public void testTransformPortDelayedPortMapping() throws Exception {
+        final AttributeSensor<Integer> ENDPOINT = Sensors.newIntegerSensor("endpoint");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
+
+        String publicIpId = "mypublicipid";
+        String publicAddress = "5.6.7.8";
+        RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
+        entity.subscribe(app, PUBLIC_ENDPOINT, sensorListener);
+
+        subnetTier.transformPort(EntityAndAttribute.create(entity, ENDPOINT), EntityAndAttribute.create(app, PUBLIC_ENDPOINT));
+
+        entity.addLocations(ImmutableList.of(simulatedMachine));
+        entity.setAttribute(ENDPOINT, 80);
+        
+        // TODO It sets the sensor to null (!). We'll rely on that for now, but feels like it 
+        // shouldn't bother setting it at all!
+        sensorListener.assertEventEventually(Duration.THIRTY_SECONDS);
+
+        portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
+        portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
+
+        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+    }
+
+    @Test
     public void testConfigurePortForwarderType() throws Exception {
         SubnetTier subnetTier2 = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDER_TYPE, NoopPortForwarder.class.getName()));
@@ -248,6 +332,22 @@ public class SubnetTierTest {
         assertEquals(subnetTier2.getAttribute(SubnetTierImpl.PORT_FORWARDER_LIVE).getClass(), NoopPortForwarder.class);
     }
 
+    public static class RecordingSensorEventListener implements SensorEventListener<Object> {
+        public final List<SensorEvent<Object>> events = Lists.newCopyOnWriteArrayList();
+        
+        @Override
+        public void onEvent(SensorEvent<Object> event) {
+            events.add(event);
+        }
+        
+        public void assertEventEventually(Duration timeout) {
+            Asserts.succeedsEventually(new Runnable() {
+                @Override public void run() {
+                    assertTrue(events.size() > 0);
+                }});
+        }
+    }
+    
     public static class StubPortForwarder implements PortForwarder {
         final Map<HostAndPort, HostAndPort> mapping;
 
