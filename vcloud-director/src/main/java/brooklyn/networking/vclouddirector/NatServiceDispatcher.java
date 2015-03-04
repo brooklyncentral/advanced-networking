@@ -1,8 +1,10 @@
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +18,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.task.SingleThreadedScheduler;
 
@@ -59,14 +63,18 @@ public class NatServiceDispatcher {
 
     public static class Builder {
         private Level logLevel;
-        private Map<String, TrustConfig> endpoints = Maps.newLinkedHashMap();
+        private Map<String, EndpointConfig> endpoints = Maps.newLinkedHashMap();
+        private PortRange defaultPortRange = PortRanges.ANY_HIGH_PORT;
         
-        public Builder endpoint(String endpoint, TrustConfig trustConfig) {
+        public Builder endpoint(String endpoint, EndpointConfig trustConfig) {
             endpoints.put(checkNotNull(endpoint, "endpoint"), checkNotNull(trustConfig, "trustConfig"));
             return this;
         }
-        public Builder endpoints(Map<String, TrustConfig> vals) {
+        public Builder endpoints(Map<String, EndpointConfig> vals) {
             this.endpoints.putAll(vals); return this;
+        }
+        public Builder portRange(PortRange val) {
+            this.defaultPortRange = val; return this;
         }
         public Builder logLevel(java.util.logging.Level val) {
             this.logLevel = val; return this;
@@ -76,29 +84,37 @@ public class NatServiceDispatcher {
         }
     }
     
-    public static class TrustConfig {
-        private String trustStore;
-        private String trustStorePassword;
+    public static class EndpointConfig {
+        private final PortRange portRange;
+        private final String trustStore;
+        private final String trustStorePassword;
         
-        public TrustConfig(String trustStore, String trustStorePassword) {
+        public EndpointConfig(PortRange portRange, String trustStore, String trustStorePassword) {
+            this.portRange = portRange;
             this.trustStore = trustStore;
             this.trustStorePassword = trustStorePassword;
         }
         
         @Override
         public int hashCode() {
-            return Objects.hashCode(trustStore, trustStorePassword);
+            return Objects.hashCode(portRange, trustStore, trustStorePassword);
         }
         
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof TrustConfig && trustStore.equals(((TrustConfig)obj).trustStore) 
-                    && trustStorePassword.equals(((TrustConfig)obj).trustStorePassword);
+            return obj instanceof EndpointConfig
+                    && Objects.equal(portRange, ((EndpointConfig)obj).portRange)
+                    && Objects.equal(trustStore, ((EndpointConfig)obj).trustStore) 
+                    && Objects.equal(trustStorePassword, ((EndpointConfig)obj).trustStorePassword);
         }
         
         @Override
         public String toString() {
-            return trustStore+":********)";
+            return Objects.toStringHelper(this)
+                    .add("trustStore", trustStore)
+                    .add("trustStorePassword", (trustStorePassword == null) ? null : "********")
+                    .add("portRange", portRange)
+                    .toString();
         }
     }
     
@@ -153,6 +169,11 @@ public class NatServiceDispatcher {
         public boolean setException(Throwable throwable) {
             return super.setException(throwable);
         }
+        
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this).add("type", actionType).add("args", args).toString();
+        }
     }
     
     private final static class UncaughtExceptionHandlerImplementation implements Thread.UncaughtExceptionHandler {
@@ -162,9 +183,9 @@ public class NatServiceDispatcher {
         }
     }
 
-    private final Map<String, TrustConfig> endpoints;
+    private final Map<String, EndpointConfig> endpoints;
+    private final PortRange defaultPortRange;
     private final Level logLevel;
-    
     private final ExecutorService executor;
 
     private final Map<String, SingleThreadedScheduler> workers = Maps.newLinkedHashMap();
@@ -173,7 +194,8 @@ public class NatServiceDispatcher {
     private final Map<String, Object> mutexes = Maps.newConcurrentMap(); // keyed by endpoint URL
     
     public NatServiceDispatcher(Builder builder) {
-        endpoints = ImmutableMap.copyOf(builder.endpoints );
+        endpoints = ImmutableMap.copyOf(builder.endpoints);
+        defaultPortRange = builder.defaultPortRange;
         logLevel = builder.logLevel;
         
         executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
@@ -265,15 +287,26 @@ public class NatServiceDispatcher {
             NatService service = getService(creds);
             
             NatService.Delta delta = new NatService.Delta().toOpen(toOpen).toClose(toClose);
-            service.updatePortForwarding(delta);
+            NatService.UpdateResult updated = service.updatePortForwarding(delta);
+            Iterator<PortForwardingConfig> opened = updated.getOpened().iterator();
             
             for (NatServiceAction action : actions) {
                 switch (action.actionType) {
                 case OPEN:
-                    action.set(HostAndPort.fromParts(action.args.publicIp, action.args.publicPort));
+                    // The original action may not have specified the port; get that from the result.
+                    // check that the result looks sane (i.e. unlikely that order has messed up etc).
+                    PortForwardingConfig result = opened.next();
+                    if (action.args.publicEndpoint.hasPort()) {
+                        checkState(result.publicEndpoint.equals(action.args.publicEndpoint), 
+                                "result=%s; action=%s", result.publicEndpoint, action);
+                    } else {
+                        checkState(result.publicEndpoint.getHostText().equals(action.args.publicEndpoint.getHostText()), 
+                                "result=%s; action=%s", result.publicEndpoint, action);
+                    }
+                    action.set(result.publicEndpoint);
                     break;
                 case CLOSE:
-                    action.set(HostAndPort.fromParts(action.args.publicIp, action.args.publicPort));
+                    action.set(action.args.publicEndpoint);
                     break;
                 }
             }
@@ -299,16 +332,19 @@ public class NatServiceDispatcher {
         synchronized (clients) {
             NatService result = clients.get(creds);
             if (result == null) {
-                TrustConfig trustConfig = endpoints.get(creds.endpoint);
-                if (trustConfig == null) {
+                EndpointConfig endpointConfig = endpoints.get(creds.endpoint);
+                if (endpointConfig == null) {
                     throw new IllegalArgumentException("Unknown endpoint "+creds.endpoint+" (identity "+creds.identity+")");
                 }
+                PortRange portRange = (endpointConfig.portRange == null) ? defaultPortRange : endpointConfig.portRange;
+                
                 result = NatService.builder()
                         .identity(creds.identity)
                         .credential(creds.credential)
                         .endpoint(creds.endpoint)
-                        .trustStore(trustConfig.trustStore)
-                        .trustStorePassword(trustConfig.trustStorePassword)
+                        .trustStore(endpointConfig.trustStore)
+                        .trustStorePassword(endpointConfig.trustStorePassword)
+                        .portRange(portRange)
                         .logLevel(logLevel)
                         .mutex(mutex)
                         .build();

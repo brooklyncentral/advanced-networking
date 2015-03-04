@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import brooklyn.networking.vclouddirector.NatServiceDispatcher.TrustConfig;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.os.Os;
 import brooklyn.util.stream.Streams;
@@ -21,19 +23,20 @@ import com.google.common.collect.Maps;
 public class PropertiesParser {
 
     public static final String ENDPOINT_SUFFIX = ".endpoint";
+    public static final String PORT_RANGE_SUFFIX = ".portRange";
     public static final String TURST_STORE_SUFFIX = ".trustStore";
     public static final String TURST_STORE_PASSWORD_SUFFIX = ".trustStorePassword";
 
-    public static Map<String, TrustConfig> parseProperties(String file) {
+    public static Map<String, EndpointConfig> parseProperties(String file) {
         return parseProperties(loadProperties(file));
     }
 
-    public static Map<String, TrustConfig> parseProperties(InputStream in) {
+    public static Map<String, EndpointConfig> parseProperties(InputStream in) {
         return parseProperties(loadProperties(in));
     }
     
-    public static Map<String, TrustConfig> parseProperties(Properties props) {
-        Map<String, TrustConfig> result = Maps.newLinkedHashMap();
+    public static Map<String, EndpointConfig> parseProperties(Properties props) {
+        Map<String, EndpointConfig> result = Maps.newLinkedHashMap();
         List<String> namePrefixes = Lists.newArrayList();
         for (Enumeration<?> names = props.propertyNames(); names.hasMoreElements();) {
             String name = (String) names.nextElement();
@@ -44,9 +47,11 @@ public class PropertiesParser {
         }
         for (Object namePrefix : namePrefixes) {
             String endpoint = props.getProperty(namePrefix + ENDPOINT_SUFFIX);
+            String portRangeStr = props.getProperty(namePrefix + PORT_RANGE_SUFFIX);
+            PortRange portRange = (portRangeStr == null) ? null : PortRanges.fromString(portRangeStr);
             String trustStore = props.getProperty(namePrefix + TURST_STORE_SUFFIX);
             String trustStorePassword = props.getProperty(namePrefix + TURST_STORE_PASSWORD_SUFFIX);
-            result.put(endpoint, new TrustConfig(trustStore, trustStorePassword));
+            result.put(endpoint, new EndpointConfig(portRange, trustStore, trustStorePassword));
         }
         return result;
     }

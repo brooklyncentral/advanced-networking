@@ -46,12 +46,12 @@ public interface NatServiceApi {
 
     @PUT
     @ApiOperation(value = "Opens port forwarding",
-            notes="Returns the return value (status 200) on success")
+            notes="Returns the public ip:port (status 200) on success")
     @ApiErrors(value = {
-            @ApiError(code = 404, reason = "Could not find application, entity or effector")
+            @ApiError(code = 404, reason = "Could not find ???") // TODO
             })
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_FORM_URLENCODED})
-    public Response openPortForwarding(
+    public String openPortForwarding(
             @ApiParam(name = "endpoint", value = "Cloud endpoint URL", required = true)
             @QueryParam("endpoint") String endpoint,
 
@@ -64,8 +64,11 @@ public interface NatServiceApi {
             @ApiParam(name = "protocol", value = "Protocol", required = true)
             @QueryParam("protocol") String protocoll,
 
-            @ApiParam(name = "original", value = "Original (i.e. public-side) ip:port", required = true)
+            @ApiParam(name = "original", value = "Original (i.e. public-side) ip or ip:port", required = true)
             @QueryParam("original") String original,
+            
+            @ApiParam(name = "originalPortRange", value = "Original (i.e. public-side) port range (must not be set if 'original' includes port)")
+            @QueryParam("originalPortRange") String originalPortRange,
             
             @ApiParam(name = "translated", value = "Translated (i.e. private-side) ip:port", required = true)
             @QueryParam("translated") String translated

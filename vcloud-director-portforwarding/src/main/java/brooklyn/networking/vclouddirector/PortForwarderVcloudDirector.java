@@ -20,6 +20,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.basic.BrooklynObjectInternal.ConfigurationSupportInternal;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
@@ -35,6 +36,7 @@ import brooklyn.management.ManagementContext;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
@@ -68,7 +70,18 @@ public class PortForwarderVcloudDirector implements PortForwarder {
 
     public static final ConfigKey<String> NAT_MICROSERVICE_ENDPOINT = ConfigKeys.newStringConfigKey(
             "advancednetworking.vcloud.network.microservice.endpoint",
-            "URL for the NAT micro-service, to be used for updating the Edge Gateway; if absent, will use vcloud directly");
+            "URL for the vCD NAT micro-service, to be used for updating the Edge Gateway; if absent, will use vcloud directly");
+    
+    public static final ConfigKey<Boolean> NAT_MICROSERVICE_AUTO_ALLOCATES_PORT = ConfigKeys.newBooleanConfigKey(
+            "advancednetworking.vcloud.network.microserviceAutoAllocatesPort",
+            "Whether the vCD NAT micro-service auto-allocates the port, or if an explicit public port should always be passed to it. "
+                    + "Defaults to false, but this will change in a future release.",
+            false);
+    
+    public static final ConfigKey<PortRange> PORT_RANGE = ConfigKeys.newConfigKey(
+            PortRange.class,
+            "advancednetworking.vcloud.network.portRange",
+            "Port-range to use for public-side when auto-allocating ports for NAT rules");
     
     private PortForwardManager portForwardManager;
 
@@ -76,8 +89,13 @@ public class PortForwarderVcloudDirector implements PortForwarder {
 
     private JcloudsLocation jcloudsLocation;
 
-    // Always access via #getClient(), to support rebind
+    private ManagementContext managementContext;
+    
+    // To support rebind, always access via #getClient(), #getPortRange() and #getNatMicroserviceAutoAllocatesPorts()
+    // For portRange/natMicroserviceAutoAllocatingPorts, this allows re-configuration on restart.
     private volatile transient NatClient client;
+    private volatile transient PortRange portRange;
+    private volatile transient Boolean natMicroserviceAutoAllocatesPorts;
 
     public PortForwarderVcloudDirector() {
     }
@@ -91,6 +109,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         if (portForwardManager == null) {
             portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
         }
+        this.managementContext = managementContext;
     }
 
     @Override
@@ -103,6 +122,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         subnetTier = (SubnetTier) owner;
         jcloudsLocation = (JcloudsLocation) Iterables.find(locations, Predicates.instanceOf(JcloudsLocation.class));
         getClient(); // force load of client: fail fast if configuration is missing
+        getPortRange();
+        getNatMicroserviceAutoAllocatesPorts();
     }
 
     @Override
@@ -146,65 +167,82 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     }
     
     @Override
-    public HostAndPort openPortForwarding(HostAndPort target, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
+    public HostAndPort openPortForwarding(HostAndPort targetEndpoint, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
         // TODO should associate ip:port with PortForwardManager; but that takes location param
         //      getPortForwardManager().associate(publicIp, publicPort, targetVm, targetPort);
         // TODO Could check old mapping, and re-use that public port
         // TODO Pass cidr in vcloud-director call
-        PortForwardManager pfw = getPortForwardManager();
         String publicIp = subnetTier.getConfig(NETWORK_PUBLIC_IP);
 
-        int publicPort;
+        HostAndPort publicEndpoint;
+        PortRange portRangeToUse;
         if (optionalPublicPort.isPresent()) {
-            publicPort = optionalPublicPort.get();
+            publicEndpoint = HostAndPort.fromParts(publicIp, optionalPublicPort.get());
+            portRangeToUse = null;
+        } else if (getNatMicroserviceAutoAllocatesPorts()) {
+            publicEndpoint = HostAndPort.fromString(publicIp);
+            portRangeToUse = getPortRange();
         } else {
-            publicPort = pfw.acquirePublicPort(publicIp);
+            PortForwardManager pfw = getPortForwardManager();
+            int publicPort = pfw.acquirePublicPort(publicIp);
+            publicEndpoint = HostAndPort.fromParts(publicIp, publicPort);
+            portRangeToUse = null;
         }
         
         try {
             HostAndPort result = getClient().openPortForwarding(new PortForwardingConfig()
-                    .publicIp(publicIp)
                     .protocol(Protocol.TCP)
-                    .target(target)
-                    .publicPort(publicPort));
-            LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {target, result, subnetTier});
+                    .publicEndpoint(publicEndpoint)
+                    .publicPortRange(portRangeToUse)
+                    .targetEndpoint(targetEndpoint));
+            
+            // TODO Work around for old vCD NAT microservice, which returned empty result
+            if (!result.hasPort() && result.getHostText().equals("")) {
+                if (publicEndpoint.hasPort()) {
+                    LOG.warn("[DEPRECATED] NAT Rule addition returned endpoint '{}'; probably old micro-service version; "
+                            + "assuming result is {}->{} via {}", new Object[] {result, publicEndpoint, targetEndpoint, subnetTier});
+                    result = publicEndpoint;
+                } else {
+                    throw new IllegalStateException("Invalid result for NAT Rule addition, returned endpoint ''; "
+                            + "cannot infer actual result as no explicit port requested for "
+                            + publicEndpoint+"->"+targetEndpoint+" via "+subnetTier);
+                }                    
+            }
+            
+            LOG.debug("Enabled port-forwarding for {}, via {}, on ", new Object[] {targetEndpoint, result, subnetTier});
             return result;
-        } catch (IllegalArgumentException e) {
-            // Can get this if the publicIp is not valid for this network.
-            throw Exceptions.propagate(e);
         } catch (Exception e) {
-            LOG.error("Failed creating port forwarding rule on "+this+" to "+target, e);
-            // it might already be created, so don't crash and burn too hard!
-            return HostAndPort.fromParts(publicIp, publicPort);
+            Exceptions.propagateIfFatal(e);
+            LOG.info("Failed creating port forwarding rule on "+this+": "+publicEndpoint+"->"+targetEndpoint+"; rethrowing", e);
+            throw Exceptions.propagate(e);
         }
     }
 
     @Override
-    public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
+    public boolean closePortForwarding(HostAndPort targetEndpoint, HostAndPort publicEndpoint, Protocol protocol) {
         try {
             HostAndPort result = getClient().closePortForwarding(new PortForwardingConfig()
-                    .publicIp(publicSide.getHostText())
-                    .publicPort(publicSide.getPort())
-                    .target(targetSide)
+                    .publicEndpoint(publicEndpoint)
+                    .targetEndpoint(targetEndpoint)
                     .protocol(Protocol.TCP));
-            LOG.debug("Deleted port-forwarding for {}, via {}, on {}", new Object[]{targetSide, result, subnetTier});
+            LOG.debug("Deleted port-forwarding for {}, via {}, on {}", new Object[]{targetEndpoint, result, subnetTier});
             return true;
         } catch (Exception e) {
-            LOG.warn("Failed to close port-forwarding rule on " + this + " to " + targetSide, e);
+            LOG.warn("Failed to close port-forwarding rule on " + this + " to " + targetEndpoint, e);
             return false;
         }
 
     }
     
     @Override
-    public boolean closePortForwarding(HasNetworkAddresses targetMachine, int targetPort, HostAndPort publicSide, Protocol protocol) {
+    public boolean closePortForwarding(HasNetworkAddresses targetMachine, int targetPort, HostAndPort publicEndpoint, Protocol protocol) {
         String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
         if (targetIp==null) {
-            LOG.warn("Failed to close port-forwarding rule because no IP in {}, on {}: {} -> {}", new Object[] {targetMachine, this, targetPort, publicSide});
+            LOG.warn("Failed to close port-forwarding rule because no IP in {}, on {}: {} -> {}", new Object[] {targetMachine, this, targetPort, publicEndpoint});
             return false;
         }
 
-        return closePortForwarding(HostAndPort.fromParts(targetIp, targetPort), publicSide, protocol);
+        return closePortForwarding(HostAndPort.fromParts(targetIp, targetPort), publicEndpoint, protocol);
     }
 
     /**
@@ -232,14 +270,46 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     }
 
     // For rebind, always access via getter so can recreate the service after rebind
-    private NatClient getClient() {
+    protected NatClient getClient() {
         if (client == null) {
-            if (subnetTier.getConfig(NAT_MICROSERVICE_ENDPOINT) == null) {
+            String microserviceUrl = subnetTier.config().get(NAT_MICROSERVICE_ENDPOINT);
+            if (microserviceUrl == null) {
+                microserviceUrl = managementContext.getConfig().getConfig(NAT_MICROSERVICE_ENDPOINT);
+            }
+
+            if (microserviceUrl == null) {
                 client = new NatDirectClient(jcloudsLocation);
             } else {
-                client = new NatMicroserviceClient(subnetTier.getConfig(NAT_MICROSERVICE_ENDPOINT), jcloudsLocation);
+                client = new NatMicroserviceClient(microserviceUrl, jcloudsLocation);
             }
         }
         return client;
+    }
+    
+    protected boolean getNatMicroserviceAutoAllocatesPorts() {
+        if (natMicroserviceAutoAllocatesPorts == null) {
+            Maybe<Object> raw = ((ConfigurationSupportInternal)subnetTier.config()).getRaw(NAT_MICROSERVICE_AUTO_ALLOCATES_PORT);
+            if (raw.isPresent()) {
+                natMicroserviceAutoAllocatesPorts = subnetTier.config().get(NAT_MICROSERVICE_AUTO_ALLOCATES_PORT);
+            }
+            if (natMicroserviceAutoAllocatesPorts == null) {
+                natMicroserviceAutoAllocatesPorts = managementContext.getConfig().getConfig(NAT_MICROSERVICE_AUTO_ALLOCATES_PORT);
+            }
+        }
+        return Boolean.TRUE.equals(natMicroserviceAutoAllocatesPorts);
+    }
+    
+    protected PortRange getPortRange() {
+        if (portRange == null) {
+            portRange = subnetTier.getConfig(PORT_RANGE);
+            if (portRange == null) {
+                portRange = managementContext.getConfig().getConfig(PORT_RANGE);
+            }
+            if (portRange == null) {
+                int startingPort = managementContext.getConfig().getConfig(PortForwardManager.PORT_FORWARD_MANAGER_STARTING_PORT);
+                portRange = PortRanges.fromString(startingPort+"+");
+            }
+        }
+        return portRange;
     }
 }
