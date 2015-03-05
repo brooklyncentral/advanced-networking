@@ -75,8 +75,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     public static final ConfigKey<Boolean> NAT_MICROSERVICE_AUTO_ALLOCATES_PORT = ConfigKeys.newBooleanConfigKey(
             "advancednetworking.vcloud.network.microserviceAutoAllocatesPort",
             "Whether the vCD NAT micro-service auto-allocates the port, or if an explicit public port should always be passed to it. "
-                    + "Defaults to false, but this will change in a future release.",
-            false);
+                    + "Defaults to true.",
+            true);
     
     public static final ConfigKey<PortRange> PORT_RANGE = ConfigKeys.newConfigKey(
             PortRange.class,
@@ -302,6 +302,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
     protected PortRange getPortRange() {
         if (portRange == null) {
             portRange = subnetTier.getConfig(PORT_RANGE);
+            if (portRange == null && jcloudsLocation != null) {
+                portRange = jcloudsLocation.getConfig(PORT_RANGE);
+            }
             if (portRange == null) {
                 portRange = managementContext.getConfig().getConfig(PORT_RANGE);
             }

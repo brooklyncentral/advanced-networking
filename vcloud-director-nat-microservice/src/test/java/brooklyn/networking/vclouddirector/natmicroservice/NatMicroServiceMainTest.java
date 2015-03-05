@@ -4,6 +4,7 @@ import static org.testng.Assert.assertTrue;
 import io.airlift.command.ParseOptionMissingException;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.concurrent.Callable;
 
@@ -74,15 +75,18 @@ public class NatMicroServiceMainTest {
     
     @Test
     public void testLaunchFailsIfInvalidPortRange() throws Exception {
+        File propertiesFile = File.createTempFile("endpoints-testLaunchFailsIfInvalidPortRange", "properties");
         try {
             // range is too big; expect failure
             Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse("launch", 
-                    "--endpointsProperties", "classpath://endpoints.properties", 
+                    "--endpointsProperties", propertiesFile.getAbsolutePath(), 
                     "--publicPortRange", "1024-100000");
             command.call();
             Assert.fail();
         } catch (IllegalArgumentException e) {
             if (!e.toString().contains("out of range")) throw e;
+        } finally {
+            propertiesFile.delete();
         }
     }
 }
