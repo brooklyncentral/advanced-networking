@@ -137,6 +137,24 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         runOpenPortForwardingAndAdvertise(null, false);
     }
     
+    // Disabled by default: do *not* run at times when production vCD NAT Microservice might be in-use
+    @Test(groups={"Live", "Live-sanity"}, enabled=false)
+    public void testOpenPortForwardingAndAdvertiseUsingPortRangeOnLocationWithoutCreatingVms() throws Exception {
+        // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
+        String microserviceUrl = startVcdNatMicroservice();
+        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
+        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
+        ((LocalManagementContext)mgmt).getBrooklynProperties().put("brooklyn.location.named."+LOCATION_SPEC+"."+PortForwarderVcloudDirector.PORT_RANGE.getName(), 
+                (STARTING_PORT+5)+"-"+ENDING_PORT);
+
+        // Replace the original loc, now that we've updated the port-range
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
+
+        HostAndPort publicEndpoint = runOpenPortForwardingAndAdvertise(null, false);
+        
+        assertTrue(publicEndpoint.getPort() >= (STARTING_PORT+5), "publicEndpoint="+publicEndpoint);
+    }
+    
     @Test(groups={"Live", "Live-sanity"})
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVmsWithExplicitPublicPort() throws Exception {
         String microserviceUrl = mgmt.getConfig().getConfig(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT);
@@ -148,8 +166,10 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     /**
      * With {@code createVm=false}, it does not provision a VM is much faster to run. However, it therefore
      * can't confirm the port-mapping is actually effective.
+     * 
+     * @return The public endpoint
      */
-    protected void runOpenPortForwardingAndAdvertise(Integer publicPort, boolean createVm) throws Exception {
+    protected HostAndPort runOpenPortForwardingAndAdvertise(Integer publicPort, boolean createVm) throws Exception {
         final AttributeSensor<Integer> PRIVATE_PORT = Sensors.newIntegerSensor("my.port");
         final AttributeSensor<String> MAPPED_ENDPOINT = Sensors.newStringSensor("mapped.endpoint");
         
@@ -260,8 +280,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         }
         
         if (tothrow != null) throw tothrow;
+        return publicEndpoint;
     }
-    
+
     protected String startVcdNatMicroservice() throws Exception {
         assertNull(NatMicroServiceMain.StaticRefs.service);
         
