@@ -109,12 +109,12 @@ public class SubnetEnrichers {
             listener = new PortForwardManager.AssociationListener() {
                 @Override
                 public void onAssociationCreated(AssociationMetadata metadata) {
-                    Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(ImmutableList.of(metadata.getLocation()));
+                    Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(producer.getLocations());
                     T sensorVal = producer.getAttribute((AttributeSensor<T>)sourceSensor);
                     if (machine.isPresent() && sensorVal != null) {
                         Integer port = extractPrivatePort(sensorVal);
                         if (port != null && port != -1) {
-                            if (metadata.getLocation().equals(machine.get()) && metadata.getPrivatePort() == port) {
+                            if (machine.get().equals(metadata.getLocation()) && metadata.getPrivatePort() == port) {
                                 log.debug("Simulating sensor-event on new port-association {}, to trigger transformation by {}", new Object[] {metadata, AbstractNatTransformingEnricher.this});
                                 AbstractNatTransformingEnricher.this.onEvent(new BasicSensorEvent<T>(sourceSensor, producer, sensorVal));
                             }
