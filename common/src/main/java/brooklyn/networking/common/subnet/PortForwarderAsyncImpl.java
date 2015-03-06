@@ -30,6 +30,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.AttributeMunger;
+import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
 
@@ -86,7 +87,11 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
             public void run() {
                 Entity entity = privatePort.getEntity();
                 Integer privatePortVal = privatePort.getValue();
-                MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
+                Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+                if (machineLocationMaybe.isAbsent()) {
+                    return;
+                }
+                MachineLocation machine = machineLocationMaybe.get();
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
                 
                 // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
