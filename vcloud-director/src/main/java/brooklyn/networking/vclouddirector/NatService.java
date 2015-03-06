@@ -1,12 +1,13 @@
 package brooklyn.networking.vclouddirector;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,6 +34,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
@@ -154,26 +156,32 @@ public class NatService {
         }
     }
 
+    /**
+     * The result of opening/closing NatServices. Gives a mapping from the args asked for to 
+     * the actual port mappings created/deleted. The input args could include port-ranges 
+     * (leaving it up to the impl to choose the actual public port), so the input/output in
+     * the map can be different.
+     */
     public static class UpdateResult {
-        private final List<PortForwardingConfig> opened = Lists.newArrayList();
-        private final List<PortForwardingConfig> closed = Lists.newArrayList();
+        private final Map<PortForwardingConfig, PortForwardingConfig> opened = Maps.newLinkedHashMap();
+        private final Map<PortForwardingConfig, PortForwardingConfig> closed = Maps.newLinkedHashMap();
         
         public UpdateResult() {
         }
-        private UpdateResult opened(PortForwardingConfig val) {
-            opened.add(val); return this;
+        private UpdateResult opened(PortForwardingConfig req, PortForwardingConfig val) {
+            opened.put(req, val); return this;
         }
-        private UpdateResult closed(PortForwardingConfig val) {
-            closed.add(val); return this;
+        private UpdateResult closed(PortForwardingConfig req, PortForwardingConfig val) {
+            closed.put(req, val); return this;
         }
-        public List<PortForwardingConfig> getOpened() {
+        public Map<PortForwardingConfig, PortForwardingConfig> getOpened() {
             return opened;
         }
-        public List<PortForwardingConfig> getClosed() {
+        public Map<PortForwardingConfig, PortForwardingConfig> getClosed() {
             return closed;
         }
         @Override public String toString() {
-            return Objects.toStringHelper(this).add("opened", opened).add("closed", closed).toString();
+            return Objects.toStringHelper(this).add("opened", opened.values()).add("closed", closed.values()).toString();
         }
     }
 
@@ -208,8 +216,14 @@ public class NatService {
         UpdateResult opened = updatePortForwarding(new Delta().toOpen(args));
         
         List<HostAndPort> result = Lists.newArrayList();
-        for (PortForwardingConfig arg : opened.getOpened()) {
-            result.add(arg.publicEndpoint);
+        for (PortForwardingConfig arg : args) {
+            PortForwardingConfig argResult = opened.getOpened().get(arg);
+            if (argResult == null) {
+                LOG.warn("No result for requested OPEN: "+arg+" (results: "+opened.getOpened()+")");
+                result.add(null);
+            } else {
+                result.add(argResult.publicEndpoint);
+            }
         }
         return result;
     }
@@ -222,8 +236,14 @@ public class NatService {
         UpdateResult closed = updatePortForwarding(new Delta().toClose(args));
         
         List<HostAndPort> result = Lists.newArrayList();
-        for (PortForwardingConfig arg : closed.getClosed()) {
-            result.add(arg.publicEndpoint);
+        for (PortForwardingConfig arg : args) {
+            PortForwardingConfig argResult = closed.getClosed().get(arg);
+            if (argResult == null) {
+                LOG.warn("No result for requested CLOSE: "+arg+" (results: "+closed.getClosed()+")");
+                result.add(null);
+            } else {
+                result.add(argResult.publicEndpoint);
+            }
         }
         return result;
     }
@@ -339,7 +359,7 @@ public class NatService {
     
                 natService.getNatRule().add(dnatRule);
                 
-                result.opened(new PortForwardingConfig()
+                result.opened(arg, new PortForwardingConfig()
                         .protocol(arg.protocol)
                         .publicEndpoint(publicEndpoint)
                         .targetEndpoint(arg.targetEndpoint));
@@ -354,7 +374,7 @@ public class NatService {
                         NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort())));
                 natService.getNatRule().removeAll(Lists.newArrayList(filtered));
                 
-                result.closed(arg);
+                result.closed(arg, arg);
             }
 
             // Create a minimal gateway-feature-set to be reconfigured (i.e. just the NAT Service)
@@ -376,7 +396,7 @@ public class NatService {
             // Confirm that the newly created rules exist,
             // with the expected translated (i.e internal) and original (i.e. public) addresses,
             // and without any conflicting DNAT rules already using that port.
-            for (PortForwardingConfig arg : result.getOpened()) {
+            for (PortForwardingConfig arg : result.getOpened().values()) {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),
                         NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort())));
@@ -401,7 +421,7 @@ public class NatService {
             }
             
             // Confirm that deleted rules don't exist.
-            for (PortForwardingConfig arg : result.getClosed()) {
+            for (PortForwardingConfig arg : result.getClosed().values()) {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
                         NatPredicates.protocolMatches(arg.protocol),
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),

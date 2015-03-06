@@ -53,6 +53,9 @@ import com.vmware.vcloud.api.rest.schema.NatRuleType;
  */
 public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupport {
 
+    // TODO Want test for concurrent interleaved open and close calls (similar idea to 
+    // testAddNatRulesConcurrently).
+    
     private static final Logger LOG = LoggerFactory.getLogger(AbstractNatServiceLiveTest.class);
 
     public static final String LOCATION_SPEC = "canopy-vCHS";

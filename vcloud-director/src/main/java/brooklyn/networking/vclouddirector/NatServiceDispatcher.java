@@ -268,6 +268,12 @@ public class NatServiceDispatcher {
             actions = actionQueues.removeAll(creds);
         }
         try {
+            // TODO Handling concurrent conflicting open+close for the same port needs more
+            // attention; we won't hit the scenario of "removing from toOpen" below because 
+            // callers are using portRange when requesting that a port be opened. However,
+            // there is still an issue for service.updatePortForwarding not being written to
+            // expect being told to open and close the same thing. It will probably do the
+            // open and then the close.
             Set<PortForwardingConfig> toOpen = Sets.newLinkedHashSet();
             Set<PortForwardingConfig> toClose = Sets.newLinkedHashSet();
             for (NatServiceAction action : actions) {
@@ -288,20 +294,27 @@ public class NatServiceDispatcher {
             
             NatService.Delta delta = new NatService.Delta().toOpen(toOpen).toClose(toClose);
             NatService.UpdateResult updated = service.updatePortForwarding(delta);
-            Iterator<PortForwardingConfig> opened = updated.getOpened().iterator();
             
             for (NatServiceAction action : actions) {
                 switch (action.actionType) {
                 case OPEN:
                     // The original action may not have specified the port; get that from the result.
                     // check that the result looks sane (i.e. unlikely that order has messed up etc).
-                    PortForwardingConfig result = opened.next();
-                    if (action.args.publicEndpoint.hasPort()) {
-                        checkState(result.publicEndpoint.equals(action.args.publicEndpoint), 
-                                "result=%s; action=%s", result.publicEndpoint, action);
+                    PortForwardingConfig result = updated.getOpened().get(action.args);
+                    if (result == null) {
+                        String msg = "No result for opening port-mapping "+action.args+" (result "+updated.getOpened()+")";
+                        LOG.warn(msg);
+                        action.setException(new IllegalStateException(msg));
                     } else {
-                        checkState(result.publicEndpoint.getHostText().equals(action.args.publicEndpoint.getHostText()), 
-                                "result=%s; action=%s", result.publicEndpoint, action);
+                        if (action.args.publicEndpoint.hasPort()) {
+                            checkState(result.publicEndpoint.equals(action.args.publicEndpoint), 
+                                    "result=%s; action=%s", result.publicEndpoint, action);
+                        } else {
+                            checkState(result.publicEndpoint.getHostText().equals(action.args.publicEndpoint.getHostText()), 
+                                    "result=%s; action=%s", result.publicEndpoint, action);
+                            checkState(result.publicEndpoint.hasPort(), 
+                                    "result=%s; action=%s", result.publicEndpoint, action);
+                        }
                     }
                     action.set(result.publicEndpoint);
                     break;
