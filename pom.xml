@@ -31,12 +31,12 @@
     <parent>
         <groupId>org.apache.brooklyn</groupId>
         <artifactId>brooklyn-downstream-parent</artifactId>
-        <version>0.7.0-ea-cloudsoft.1</version>  <!-- BROOKLYN_VERSION -->
+        <version>0.7.0-ea-cloudsoft.2</version>  <!-- BROOKLYN_VERSION -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <properties>
-        <brooklyn.version>0.7.0-ea-cloudsoft.1</brooklyn.version> <!--  BROOKLYN_VERSION -->
+        <brooklyn.version>0.7.0-ea-cloudsoft.2</brooklyn.version> <!--  BROOKLYN_VERSION -->
         <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
     </properties>
 
