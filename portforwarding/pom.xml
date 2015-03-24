@@ -25,7 +25,7 @@
     <parent>
         <groupId>io.brooklyn.networking</groupId>
         <artifactId>brooklyn-networking-parent</artifactId>
-        <version>0.7.0-ea-cloudsoft.4</version> <!-- BROOKLYN_VERSION -->
+        <version>0.7.0-ea-cloudsoft.5</version> <!-- BROOKLYN_VERSION -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
