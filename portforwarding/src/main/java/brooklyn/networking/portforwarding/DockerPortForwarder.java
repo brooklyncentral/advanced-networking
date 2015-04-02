@@ -18,7 +18,9 @@ package brooklyn.networking.portforwarding;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.docker.DockerApi;
@@ -194,19 +196,23 @@ public class DockerPortForwarder implements PortForwarder {
     }
 
     public Map<Integer, Integer> getPortMappings(MachineLocation targetMachine) {
+        Properties properties = new Properties();
+        properties.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, Boolean.toString(true));
+        properties.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, Boolean.toString(true));
         ComputeServiceContext context = ContextBuilder.newBuilder("docker")
                 .endpoint(dockerEndpoint)
                 .credentials(dockerIdentity, dockerCredential)
+                .overrides(properties)
                 .modules(ImmutableSet.<Module>of(new SLF4JLoggingModule(), new SshjSshClientModule()))
                 .build(ComputeServiceContext.class);
 
         DockerApi api = context.unwrapApi(DockerApi.class);
         String containerId = ((JcloudsSshMachineLocation) targetMachine).getJcloudsId();
-        Container container = api.getRemoteApi().inspectContainer(containerId);
+        Container container = api.getContainerApi().inspectContainer(containerId);
         context.close();
         Map<Integer, Integer> portMappings = Maps.newLinkedHashMap();
-        if(container.getNetworkSettings() == null) return portMappings;
-        for(Map.Entry<String, List<Map<String, String>>> entrySet : container.getNetworkSettings().getPorts().entrySet()) {
+        if(container.networkSettings() == null) return portMappings;
+        for(Map.Entry<String, List<Map<String, String>>> entrySet : container.networkSettings().ports().entrySet()) {
             String containerPort = Iterables.get(Splitter.on("/").split(entrySet.getKey()), 0);
             String hostPort = Iterables.getOnlyElement(Iterables.transform(entrySet.getValue(),
                     new Function<Map<String, String>, String>() {
