@@ -6,10 +6,10 @@ import java.util.List;
 
 import org.testng.annotations.Test;
 
-import brooklyn.location.jclouds.JcloudsLocation;
-
 import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
+
+import brooklyn.location.jclouds.JcloudsLocation;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.
@@ -37,6 +37,17 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     @Test(groups="Live")
     public void testGetNatRulesAtTai() throws Exception {
         JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_SPEC);
+        NatService service = newServiceBuilder(loc2)
+                .portRange(DEFAULT_PORT_RANGE)
+                .build();
+        List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
+        assertNotNull(rules);
+    }
+
+    // TAI2.0 (as at 2015-04-27) is running vcloud-director version 5.5
+    @Test(groups="Live")
+    public void testGetNatRulesAtTai2() throws Exception {
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2_SPEC);
         NatService service = newServiceBuilder(loc2)
                 .portRange(DEFAULT_PORT_RANGE)
                 .build();

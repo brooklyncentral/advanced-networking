@@ -18,13 +18,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Protocol;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -34,6 +27,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
+
+import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.net.Protocol;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.
@@ -61,6 +61,8 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     public static final String LOCATION_SPEC = "canopy-vCHS";
 
     public static final String LOCATION_TAI_SPEC = "canopy-TAI";
+
+    public static final String LOCATION_TAI_2_SPEC = "Canopy_TAI_2";
 
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
 

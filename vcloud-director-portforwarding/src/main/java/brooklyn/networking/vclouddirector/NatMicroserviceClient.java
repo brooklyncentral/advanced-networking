@@ -14,7 +14,9 @@ import brooklyn.util.http.HttpToolResponse;
 import brooklyn.util.net.Urls;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.escape.Escaper;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
@@ -44,9 +46,10 @@ public class NatMicroserviceClient implements NatClient {
     private final String identity;
 
     public NatMicroserviceClient(String microserviceUri, JcloudsLocation loc) {
+        String tenantAndIdentity = checkNotNull(loc.getIdentity(), "identity");
         this.microserviceUri = checkNotNull(microserviceUri, "microserviceUri");
-        endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint());
-        this.identity = checkNotNull(loc.getIdentity(), "identity");
+        endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), Iterables.get(Splitter.on("@").split(tenantAndIdentity), 1));
+        this.identity = Iterables.get(Splitter.on("@").split(tenantAndIdentity), 0);
         this.credential = checkNotNull(loc.getCredential(), "credential");
     }
 

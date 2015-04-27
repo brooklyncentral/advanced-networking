@@ -4,12 +4,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
+
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
 
 public class NatDirectClient implements NatClient {
 
@@ -71,11 +71,21 @@ public class NatDirectClient implements NatClient {
     
     // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api"
     public static String transformEndpoint(String endpoint) {
+        return transformEndpoint(endpoint, null);
+    }
+
+    // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api" + tenant
+    // i.e.: https://emea01.canopy-cloud.com/cloud/org/cct-emea01/
+    public static String transformEndpoint(String endpoint, String tenant) {
+        String path = null;
+        if (tenant != null) {
+            path = String.format("/cloud/org/%s", tenant);
+        }
         try {
             URI uri = URI.create(endpoint);
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, null, null).toString();
         } catch (URISyntaxException e) {
             throw Exceptions.propagate(e);
-        } 
+        }
     }
 }
