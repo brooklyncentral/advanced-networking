@@ -1,5 +1,6 @@
 package brooklyn.networking.vclouddirector;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
@@ -46,10 +47,13 @@ public class NatMicroserviceClient implements NatClient {
     private final String identity;
 
     public NatMicroserviceClient(String microserviceUri, JcloudsLocation loc) {
-        String tenantAndIdentity = checkNotNull(loc.getIdentity(), "identity");
+        String identityAtVOrg = checkNotNull(loc.getIdentity(), "identity");
+        checkArgument(identityAtVOrg.contains("@"));
+        String vOrg = identityAtVOrg.substring(identityAtVOrg.lastIndexOf("@") + 1);
+        String identity = identityAtVOrg.substring(0, identityAtVOrg.lastIndexOf("@"));
         this.microserviceUri = checkNotNull(microserviceUri, "microserviceUri");
-        endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), Iterables.get(Splitter.on("@").split(tenantAndIdentity), 1));
-        this.identity = Iterables.get(Splitter.on("@").split(tenantAndIdentity), 0);
+        endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), vOrg);
+        this.identity = identity;
         this.credential = checkNotNull(loc.getCredential(), "credential");
     }
 

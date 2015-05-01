@@ -87,11 +87,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         NatMicroServiceMain.StaticRefs.service = null;
         
         super.setUp();
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwardManager.PORT_FORWARD_MANAGER_STARTING_PORT, STARTING_PORT);
-        
+        mgmt.getBrooklynProperties().put(PortForwardManager.PORT_FORWARD_MANAGER_STARTING_PORT, STARTING_PORT);
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
-        publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
-        
+        publicIp = checkNotNull(loc.getConfig(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP), "publicip");
         executor = Executors.newCachedThreadPool();
     }
     
@@ -112,8 +110,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     public void testOpenPortForwardingAndAdvertise() throws Exception {
         // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
         String microserviceUrl = startVcdNatMicroservice();
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
         
         runOpenPortForwardingAndAdvertise(null, true);
     }
@@ -131,8 +129,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVms() throws Exception {
         // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
         String microserviceUrl = startVcdNatMicroservice();
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
         
         runOpenPortForwardingAndAdvertise(null, false);
     }
@@ -142,9 +140,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     public void testOpenPortForwardingAndAdvertiseUsingPortRangeOnLocationWithoutCreatingVms() throws Exception {
         // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
         String microserviceUrl = startVcdNatMicroservice();
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
-        ((LocalManagementContext)mgmt).getBrooklynProperties().put("brooklyn.location.named."+LOCATION_SPEC+"."+PortForwarderVcloudDirector.PORT_RANGE.getName(), 
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
+        mgmt.getBrooklynProperties().put("brooklyn.location.named."+LOCATION_SPEC+"."+PortForwarderVcloudDirector.PORT_RANGE.getName(),
                 (STARTING_PORT+5)+"-"+ENDING_PORT);
 
         // Replace the original loc, now that we've updated the port-range

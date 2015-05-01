@@ -76,10 +76,10 @@ public class NatDirectClient implements NatClient {
 
     // jclouds endpoint has suffix "/api"; but VMware SDK wants it without "api" + tenant
     // i.e.: https://emea01.canopy-cloud.com/cloud/org/cct-emea01/
-    public static String transformEndpoint(String endpoint, String tenant) {
+    public static String transformEndpoint(String endpoint, String vOrg) {
         String path = null;
-        if (tenant != null) {
-            path = String.format("/cloud/org/%s", tenant);
+        if (vOrg != null) {
+            path = String.format("/cloud/org/%s", vOrg);
         }
         try {
             URI uri = URI.create(endpoint);
