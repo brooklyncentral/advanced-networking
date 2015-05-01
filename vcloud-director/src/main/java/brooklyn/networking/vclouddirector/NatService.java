@@ -614,6 +614,9 @@ public class NatService {
                 VcloudClient.setLogLevel(logLevel);
             }
 
+            // The vcloudClient want the URI without the path.
+            // However, users of the NatMicroserviceClient may want the URI to include
+            // the vOrg in the path, because some endpoints are only accessible in that way.
             URI uri = URI.create(endpoint);
             String vCloudUrl = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
 

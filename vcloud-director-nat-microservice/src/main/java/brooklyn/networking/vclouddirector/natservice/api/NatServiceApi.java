@@ -20,6 +20,18 @@ import com.wordnik.swagger.core.ApiErrors;
 import com.wordnik.swagger.core.ApiOperation;
 import com.wordnik.swagger.core.ApiParam;
 
+/**
+ * REST api for accessing/updating NAT rules on vCloud Director's Edge Gateway.
+ * 
+ * The Edge Gateway does not handle concurrent access (because an update requires
+ * a chain of calls to: 1) read existing; 2) create list of existing+new; 3) write everything.
+ * 
+ * Therefore this service provides controlled access to ensure updates from multiple callers
+ * are done safely and sequentially.
+ * 
+ * The {@code identity} can be the {@code <user>@<vOrg>}, or alternatively just the {@code <user>}
+ * if the vOrg is included in the endpoint URL.
+ */
 @Path("/v1/nat")
 @Apidoc("Nat")
 @Produces(MediaType.APPLICATION_JSON)
