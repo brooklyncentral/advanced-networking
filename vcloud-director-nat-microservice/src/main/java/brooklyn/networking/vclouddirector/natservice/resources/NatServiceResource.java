@@ -45,10 +45,10 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     private static final Logger LOG = LoggerFactory.getLogger(NatServiceResource.class);
 
     @Override
-    public List<NatRuleSummary> list(String endpoint, String identity, String credential) {
+    public List<NatRuleSummary> list(String endpoint, String vDC, String identity, String credential) {
         try {
             LOG.info("listing nat rules on " + endpoint);
-            List<NatRuleType> rules = dispatcher().getNatRules(endpoint, identity, credential);
+            List<NatRuleType> rules = dispatcher().getNatRules(endpoint, vDC, identity, credential);
             return FluentIterable
                     .from(rules)
                     .transform(new Function<NatRuleType, NatRuleSummary>() {
@@ -64,7 +64,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     }
 
     @Override
-    public String openPortForwarding(String endpoint,
+    public String openPortForwarding(String endpoint, String vDC,
             String identity, String credential, String protocol,
             String original, String originalPortRange, String translated) {
         LOG.info("creating nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
@@ -72,7 +72,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
         Preconditions.checkArgument(translatedHostAndPort.hasPort(), "translated %s must include port", translated);
         try {
-            HostAndPort result = dispatcher().openPortForwarding(endpoint, identity, credential, new PortForwardingConfig()
+            HostAndPort result = dispatcher().openPortForwarding(endpoint, vDC, identity, credential, new PortForwardingConfig()
                     .protocol(Protocol.valueOf(protocol.toUpperCase()))
                     .publicEndpoint(originalHostAndPort)
                     .publicPortRange(Strings.isBlank(originalPortRange) ? null : PortRanges.fromString(originalPortRange))
@@ -86,8 +86,8 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
 
     @Override
     public Response closePortForwarding(String endpoint,
-            String identity, String credential, String protocol,
-            String original, String translated) {
+            String vDC, String identity, String credential,
+            String protocol, String original, String translated) {
         LOG.info("deleting nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
         // TODO throw 404 if not found
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
@@ -95,7 +95,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
         Preconditions.checkArgument(originalHostAndPort.hasPort(), "original %s must include port", original);
         Preconditions.checkArgument(translatedHostAndPort.hasPort(), "translated %s must include port", translated);
         try {
-            dispatcher().closePortForwarding(endpoint, identity, credential, new PortForwardingConfig()
+            dispatcher().closePortForwarding(endpoint, vDC, identity, credential, new PortForwardingConfig()
                     .protocol(Protocol.valueOf(protocol.toUpperCase()))
                     .publicEndpoint(originalHostAndPort)
                     .targetEndpoint(translatedHostAndPort));

@@ -3,6 +3,7 @@ package brooklyn.networking.vclouddirector;
 import java.net.URI;
 
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 
@@ -20,9 +21,11 @@ import com.google.common.net.HostAndPort;
  * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.publicip=23.92.230.21
  * </pre> 
  */
+@Test(groups="Live")
 public class NatServiceDispatcherLiveTest extends AbstractNatServiceLiveTest {
 
     private String endpoint;
+    private String vDC;
     private String identity;
     private String credential;
     
@@ -34,6 +37,7 @@ public class NatServiceDispatcherLiveTest extends AbstractNatServiceLiveTest {
         super.setUp();
         URI uri = URI.create(loc.getEndpoint());
         endpoint = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
+        vDC = loc.getRegion();
         identity = loc.getIdentity();
         credential = loc.getCredential();
         
@@ -44,10 +48,10 @@ public class NatServiceDispatcherLiveTest extends AbstractNatServiceLiveTest {
     }
     
     protected HostAndPort openPortForwarding(PortForwardingConfig config) throws Exception {
-        return dispatcher.openPortForwarding(endpoint, identity, credential, config);
+        return dispatcher.openPortForwarding(endpoint, vDC, identity, credential, config);
     }
     
     protected HostAndPort closePortForwarding(PortForwardingConfig config) throws Exception {
-        return dispatcher.closePortForwarding(endpoint, identity, credential, config);
+        return dispatcher.closePortForwarding(endpoint, vDC, identity, credential, config);
     }
 }

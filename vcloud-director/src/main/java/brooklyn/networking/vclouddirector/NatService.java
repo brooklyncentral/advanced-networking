@@ -19,6 +19,15 @@ import javax.xml.bind.JAXBElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
+
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
@@ -50,15 +59,6 @@ import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
-
 /**
  * For adding/removing NAT rules to vcloud-director.
  * 
@@ -81,9 +81,15 @@ public class NatService {
     private static final List<Version> VCLOUD_VERSIONS = ImmutableList.of(Version.V5_5, Version.V5_1, Version.V1_5);
 
     public static Builder builder() {
-        return new Builder();
+        return new NatServiceFactory().builder();
     }
 
+    public static class NatServiceFactory {
+        public Builder builder() {
+            return new Builder();
+        }
+    }
+    
     public static class Builder {
         private String identity;
         private String credential;
@@ -124,8 +130,8 @@ public class NatService {
     }
     
     public static class Delta {
-        private final List<PortForwardingConfig> toOpen = Lists.newArrayList();
-        private final List<PortForwardingConfig> toClose = Lists.newArrayList();
+        protected final List<PortForwardingConfig> toOpen = Lists.newArrayList();
+        protected final List<PortForwardingConfig> toClose = Lists.newArrayList();
         
         public Delta() {
         }
@@ -169,10 +175,10 @@ public class NatService {
         
         public UpdateResult() {
         }
-        private UpdateResult opened(PortForwardingConfig req, PortForwardingConfig val) {
+        protected UpdateResult opened(PortForwardingConfig req, PortForwardingConfig val) {
             opened.put(req, val); return this;
         }
-        private UpdateResult closed(PortForwardingConfig req, PortForwardingConfig val) {
+        protected UpdateResult closed(PortForwardingConfig req, PortForwardingConfig val) {
             closed.put(req, val); return this;
         }
         public Map<PortForwardingConfig, PortForwardingConfig> getOpened() {

@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +64,7 @@ public class NatServiceDispatcher {
         private Level logLevel;
         private Map<String, EndpointConfig> endpoints = Maps.newLinkedHashMap();
         private PortRange defaultPortRange = PortRanges.ANY_HIGH_PORT;
+        private NatService.NatServiceFactory natServiceFactory = new NatService.NatServiceFactory();
         
         public Builder endpoint(String endpoint, EndpointConfig trustConfig) {
             endpoints.put(checkNotNull(endpoint, "endpoint"), checkNotNull(trustConfig, "trustConfig"));
@@ -78,6 +78,10 @@ public class NatServiceDispatcher {
         }
         public Builder logLevel(java.util.logging.Level val) {
             this.logLevel = val; return this;
+        }
+        public Builder natServiceFactory(NatService.NatServiceFactory val) {
+            natServiceFactory = checkNotNull(val, "natServiceFactory");
+            return this;
         }
         public NatServiceDispatcher build() {
             return new NatServiceDispatcher(this);
@@ -120,24 +124,33 @@ public class NatServiceDispatcher {
     
     static class Credentials {
         final String endpoint;
+        @Nullable final String vDC;
         final String identity;
         final String credential;
-        
+
+        @Deprecated
         public Credentials(String endpoint, String identity, String credential) {
+            this(endpoint, null, identity, credential);
+        }
+        
+        public Credentials(String endpoint, @Nullable String vDC, String identity, String credential) {
             this.endpoint = checkNotNull(endpoint, "endpoint");
+            this.vDC = vDC;
             this.identity = checkNotNull(identity, "identity");
             this.credential = checkNotNull(credential, "credential");
         }
         
         @Override
         public int hashCode() {
-            return Objects.hashCode(endpoint, identity, credential);
+            return Objects.hashCode(endpoint, vDC, identity, credential);
         }
         
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Credentials && identity.equals(((Credentials)obj).identity) 
-                    && endpoint.equals(((Credentials)obj).endpoint) && credential.equals(((Credentials)obj).credential);
+            if (!(obj instanceof Credentials)) return false;
+            Credentials o = (Credentials) obj;
+            return identity.equals(o.identity) && endpoint.equals(o.endpoint) && credential.equals(o.credential) 
+                    && Objects.equal(vDC, o.vDC);
         }
         
         @Override
@@ -146,6 +159,50 @@ public class NatServiceDispatcher {
         }
     }
     
+    /**
+     * The EdgeGateway that the NAT Rules belong to (used to identify the appropriate lock, so
+     * that concurrent requests on a given EdgeGateway are submitted sequentially).
+     */
+    static class EdgeGatewayIdentifier {
+        private final String endpoint;
+        private final String vOrg;
+        private final String vDC;
+        
+        public EdgeGatewayIdentifier(String endpoint, String vOrg, String vDC) {
+            this.endpoint = checkNotNull(endpoint, "endpoint");
+            this.vOrg = vOrg;
+            this.vDC = vDC;
+        }
+        
+        public EdgeGatewayIdentifier(Credentials creds) {
+            this.endpoint = checkNotNull(creds, "creds").endpoint;
+            this.vOrg = (creds.identity.contains("@")) ? creds.identity.substring(creds.identity.lastIndexOf("@") + 1) : null;
+            this.vDC = creds.vDC;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(endpoint, vOrg, vDC);
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof EdgeGatewayIdentifier)) return false;
+            EdgeGatewayIdentifier o = (EdgeGatewayIdentifier) obj;
+            return Objects.equal(endpoint, o.endpoint) && Objects.equal(vOrg, o.vOrg) 
+                    && Objects.equal(vDC, o.vDC);
+        }
+        
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this).omitNullValues()
+                    .add("endpoint", endpoint)
+                    .add("vOrg", vOrg)
+                    .add("vDC", vDC)
+                    .toString();
+        }
+    }
+
     static class NatServiceAction extends AbstractFuture<HostAndPort> {
         enum ActionType {
             OPEN,
@@ -186,17 +243,19 @@ public class NatServiceDispatcher {
     private final Map<String, EndpointConfig> endpoints;
     private final PortRange defaultPortRange;
     private final Level logLevel;
+    private final NatService.NatServiceFactory natServiceFactory;
     private final ExecutorService executor;
 
-    private final Map<String, SingleThreadedScheduler> workers = Maps.newLinkedHashMap();
+    private final Map<EdgeGatewayIdentifier, SingleThreadedScheduler> workers = Maps.newLinkedHashMap();
     private final Multimap<Credentials, NatServiceAction> actionQueues = ArrayListMultimap.create(); 
     private final Map<Credentials, NatService> clients = Maps.newLinkedHashMap();
-    private final Map<String, Object> mutexes = Maps.newConcurrentMap(); // keyed by endpoint URL
+    private final Map<EdgeGatewayIdentifier, Object> mutexes = Maps.newConcurrentMap();
     
     public NatServiceDispatcher(Builder builder) {
         endpoints = ImmutableMap.copyOf(builder.endpoints);
         defaultPortRange = builder.defaultPortRange;
         logLevel = builder.logLevel;
+        natServiceFactory = builder.natServiceFactory;
         
         executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                 .setNameFormat("natservice-execmanager-%d")
@@ -209,13 +268,13 @@ public class NatServiceDispatcher {
         executor.shutdownNow();
     }
     
-    public List<NatRuleType> getNatRules(String endpoint, String identity, String credential) throws VCloudException {
-        NatService service = getService(new Credentials(endpoint, identity, credential));
+    public List<NatRuleType> getNatRules(String endpoint, String vDC, String identity, String credential) throws VCloudException {
+        NatService service = getService(new Credentials(endpoint, vDC, identity, credential));
         return service.getNatRules();
     }
     
-    public HostAndPort openPortForwarding(String endpoint, String identity, String credential, PortForwardingConfig args) {
-        Credentials creds = new Credentials(endpoint, identity, credential);
+    public HostAndPort openPortForwarding(String endpoint, String vDC, String identity, String credential, PortForwardingConfig args) {
+        Credentials creds = new Credentials(endpoint, vDC, identity, credential);
         NatServiceAction action = new NatServiceAction(NatServiceAction.ActionType.OPEN, args);
         synchronized (actionQueues) {
             actionQueues.put(creds, action);
@@ -228,8 +287,8 @@ public class NatServiceDispatcher {
         }
     }
 
-    public HostAndPort closePortForwarding(String endpoint, String identity, String credential, PortForwardingConfig args) throws VCloudException {
-        Credentials creds = new Credentials(endpoint, identity, credential);
+    public HostAndPort closePortForwarding(String endpoint, String vDC, String identity, String credential, PortForwardingConfig args) throws VCloudException {
+        Credentials creds = new Credentials(endpoint, vDC, identity, credential);
         NatServiceAction action = new NatServiceAction(NatServiceAction.ActionType.CLOSE, args);
         synchronized (actionQueues) {
             actionQueues.put(creds, action);
@@ -243,11 +302,12 @@ public class NatServiceDispatcher {
     }
     
     protected void triggerExecutor(final Credentials creds) {
-        SingleThreadedScheduler worker = workers.get(creds.endpoint);
+        EdgeGatewayIdentifier workerKey = new EdgeGatewayIdentifier(creds);
+        SingleThreadedScheduler worker = workers.get(workerKey);
         if (worker == null) {
             worker = new SingleThreadedScheduler();
             worker.injectExecutor(executor);
-            workers.put(creds.endpoint, worker);
+            workers.put(workerKey, worker);
         }
         worker.submit(new Callable<Void>() {
             public Void call() {
@@ -334,11 +394,12 @@ public class NatServiceDispatcher {
 
     protected NatService getService(Credentials creds) throws VCloudException {
         Object mutex;
+        EdgeGatewayIdentifier mutexKey = new EdgeGatewayIdentifier(creds);
         synchronized (mutexes) {
-            mutex = mutexes.get(creds.endpoint);
+            mutex = mutexes.get(mutexKey);
             if (mutex == null) {
                 mutex = new Object();
-                mutexes.put(creds.endpoint, mutex);
+                mutexes.put(mutexKey, mutex);
             }
         }
         
@@ -351,7 +412,7 @@ public class NatServiceDispatcher {
                 }
                 PortRange portRange = (endpointConfig.portRange == null) ? defaultPortRange : endpointConfig.portRange;
                 
-                result = NatService.builder()
+                result = natServiceFactory.builder()
                         .identity(creds.identity)
                         .credential(creds.credential)
                         .endpoint(creds.endpoint)
