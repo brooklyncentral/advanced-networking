@@ -17,6 +17,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.google.common.escape.Escaper;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.UrlEscapers;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.GenericType;
+
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.PortRange;
@@ -32,15 +38,10 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;
 
-import com.google.common.escape.Escaper;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.UrlEscapers;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
 
-public class NatServiceMicroserviceLiveTest extends AbstractRestApiTest {
+public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRestApiTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NatServiceMicroserviceLiveTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NatServiceMicroserviceAbstractLiveTest.class);
 
     private static final int STARTING_PORT = 19980;
     private static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString("19980-19999");
@@ -57,11 +58,13 @@ public class NatServiceMicroserviceLiveTest extends AbstractRestApiTest {
 
     private Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
     
+    protected abstract String getLocationSpec();
+
     @BeforeClass(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
         mgmt = new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
-        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve("canopy-vCHS");
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(getLocationSpec());
         endpoint = endpoint(loc);
         identity = loc.getIdentity();
         credential = loc.getCredential();
@@ -86,7 +89,7 @@ public class NatServiceMicroserviceLiveTest extends AbstractRestApiTest {
     
     @Test(groups="Live")
     public void testGetNatRules() throws Exception {
-        JcloudsLocation loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve("canopy-vCHS");
+        JcloudsLocation loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(getLocationSpec());
         String url = "/v1/nat"
                 + "?endpoint="+escaper.escape(endpoint)
                 + "&identity="+escaper.escape(identity)

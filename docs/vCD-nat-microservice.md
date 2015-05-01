@@ -1,20 +1,23 @@
 DNAT Micro-service
 ===
 
-The DNAT micro-service provides a single service for multiple AMP servers to make
+The DNAT micro-service provides a single service for multiple Brooklyn servers to make
 concurrent changes to the DNAT rules on a vcloud-director gateway. This will 
 prevent a race condition that can occur as the vCD REST API requires that the full
 list of DNAT rules be download, modified, then the complete list uploaded in order
 to make changes to the rules.
 
 The instructions below assume that the micro-service is running on the same server 
-as AMP, which may not be the case in production. If the micro-service and AMP
+as Brooklyn, which may not be the case in production. If the micro-service and Brooklyn
 are running on different servers, the endpoint configured in brooklyn.properties
 should be changed to reflect the address of the micro-service instead of 'localhost'
 
 NOTE: There should be one and only one DNAT micro-service per vOrg. If multiple
-rAMP servers are targeting the same vOrg (such as in development / test) then all
-rAMP servers should be using the same micro-service.
+Brooklyn servers are targeting the same vOrg (such as in development / test) then all
+Brooklyn servers should be using the same micro-service.
+
+
+### Deployment and Configuration
 
 To deploy the micro-service:
 
@@ -55,6 +58,9 @@ my-vorg-2.trustStorePassword=
 my-vorg-2.portRange=12000+
 ```
 
+
+### Launching
+
 * To start the microservice, use the `start.sh` script.
 
   * Optionally `--publicPortRange <range>` can be passed as a command line argument,
@@ -67,10 +73,27 @@ my-vorg-2.portRange=12000+
 nohup ./start.sh launch --endpointsProperties ~/.brooklyn/dnat-microservice.properties &
 ```
 
-* To enable AMP to use the service, add the following to your `brooklyn.properties`
-  file (with your URL, obviously) and restart rAMP:
+
+### Configuring Brooklyn
+
+* To enable Brooklyn to use the service, add the following to your `brooklyn.properties`
+  file (with your URL, obviously) and restart Brooklyn:
 
 ```
 # Enable NAT micro-service
 advancednetworking.vcloud.network.microservice.endpoint=https://localhost:8443
 ```
+
+
+### Using the REST API
+
+The REST api calls often include the following parameters:
+
+* `endpoint`: the vCloud Director URL, without the suffix `/api`.
+  e.g. https://emea01.canopy-cloud.com or https://emea01.canopy-cloud.com/cloud/org/cct-emea01/,
+  where the latter includes the vOrg.
+
+* `identity`: either the `<user>@<vOrg>`, or just the `<user>` (the latter only if vOrg is 
+  included in the endpoint) 
+
+* `credential`: the password

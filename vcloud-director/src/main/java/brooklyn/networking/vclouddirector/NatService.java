@@ -3,6 +3,7 @@ package brooklyn.networking.vclouddirector;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -17,15 +18,6 @@ import javax.xml.bind.JAXBElement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
@@ -57,6 +49,15 @@ import com.vmware.vcloud.sdk.admin.extensions.ExtensionQueryService;
 import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
+
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
 
 /**
  * For adding/removing NAT rules to vcloud-director.
@@ -522,13 +523,15 @@ public class NatService {
     private void checkPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
         boolean found = false;
         for (SubnetParticipationType subnetParticipation : subnetParticipations) {
-            Iterator<IpRangeType> iter = subnetParticipation.getIpRanges().getIpRange().iterator();
-            while (!found && iter.hasNext()) {
-                IpRangeType ipRangeType = iter.next();
-                long ipLo = ipToLong(InetAddresses.forString(ipRangeType.getStartAddress()));
-                long ipHi = ipToLong(InetAddresses.forString(ipRangeType.getEndAddress()));
-                long ipToTest = ipToLong(InetAddresses.forString(publicIp));
-                found = ipToTest >= ipLo && ipToTest <= ipHi;
+            if (subnetParticipation.getIpRanges() != null) {
+                Iterator<IpRangeType> iter = subnetParticipation.getIpRanges().getIpRange().iterator();
+                while (!found && iter.hasNext()) {
+                    IpRangeType ipRangeType = iter.next();
+                    long ipLo = ipToLong(InetAddresses.forString(ipRangeType.getStartAddress()));
+                    long ipHi = ipToLong(InetAddresses.forString(ipRangeType.getEndAddress()));
+                    long ipToTest = ipToLong(InetAddresses.forString(publicIp));
+                    found = ipToTest >= ipLo && ipToTest <= ipHi;
+                }
             }
         }
         if (!found) {
@@ -610,13 +613,19 @@ public class NatService {
                 // Consider setting this to WARN; leaving as default is not explicitly set
                 VcloudClient.setLogLevel(logLevel);
             }
-            
+
+            // The vcloudClient want the URI without the path.
+            // However, users of the NatMicroserviceClient may want the URI to include
+            // the vOrg in the path, because some endpoints are only accessible in that way.
+            URI uri = URI.create(endpoint);
+            String vCloudUrl = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null).toString();
+
             // Client login
             VcloudClient vcloudClient = null;
             boolean versionFound = false;
             for (Version version : VCLOUD_VERSIONS) {
                 try {
-                    vcloudClient = new VcloudClient(endpoint, version);
+                    vcloudClient = new VcloudClient(vCloudUrl, version);
                     LOG.debug("VCloudClient - trying login to {} using {}", endpoint, version);
                     vcloudClient.login(identity, credential);
                     versionFound = true;
