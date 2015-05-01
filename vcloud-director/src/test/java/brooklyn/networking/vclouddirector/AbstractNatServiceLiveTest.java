@@ -18,6 +18,14 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.net.Protocol;
+
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -26,14 +34,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
-
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.
@@ -58,11 +61,13 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     
     private static final Logger LOG = LoggerFactory.getLogger(AbstractNatServiceLiveTest.class);
 
-    public static final String LOCATION_SPEC = "canopy-vCHS";
+    public static final String LOCATION_VCHS = "canopy-vCHS";
 
-    public static final String LOCATION_TAI_SPEC = "canopy-TAI";
+    public static final String LOCATION_TAI_SPEC = "Canopy_TAI_TEST"; //"canopy-TAI";
 
     public static final String LOCATION_TAI_2_SPEC = "Canopy_TAI_2";
+
+    public static final String LOCATION_SPEC = LOCATION_TAI_SPEC;
 
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
 
@@ -237,9 +242,40 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
         NatService service = newServiceBuilder(loc).build();
         List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
         Optional<NatRuleType> rule = Iterables.tryFind(rules, NatPredicates.translatedEndpointEquals(targetEndpoint));
-        assertFalse(rule.isPresent(), "rule=" + rule);
+        assertFalse(rule.isPresent(), (rule.isPresent() ? toString(rule.get()) : rule.toString()));
     }
     
+    protected String toString(NatRuleType rule) {
+        if (rule == null) return null;
+        return Objects.toStringHelper(rule)
+                .add("type", rule.getRuleType())
+                .add("portForwardingRule", toString(rule.getPortForwardingRule()))
+                .add("portForwardingRule", toString(rule.getVmRule()))
+                .toString();
+    }
+    
+    private String toString(NatVmRuleType rule) {
+        if (rule == null) return null;
+        return Objects.toStringHelper(rule)
+                .add("protocol", rule.getProtocol())
+                .add("internalPort", rule.getInternalPort())
+                .add("vAppScopedVmId", rule.getVAppScopedVmId())
+                .add("externalIp", rule.getExternalIpAddress())
+                .add("externalPort", rule.getExternalPort())
+                .toString();
+    }
+
+    protected String toString(NatPortForwardingRuleType rule) {
+        if (rule == null) return null;
+        return Objects.toStringHelper(rule)
+                .add("protocol", rule.getProtocol())
+                .add("internalIp", rule.getInternalIpAddress())
+                .add("internalPort", rule.getInternalPort())
+                .add("externalIp", rule.getExternalIpAddress())
+                .add("externalPort", rule.getExternalPort())
+                .toString();
+    }
+
     protected boolean contains(PortRange range, int port) {
         for (int contender : range) {
             if (contender == port) return true;

@@ -51,6 +51,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
     private LocalManagementContext mgmt;
     private JcloudsLocation loc;
     private String endpoint;
+    private String vDC;
     private String identity;
     private String credential;
     private String publicIp;
@@ -66,6 +67,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
         mgmt = new LocalManagementContextForTests(BrooklynProperties.Factory.newDefault());
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(getLocationSpec());
         endpoint = endpoint(loc);
+        vDC = loc.getRegion();
         identity = loc.getIdentity();
         credential = loc.getCredential();
         publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
@@ -126,6 +128,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
         // Open the NAT rule
         String openUrl = "/v1/nat"
                 + "?endpoint="+escaper.escape(endpoint)
+                + (vDC != null ? "?vdc="+escaper.escape(vDC) : "")
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + protocol
@@ -154,6 +157,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
             // Delete the rule
             String deleteUrl = "/v1/nat"
                     + "?endpoint="+escaper.escape(endpoint)
+                    + (vDC != null ? "?vdc="+escaper.escape(vDC) : "")
                     + "&identity="+escaper.escape(identity)
                     + "&credential="+escaper.escape(credential)
                     + "&protocol=" + protocol
@@ -167,7 +171,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
             assertRuleNotExists(result, targetEndpoint, protocol);
         } finally {
             if (result != null) {
-                dispatcher.closePortForwarding(endpoint, identity, credential, new PortForwardingConfig()
+                dispatcher.closePortForwarding(endpoint, vDC, identity, credential, new PortForwardingConfig()
                         .protocol(Protocol.TCP)
                         .publicEndpoint(result)
                         .targetEndpoint(targetEndpoint));

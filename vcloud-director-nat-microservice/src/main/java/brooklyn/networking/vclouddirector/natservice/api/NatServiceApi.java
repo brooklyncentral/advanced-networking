@@ -49,6 +49,9 @@ public interface NatServiceApi {
             @ApiParam(name = "endpoint", value = "Cloud endpoint URL", required = true)
             @QueryParam("endpoint") String endpoint,
 
+            @ApiParam(name = "vdc", value = "vDC name", required = false)
+            @QueryParam("vdc") String vDC,
+
             @ApiParam(name = "identity", value = "User identity", required = true)
             @QueryParam("identity") String identity,
 
@@ -66,6 +69,9 @@ public interface NatServiceApi {
     public String openPortForwarding(
             @ApiParam(name = "endpoint", value = "Cloud endpoint URL", required = true)
             @QueryParam("endpoint") String endpoint,
+
+            @ApiParam(name = "vdc", value = "vDC name", required = false)
+            @QueryParam("vdc") String vDC,
 
             @ApiParam(name = "identity", value = "User identity", required = true)
             @QueryParam("identity") String identity,
@@ -96,6 +102,9 @@ public interface NatServiceApi {
     public Response closePortForwarding(
             @ApiParam(name = "endpoint", value = "Cloud endpoint URL", required = true)
             @QueryParam("endpoint") String endpoint,
+
+            @ApiParam(name = "vdc", value = "vDC name", required = false)
+            @QueryParam("vdc") String vDC,
 
             @ApiParam(name = "identity", value = "User identity", required = true)
             @QueryParam("identity") String identity,
