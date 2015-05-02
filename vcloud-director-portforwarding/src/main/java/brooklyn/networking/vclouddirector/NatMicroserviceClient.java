@@ -47,14 +47,13 @@ public class NatMicroserviceClient implements NatClient {
     private final String identity;
 
     public NatMicroserviceClient(String microserviceUri, JcloudsLocation loc) {
-        String identityAtVOrg = checkNotNull(loc.getIdentity(), "identity");
-        checkArgument(identityAtVOrg.contains("@"));
-        String vOrg = identityAtVOrg.substring(identityAtVOrg.lastIndexOf("@") + 1);
-        String identity = identityAtVOrg.substring(0, identityAtVOrg.lastIndexOf("@"));
         this.microserviceUri = checkNotNull(microserviceUri, "microserviceUri");
-        endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), vOrg);
-        this.identity = identity;
+        this.identity = checkNotNull(loc.getIdentity(), "identity");
         this.credential = checkNotNull(loc.getCredential(), "credential");
+        
+        checkArgument(identity.contains("@"), "identity %s does not contain vOrg, in location %s", identity, loc);
+        String vOrg = identity.substring(identity.lastIndexOf("@") + 1);
+        this.endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), vOrg);
     }
 
     @Override
