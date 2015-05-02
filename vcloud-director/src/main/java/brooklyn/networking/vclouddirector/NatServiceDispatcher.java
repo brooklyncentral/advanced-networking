@@ -315,7 +315,7 @@ public class NatServiceDispatcher {
                     executeActions(creds);
                     return null;
                 } catch (Exception e) {
-                    LOG.warn("Problem executing action to modify NAT rules for "+creds.identity+" @ "+creds.credential, e);
+                    LOG.warn("Problem executing action to modify NAT rules for "+creds.identity+" @ "+creds.endpoint, e);
                     throw Exceptions.propagate(e);
                 }
             }
