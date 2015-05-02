@@ -93,7 +93,8 @@ The REST api calls often include the following parameters:
   e.g. https://emea01.canopy-cloud.com or https://emea01.canopy-cloud.com/cloud/org/cct-emea01/,
   where the latter includes the vOrg.
 
-* `identity`: either the `<user>@<vOrg>`, or just the `<user>` (the latter only if vOrg is 
-  included in the endpoint) 
+* `vdc` (optional): the vDC name
+  
+* `identity`: the `<user>@<vOrg>`
 
 * `credential`: the password

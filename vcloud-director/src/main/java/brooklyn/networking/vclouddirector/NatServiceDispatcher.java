@@ -3,9 +3,11 @@ package brooklyn.networking.vclouddirector;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +23,7 @@ import brooklyn.location.PortRange;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.task.SingleThreadedScheduler;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -176,8 +179,16 @@ public class NatServiceDispatcher {
         
         public EdgeGatewayIdentifier(Credentials creds) {
             this.endpoint = checkNotNull(creds, "creds").endpoint;
-            this.vOrg = (creds.identity.contains("@")) ? creds.identity.substring(creds.identity.lastIndexOf("@") + 1) : null;
             this.vDC = creds.vDC;
+            
+            String endpointPath = URI.create(endpoint).getPath();
+            if (Strings.isNonBlank(endpointPath)) {
+                vOrg = endpointPath;
+            } else if (creds.identity.contains("@")) {
+                vOrg = creds.identity.substring(creds.identity.lastIndexOf("@") + 1);
+            } else {
+                vOrg = null;
+            }
         }
 
         @Override
@@ -262,6 +273,8 @@ public class NatServiceDispatcher {
                 .setUncaughtExceptionHandler(new UncaughtExceptionHandlerImplementation())
                 .setDaemon(true)
                 .build());
+        
+        LOG.info("Initialised dispatcher: endpoints="+endpoints+"; defaultPortRange="+defaultPortRange);
     }
 
     public void close() {
@@ -315,7 +328,7 @@ public class NatServiceDispatcher {
                     executeActions(creds);
                     return null;
                 } catch (Exception e) {
-                    LOG.warn("Problem executing action to modify NAT rules for "+creds.identity+" @ "+creds.credential, e);
+                    LOG.warn("Problem executing action to modify NAT rules for "+creds.identity+" @ "+creds.endpoint, e);
                     throw Exceptions.propagate(e);
                 }
             }
@@ -406,7 +419,7 @@ public class NatServiceDispatcher {
         synchronized (clients) {
             NatService result = clients.get(creds);
             if (result == null) {
-                EndpointConfig endpointConfig = endpoints.get(creds.endpoint);
+                EndpointConfig endpointConfig = getEndpointConfig(creds.endpoint);
                 if (endpointConfig == null) {
                     throw new IllegalArgumentException("Unknown endpoint "+creds.endpoint+" (identity "+creds.identity+")");
                 }
@@ -426,5 +439,17 @@ public class NatServiceDispatcher {
             }
             return result;
         }
+    }
+    
+    protected EndpointConfig getEndpointConfig(String endpoint) {
+        for (String contender : endpoints.keySet()) {
+            if (endpoint.startsWith(contender)) {
+                return endpoints.get(contender);
+            }
+            if (contender.endsWith("/") && endpoint.startsWith(contender.substring(0, contender.length()-1))) {
+                return endpoints.get(contender);
+            }
+        }
+        throw new IllegalArgumentException("Unknown endpoint "+endpoint);
     }
 }

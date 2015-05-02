@@ -98,6 +98,13 @@
             </exclusions>
         </dependency>
         
+        <!--  For Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        
         <!-- For exposing as web-service -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

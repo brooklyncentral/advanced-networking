@@ -1,5 +1,8 @@
 package brooklyn.networking.vclouddirector;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -41,12 +44,17 @@ public class NatDirectClient implements NatClient {
     }
     
     public NatDirectClient(JcloudsLocation loc) {
-        String endpoint = transformEndpoint(loc.getEndpoint());
+        String identity = checkNotNull(loc.getIdentity(), "identity");
+        String credential = checkNotNull(loc.getCredential(), "credential");
+        
+        checkArgument(identity.contains("@"), "identity %s does not contain vOrg, in location %s", identity, loc);
+        String vOrg = identity.substring(identity.lastIndexOf("@") + 1);
+        String endpoint = transformEndpoint(loc.getEndpoint(), vOrg);
 
         client = NatService.builder()
                 .endpoint(endpoint)
-                .identity(loc.getIdentity())
-                .credential(loc.getCredential())
+                .identity(identity)
+                .credential(credential)
                 .mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint))
                 .build();
     }

@@ -173,7 +173,12 @@ public class NatServiceDispatcherTest {
         public List<HostAndPort> openPortForwarding(Iterable<PortForwardingConfig> args) throws VCloudException {
             List<HostAndPort> result = Lists.newArrayList();
             for (PortForwardingConfig arg : args) {
-                result.add(HostAndPort.fromParts("mypublichost", nextPort++));
+                HostAndPort publicEndpoint = arg.publicEndpoint == null 
+                        ? HostAndPort.fromParts("mypublichost", (nextPort++)) 
+                        : arg.publicEndpoint.hasPort() 
+                                ? arg.publicEndpoint 
+                                : HostAndPort.fromParts(arg.publicEndpoint.getHostText(), nextPort++);
+                result.add(publicEndpoint);
             }
             return result;
         }
@@ -187,7 +192,7 @@ public class NatServiceDispatcherTest {
         public List<HostAndPort> closePortForwarding(Iterable<PortForwardingConfig> args) throws VCloudException {
             List<HostAndPort> result = Lists.newArrayList();
             for (PortForwardingConfig arg : args) {
-                result.add(HostAndPort.fromParts("mypublichost", 60000));
+                result.add(arg.publicEndpoint);
             }
             return result;
         }
