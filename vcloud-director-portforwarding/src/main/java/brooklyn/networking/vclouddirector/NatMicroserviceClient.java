@@ -9,18 +9,17 @@ import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.Beta;
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.escape.Escaper;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.UrlEscapers;
+
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.http.HttpTool;
 import brooklyn.util.http.HttpToolResponse;
 import brooklyn.util.net.Urls;
-
-import com.google.common.annotations.Beta;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.escape.Escaper;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.UrlEscapers;
 
 /**
  * For adding/removing NAT rules to vcloud-director.
@@ -47,10 +46,11 @@ public class NatMicroserviceClient implements NatClient {
     private final String identity;
 
     public NatMicroserviceClient(String microserviceUri, JcloudsLocation loc) {
+        String identityAtVOrg = checkNotNull(loc.getIdentity(), "identity");
         this.microserviceUri = checkNotNull(microserviceUri, "microserviceUri");
-        this.identity = checkNotNull(loc.getIdentity(), "identity");
+        this.identity = getIdentity(identityAtVOrg);
         this.credential = checkNotNull(loc.getCredential(), "credential");
-        
+
         checkArgument(identity.contains("@"), "identity %s does not contain vOrg, in location %s", identity, loc);
         String vOrg = identity.substring(identity.lastIndexOf("@") + 1);
         this.endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), vOrg);
@@ -105,5 +105,17 @@ public class NatMicroserviceClient implements NatClient {
             throw new RuntimeException(msg);
         }
         return args.publicEndpoint;
+    }
+
+    /**
+     * Scan identityAtVOrg to check if the identity contains a `@` i.e. email as identity
+     * @param identityAtVOrg
+     * @return identity
+     */
+    private String getIdentity(String identityAtVOrg) {
+        checkArgument(identityAtVOrg.contains("@"), "identityAtVOrg %s does not contain vOrg, in location %s", identityAtVOrg);
+        return CharMatcher.is('@').countIn(identityAtVOrg) > 1 ?
+                identityAtVOrg.substring(0, identityAtVOrg.lastIndexOf("@")) :
+                identityAtVOrg;
     }
 }
