@@ -40,7 +40,6 @@
         <commons-lang.version>2.4</commons-lang.version>
         <swagger.version>1.0.1</swagger.version>
         <jetty-orbit-javax-servlet.version>3.0.0.v201112011016</jetty-orbit-javax-servlet.version>
-        <resteasy.version>3.0.8.Final</resteasy.version>
         <jsr311-api.version>1.1.1</jsr311-api.version>
         <airline.version>0.6</airline.version>
     </properties>
@@ -166,33 +165,6 @@
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-core</artifactId>
             <version>${jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
-            <version>${resteasy.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson-provider</artifactId>
-            <version>${resteasy.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>jaxrs-api</artifactId>
-            <version>${resteasy.version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
