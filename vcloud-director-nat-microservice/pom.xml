@@ -220,7 +220,7 @@
         <dependency>
             <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>vcloud-director</artifactId>
-            <version>1.9.0-rc2</version>
+            <version>1.9.0-rc3</version>
             <scope>test</scope>
         </dependency>
 
