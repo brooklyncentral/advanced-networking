@@ -47,7 +47,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     @Override
     public List<NatRuleSummary> list(String endpoint, String vDC, String identity, String credential) {
         try {
-            LOG.info("listing nat rules on " + endpoint);
+            LOG.info("listing nat rule on {} @ {} (vDC {})", new Object[]{identity, endpoint, vDC});
             List<NatRuleType> rules = dispatcher().getNatRules(endpoint, vDC, identity, credential);
             return FluentIterable
                     .from(rules)
@@ -67,7 +67,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     public String openPortForwarding(String endpoint, String vDC,
             String identity, String credential, String protocol,
             String original, String originalPortRange, String translated) {
-        LOG.info("creating nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
+        LOG.info("creating nat rule {} {} -> {}, on {} @ {} (vDC {})", new Object[]{protocol, original, translated, identity, endpoint, vDC});
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
         Preconditions.checkArgument(translatedHostAndPort.hasPort(), "translated %s must include port", translated);
@@ -88,7 +88,7 @@ public class NatServiceResource extends AbstractRestResource implements NatServi
     public Response closePortForwarding(String endpoint,
             String vDC, String identity, String credential,
             String protocol, String original, String translated) {
-        LOG.info("deleting nat rule {} -> {} for {}", new Object[]{original, translated, protocol});
+        LOG.info("deleting nat rule {} {} -> {}, on {} @ {} (vDC {})", new Object[]{protocol, original, translated, identity, endpoint, vDC});
         // TODO throw 404 if not found
         HostAndPort originalHostAndPort = HostAndPort.fromString(original);
         HostAndPort translatedHostAndPort = HostAndPort.fromString(translated);
