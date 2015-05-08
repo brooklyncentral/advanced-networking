@@ -94,6 +94,7 @@ public class NatService {
         private String identity;
         private String credential;
         private String endpoint;
+        private String vDC;
         private String trustStore;
         private String trustStorePassword;
         private PortRange portRange = PortRanges.ANY_HIGH_PORT;
@@ -108,6 +109,9 @@ public class NatService {
         }
         public Builder endpoint(String val) {
             this.endpoint = checkNotNull(val, "endpoint"); return this;
+        }
+        public Builder vDC(@Nullable String val) {
+            this.vDC = val; return this;
         }
         public Builder trustStore(String val) {
             this.trustStore = val; return this;
@@ -193,6 +197,7 @@ public class NatService {
     }
 
     private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
+    @Nullable private final String vDC;
     private final String credential;
     private final String identity;
     private final String trustStore;
@@ -205,6 +210,7 @@ public class NatService {
 
     public NatService(Builder builder) {
         baseUrl = checkNotNull(builder.endpoint, "endpoint");
+        vDC = builder.vDC;
         identity = checkNotNull(builder.identity, "identity");
         credential = checkNotNull(builder.credential, "credential");
         trustStore = builder.trustStore;

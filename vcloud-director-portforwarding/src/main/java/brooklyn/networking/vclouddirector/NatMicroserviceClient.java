@@ -13,6 +13,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.http.HttpTool;
 import brooklyn.util.http.HttpToolResponse;
 import brooklyn.util.net.Urls;
+import brooklyn.util.text.Strings;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Splitter;
@@ -43,13 +44,16 @@ public class NatMicroserviceClient implements NatClient {
     
     private final String microserviceUri;
     private final String endpoint; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
+    private final String vDC;
     private final String credential;
     private final String identity;
+
 
     public NatMicroserviceClient(String microserviceUri, JcloudsLocation loc) {
         this.microserviceUri = checkNotNull(microserviceUri, "microserviceUri");
         this.identity = checkNotNull(loc.getIdentity(), "identity");
         this.credential = checkNotNull(loc.getCredential(), "credential");
+        this.vDC = loc.getRegion();
         
         checkArgument(identity.contains("@"), "identity %s does not contain vOrg, in location %s", identity, loc);
         String vOrg = identity.substring(identity.lastIndexOf("@") + 1);
@@ -66,6 +70,7 @@ public class NatMicroserviceClient implements NatClient {
         Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
         URI uri = URI.create(Urls.mergePaths(microserviceUri, "/v1/nat"
                 + "?endpoint="+escaper.escape(endpoint)
+                + (Strings.isNonBlank(vDC) ? "&vdc="+escaper.escape(vDC) : "")
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + args.protocol
@@ -92,6 +97,7 @@ public class NatMicroserviceClient implements NatClient {
         Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
         URI uri = URI.create(Urls.mergePaths(microserviceUri, "/v1/nat"
                 + "?endpoint="+escaper.escape(endpoint)
+                + (Strings.isNonBlank(vDC) ? "&vdc="+escaper.escape(vDC) : "")
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
                 + "&protocol=" + args.protocol

@@ -50,9 +50,11 @@ public class NatDirectClient implements NatClient {
         checkArgument(identity.contains("@"), "identity %s does not contain vOrg, in location %s", identity, loc);
         String vOrg = identity.substring(identity.lastIndexOf("@") + 1);
         String endpoint = transformEndpoint(loc.getEndpoint(), vOrg);
+        String vDC = loc.getRegion();
 
         client = NatService.builder()
                 .endpoint(endpoint)
+                .vDC(vDC)
                 .identity(identity)
                 .credential(credential)
                 .mutex(MutexRegistry.INSTANCE.getMutexFor(endpoint))
