@@ -429,6 +429,7 @@ public class NatServiceDispatcher {
                         .identity(creds.identity)
                         .credential(creds.credential)
                         .endpoint(creds.endpoint)
+                        .vDC(creds.vDC)
                         .trustStore(endpointConfig.trustStore)
                         .trustStorePassword(endpointConfig.trustStorePassword)
                         .portRange(portRange)

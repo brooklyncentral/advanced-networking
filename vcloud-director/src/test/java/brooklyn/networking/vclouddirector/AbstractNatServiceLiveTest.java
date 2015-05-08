@@ -67,9 +67,16 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
 
     public static final String LOCATION_TAI_2_SPEC = "Canopy_TAI_2";
 
+    // A second vDC in a vOrg within TAI 2.0
+    public static final String LOCATION_TAI_2b_SPEC = "Canopy_TAI_2b";
+
     public static final String LOCATION_SPEC = LOCATION_TAI_SPEC;
 
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
+
+    public static final String INTERNAL_MACHINE_IP_TAI_2 = "192.168.10.110"; // IP within TAI 2.0's first vDC
+
+    public static final String INTERNAL_MACHINE_IP_TAI_2b = "192.168.11.110"; // IP within TAI 2.0's second vDC
 
     public static final int STARTING_PORT = 19980;
     public static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString("19980-19999");
@@ -229,7 +236,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     
     protected void assertRuleExists(HostAndPort expectedPublicEndpoint, HostAndPort targetEndpoint) throws Exception {
         NatService service = newServiceBuilder(loc).build();
-        List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
+        List<NatRuleType> rules = service.getNatRules();
         NatRuleType rule = Iterables.tryFind(rules, NatPredicates.translatedEndpointEquals(targetEndpoint)).get();
         
         assertEquals(rule.getGatewayNatRule().getOriginalIp(), expectedPublicEndpoint.getHostText());
@@ -240,7 +247,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     
     protected void assertRuleNotExists(HostAndPort publicEndpoint, HostAndPort targetEndpoint, Protocol protocol) throws Exception {
         NatService service = newServiceBuilder(loc).build();
-        List<NatRuleType> rules = service.getNatRules(service.getEdgeGateway());
+        List<NatRuleType> rules = service.getNatRules();
         Optional<NatRuleType> rule = Iterables.tryFind(rules, NatPredicates.translatedEndpointEquals(targetEndpoint));
         assertFalse(rule.isPresent(), (rule.isPresent() ? toString(rule.get()) : rule.toString()));
     }

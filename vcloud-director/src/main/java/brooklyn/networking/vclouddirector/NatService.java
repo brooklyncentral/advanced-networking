@@ -6,7 +6,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
+import javax.annotation.Nullable;
 import javax.xml.bind.JAXBElement;
 
 import org.slf4j.Logger;
@@ -43,6 +43,7 @@ import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;
 import com.vmware.vcloud.api.rest.schema.GatewayInterfaceType;
 import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
 import com.vmware.vcloud.api.rest.schema.IpRangeType;
+import com.vmware.vcloud.api.rest.schema.IpRangesType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatServiceType;
 import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
@@ -76,6 +77,8 @@ import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 @Beta
 public class NatService {
 
+    // TODO Given a vDC identifier, how do we tell which EdgeGateway that corresponds to?
+    
     private static final Logger LOG = LoggerFactory.getLogger(NatService.class);
     
     private static final List<Version> VCLOUD_VERSIONS = ImmutableList.of(Version.V5_5, Version.V5_1, Version.V1_5);
@@ -329,22 +332,12 @@ public class NatService {
         Stopwatch stopwatch = Stopwatch.createStarted();
         
         synchronized (getMutex()) {
-            EdgeGateway edgeGateway = getEdgeGateway();
+            EdgeGateway edgeGateway = getEdgeGatewayForPublicIp(publicIps);
             GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
             NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
+            Map<String, GatewayInterfaceType> publicIpToGatewayInterface = getUplinkGatewayInterfacePerPublicIp(edgeGateway, publicIps);
 
-            // extract the external network attached to the EdgeGateway and its subnet participations to validate public IP
-            ReferenceType externalNetworkRef = null;
-            List<SubnetParticipationType> subnetParticipations = Lists.newArrayList();
-            for (GatewayInterfaceType gatewayInterfaceType : edgeGateway.getResource().getConfiguration().getGatewayInterfaces().getGatewayInterface()) {
-                if (gatewayInterfaceType.getInterfaceType().equals("uplink")) {
-                    externalNetworkRef = gatewayInterfaceType.getNetwork();
-                    subnetParticipations.addAll(gatewayInterfaceType.getSubnetParticipation());
-                }
-            }
             timeRetrieve = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            
-            checkPublicIps(publicIps, subnetParticipations);
             
             // generate and add the new rules
             for (PortForwardingConfig arg : delta.toOpen) {
@@ -352,6 +345,9 @@ public class NatService {
                 // TODO If many NAT rules to be opened in the batch, then this is inefficient - but nothing compared to
                 // the time it takes VMware to make the change (e.g. 40 seconds).
                 HostAndPort publicEndpoint = arg.publicEndpoint;
+                GatewayInterfaceType gatewayInterface = publicIpToGatewayInterface.get(publicEndpoint.getHostText());
+                ReferenceType externalNetworkRef = gatewayInterface.getNetwork();
+                
                 if (arg.publicEndpoint.hasPort()) {
                     publicEndpoint = arg.publicEndpoint;
                 } else {
@@ -404,7 +400,7 @@ public class NatService {
 
             // Confirm the updates have been applied.
             // Retrieves a new EdgeGateway instance, to ensure we're not just looking at our local copy.
-            List<NatRuleType> rules = getNatRules(getEdgeGateway());
+            List<NatRuleType> rules = getNatRules(getEdgeGateway(edgeGateway.getReference()));
 
             // Confirm that the newly created rules exist,
             // with the expected translated (i.e internal) and original (i.e. public) addresses,
@@ -483,25 +479,34 @@ public class NatService {
         // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
         // If instead we create new objects then risk those having different config - this is *not* a delta!
 
+        List<NatRuleType> result = Lists.newArrayList();
         synchronized (getMutex()) {
-            return getNatRules(getEdgeGateway());
+            for (EdgeGateway edgeGateway : getEdgeGateways()) {
+                result.addAll(getNatRules(edgeGateway));
+            }
         }
+        return result;
     }
 
     public void enableNatService() throws VCloudException {
         if (LOG.isDebugEnabled()) LOG.debug("Enabling NAT Service at {}", baseUrl);
         
         synchronized (getMutex()) {
-            EdgeGateway edgeGateway = getEdgeGateway();
-            GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
-            NatServiceType natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class).get();
-    
-            // Modify
-            natService.setIsEnabled(true);
-            
-            // Execute task
-            Task task = edgeGateway.configureServices(gatewayFeatures);
-            waitForTask(task, "enable nat-service");
+            for (EdgeGateway edgeGateway : getEdgeGateways()) {
+                GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
+                Maybe<NatServiceType> natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class);
+        
+                if (natService.isPresent()) {
+                    LOG.info("Enabling NAT Service for {} @ {}, EdgeGateway {}", new Object[] {identity, baseUrl, edgeGateway});
+                    
+                    // Modify
+                    natService.get().setIsEnabled(true);
+                    
+                    // Execute task
+                    Task task = edgeGateway.configureServices(gatewayFeatures);
+                    waitForTask(task, "enable nat-service");
+                }
+            }
         }
     }
 
@@ -526,36 +531,51 @@ public class NatService {
         }
     }
 
+    private boolean includesPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
+        if (subnetParticipations == null) return false;
+        
+        for (SubnetParticipationType subnetParticipation : subnetParticipations) {
+            if (subnetParticipation.getIpRanges() != null && subnetParticipation.getIpRanges().getIpRange() != null) {
+                for (IpRangeType ipRangeType : subnetParticipation.getIpRanges().getIpRange()) {
+                    long ipLo = ipToLong(InetAddresses.forString(ipRangeType.getStartAddress()));
+                    long ipHi = ipToLong(InetAddresses.forString(ipRangeType.getEndAddress()));
+                    long ipToTest = ipToLong(InetAddresses.forString(publicIp));
+                    if (ipToTest >= ipLo && ipToTest <= ipHi) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
     private void checkPublicIps(Iterable<String> publicIps, List<SubnetParticipationType> subnetParticipations) {
         for (String publicIp : publicIps) {
             checkPublicIp(publicIp, subnetParticipations);
         }
     }
-    
+
     private void checkPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
-        boolean found = false;
-        for (SubnetParticipationType subnetParticipation : subnetParticipations) {
-            if (subnetParticipation.getIpRanges() != null) {
-                Iterator<IpRangeType> iter = subnetParticipation.getIpRanges().getIpRange().iterator();
-                while (!found && iter.hasNext()) {
-                    IpRangeType ipRangeType = iter.next();
-                    long ipLo = ipToLong(InetAddresses.forString(ipRangeType.getStartAddress()));
-                    long ipHi = ipToLong(InetAddresses.forString(ipRangeType.getEndAddress()));
-                    long ipToTest = ipToLong(InetAddresses.forString(publicIp));
-                    found = ipToTest >= ipLo && ipToTest <= ipHi;
-                }
-            }
-        }
+        boolean found = includesPublicIp(publicIp, subnetParticipations);
         if (!found) {
             StringBuilder builder = new StringBuilder();
             builder.append("PublicIp '" + publicIp + "' is not valid. Public IP must fall in the following ranges: ");
-            for (SubnetParticipationType subnetParticipation : subnetParticipations) {
-                for (IpRangeType ipRangeType : subnetParticipation.getIpRanges().getIpRange()) {
-                    builder.append(ipRangeType.getStartAddress());
-                    builder.append(" - ");
-                    builder.append(ipRangeType.getEndAddress());
-                    builder.append(", ");
+            if (subnetParticipations == null) {
+                for (SubnetParticipationType subnetParticipation : subnetParticipations) {
+                    IpRangesType range = subnetParticipation.getIpRanges();
+                    if (range != null && range.getIpRange() != null) {
+                        for (IpRangeType ipRangeType : range.getIpRange()) {
+                            builder.append(ipRangeType.getStartAddress());
+                            builder.append(" - ");
+                            builder.append(ipRangeType.getEndAddress());
+                            builder.append(", ");
+                        }
+                    } else {
+                        builder.append("<no ip range>, ");
+                    }
                 }
+            } else {
+                builder.append("<no subnet participants>");
             }
             LOG.error(builder.toString()+" (rethrowing)");
             throw new IllegalArgumentException(builder.toString());
@@ -572,10 +592,77 @@ public class NatService {
         return result;
     }
 
-    protected EdgeGateway getEdgeGateway() throws VCloudException {
+    protected List<EdgeGateway> getEdgeGateways() throws VCloudException {
+        List<EdgeGateway> result = Lists.newArrayList();
         List<ReferenceType> edgeGatewayRef = queryEdgeGateways();
-        return EdgeGateway.getEdgeGatewayById(client, edgeGatewayRef.get(0).getId());
+        for (ReferenceType ref : edgeGatewayRef) {
+            result.add(EdgeGateway.getEdgeGatewayById(client, ref.getId()));
+        }
+        return result;
     }
+
+    protected EdgeGateway getEdgeGateway(ReferenceType edgeGatewayRef) throws VCloudException {
+        return EdgeGateway.getEdgeGatewayById(client, edgeGatewayRef.getId());
+    }
+
+    protected EdgeGateway getEdgeGatewayForPublicIp(Iterable<String> publicIps) throws VCloudException {
+        Map<EdgeGateway, String> errs = Maps.newLinkedHashMap();
+        
+        for (EdgeGateway edgeGateway : getEdgeGateways()) {
+            // extract the EdgeGateway's subnet participations to validate public IPs
+            List<SubnetParticipationType> subnetParticipations = Lists.newArrayList();
+            for (GatewayInterfaceType gatewayInterfaceType : getUplinkGatewayInterfaces(edgeGateway)) {
+                subnetParticipations.addAll(gatewayInterfaceType.getSubnetParticipation());
+            }
+            try {
+                checkPublicIps(publicIps, subnetParticipations);
+                return edgeGateway;
+            } catch (IllegalArgumentException e) {
+                errs.put(edgeGateway, e.getMessage());
+            }
+        }
+        
+        StringBuilder builder = new StringBuilder();
+        builder.append("No EdgeGateway for publicIps "+publicIps+":\n");
+        for (Map.Entry<EdgeGateway, String> entry : errs.entrySet()) {
+            builder.append("\t");
+            builder.append("edgeGateway="+entry.getKey().getReference().getId()+"; "+entry.getValue());
+            builder.append("\n");
+        }
+        String err = builder.toString();
+        throw new IllegalArgumentException(err);
+    }
+
+    private Map<String, GatewayInterfaceType> getUplinkGatewayInterfacePerPublicIp(EdgeGateway edgeGateway, Iterable<String> publicIps) {
+        Map<String, GatewayInterfaceType> result = Maps.newLinkedHashMap();
+        List<GatewayInterfaceType> gatewayInterfaces = getUplinkGatewayInterfaces(edgeGateway);
+        for (String publicIp : publicIps) {
+            boolean found = false;
+            for (GatewayInterfaceType gatewayInterface : gatewayInterfaces) {
+                if (includesPublicIp(publicIp, gatewayInterface.getSubnetParticipation())) {
+                    result.put(publicIp, gatewayInterface);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IllegalStateException("No Gateway Interface for public IP "+publicIp+" in edge gateway "+edgeGateway.getReference().getId());
+            }
+        }
+        return result;
+    }
+    
+    // extract the external network attached to the EdgeGateway
+    private List<GatewayInterfaceType> getUplinkGatewayInterfaces(EdgeGateway edgeGateway) {
+        List<GatewayInterfaceType> result = Lists.newArrayList();
+        for (GatewayInterfaceType gatewayInterfaceType : edgeGateway.getResource().getConfiguration().getGatewayInterfaces().getGatewayInterface()) {
+            if (gatewayInterfaceType.getInterfaceType().equals("uplink")) {
+                result.add(gatewayInterfaceType);
+            }
+        }
+        return result;
+    }
+
 
     protected GatewayFeaturesType getGatewayFeatures(EdgeGateway edgeGateway) {
         return edgeGateway
