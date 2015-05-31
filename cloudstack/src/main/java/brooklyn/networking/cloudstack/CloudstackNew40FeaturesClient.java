@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -32,7 +33,6 @@ import org.jclouds.cloudstack.CloudStackContext;
 import org.jclouds.cloudstack.CloudStackGlobalApi;
 import org.jclouds.cloudstack.domain.AsyncJob;
 import org.jclouds.cloudstack.domain.AsyncJob.Status;
-import org.jclouds.cloudstack.domain.IPForwardingRule;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.domain.NetworkOffering;
 import org.jclouds.cloudstack.domain.PortForwardingRule;
@@ -59,12 +59,20 @@ import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.http.HttpToolResponse;
+import brooklyn.util.stream.Streams;
+import brooklyn.util.time.Time;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -75,12 +83,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.inject.Module;
 
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.http.HttpToolResponse;
-import brooklyn.util.time.Time;
-
 public class CloudstackNew40FeaturesClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(CloudstackNew40FeaturesClient.class);
@@ -90,14 +92,48 @@ public class CloudstackNew40FeaturesClient {
     //context knows it and gives us the signer; included for completeness only
     @SuppressWarnings("unused")
     private final String secretKey;
+    private Optional<AccountAndDomain> accAndDomain;
 
     private final CloudStackContext context;
 
+
+    private static class AccountAndDomain {
+        final String account;
+        final String domainId;
+
+        public static Optional<AccountAndDomain> newOptional(Map<String, String> templateOptions) {
+            if (templateOptions != null) {
+                return newOptional(templateOptions.get("account"), templateOptions.get("domainId"));
+            } else {
+                return Optional.<AccountAndDomain>absent();
+            }
+        }
+        
+        public static Optional<AccountAndDomain> newOptional(String account, String domainId) {
+            if (account != null) {
+                return Optional.of(new AccountAndDomain(account, domainId));
+            } else {
+                if (domainId != null) throw new IllegalArgumentException("Account and domainId must either both be null, or both be set: account="+account+"; domainId="+domainId);
+                return Optional.<AccountAndDomain>absent();
+            }
+        }
+        
+        public AccountAndDomain(String account, String domainId) {
+            this.account = account;
+            this.domainId = domainId;
+        }
+    }
+    
     public static CloudstackNew40FeaturesClient newInstance(JcloudsLocation loc) {
-        return newInstance(loc.getConfig(JcloudsLocation.CLOUD_ENDPOINT), loc.getIdentity(), loc.getCredential());
+        Optional<AccountAndDomain> accAndDomain = AccountAndDomain.newOptional(loc.getConfig(JcloudsLocation.TEMPLATE_OPTIONS));
+        return newInstance(loc.getConfig(JcloudsLocation.CLOUD_ENDPOINT), loc.getIdentity(), loc.getCredential(), accAndDomain);
     }
 
     public static CloudstackNew40FeaturesClient newInstance(String endpoint, String apiKey, String secretKey) {
+        return newInstance(endpoint, apiKey, secretKey, Optional.<AccountAndDomain>absent());
+    }
+    
+    public static CloudstackNew40FeaturesClient newInstance(String endpoint, String apiKey, String secretKey, Optional<AccountAndDomain> accAndDomain) {
         Properties overrides = new Properties();
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
@@ -113,13 +149,18 @@ public class CloudstackNew40FeaturesClient {
                 .overrides(overrides);
 
         CloudStackContext context = builder.buildView(CloudStackContext.class);
-        return new CloudstackNew40FeaturesClient(endpoint, apiKey, secretKey, context);
+        return new CloudstackNew40FeaturesClient(endpoint, apiKey, secretKey, accAndDomain, context);
     }
 
     public CloudstackNew40FeaturesClient(String endpoint, String apiKey, String secretKey, CloudStackContext context) {
+        this(endpoint, apiKey, secretKey, Optional.<AccountAndDomain>absent(), context);
+    }
+    
+    public CloudstackNew40FeaturesClient(String endpoint, String apiKey, String secretKey, Optional<AccountAndDomain> accAndDomain, CloudStackContext context) {
+        this.endpoint = endpoint;
         this.apiKey = apiKey;
         this.secretKey = secretKey;
-        this.endpoint = endpoint;
+        this.accAndDomain = accAndDomain;
         this.context = context;
     }
 
@@ -220,6 +261,10 @@ public class CloudstackNew40FeaturesClient {
     protected JsonArray listVpcsJson() {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listVPCs");
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -250,7 +295,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("name", name);
         params.put("vpcOfferingId", vpcOfferingId);
         params.put("zoneId", zoneId);
-
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
@@ -428,6 +476,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("vpcid", vpcId);
         params.put("gateway", gateway);
         params.put("netmask", netmask);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -749,6 +801,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("command", "associateIpAddress");
 
         params.put("vpcid", vpcId);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -780,6 +836,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("command", "listPublicIpAddresses");
 
         params.put("vpcid", vpcId);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -977,6 +1037,10 @@ public class CloudstackNew40FeaturesClient {
     public Maybe<String> findVpcIdFromNetworkId(final String networkId) {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listNetworks");
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
