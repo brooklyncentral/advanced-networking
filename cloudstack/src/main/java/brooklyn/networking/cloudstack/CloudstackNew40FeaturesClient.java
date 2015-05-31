@@ -1041,10 +1041,15 @@ public class CloudstackNew40FeaturesClient {
         return Maybe.of(Iterables.tryFind(vms, new Predicate<VirtualMachine>() {
             @Override
             public boolean apply(VirtualMachine vm) {
-                //check first NIC for ip address
-                return vm.getNICs().iterator().next().getIPAddress().equals(ipAddress);
+                //check all NICs for ip address
+                return CloudstackFunctions.vmIpAddresses().apply(vm).contains(ipAddress);
             }
         }));
+    }
+
+    public Map<VirtualMachine, List<String>> getVmIps() {
+        Set<VirtualMachine> vms = getVirtualMachineClient().listVirtualMachines();
+        return Maps.toMap(vms, CloudstackFunctions.vmIpAddresses());
     }
 
     public Maybe<String> findVpcIdFromNetworkId(final String networkId) {
