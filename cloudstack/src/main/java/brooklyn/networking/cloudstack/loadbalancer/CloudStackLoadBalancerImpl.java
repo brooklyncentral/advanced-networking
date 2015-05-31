@@ -40,7 +40,7 @@ import brooklyn.entity.proxy.LoadBalancer;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.access.BrooklynAccessUtils;
-import brooklyn.location.cloud.CloudMachineNamer;
+import brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
@@ -194,7 +194,7 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         String lbName = getAttribute(LOAD_BALANCER_NAME);
         if (Strings.isBlank(lbName)) {
             ConfigBag setup = ConfigBag.newInstance(getAllConfig());
-            lbName = new CloudMachineNamer(setup).generateNewGroupId();
+            lbName = new BasicCloudMachineNamer().generateNewGroupId(setup);
             setAttribute(LOAD_BALANCER_NAME, lbName);
         }
         createLoadBalancer(lbName);

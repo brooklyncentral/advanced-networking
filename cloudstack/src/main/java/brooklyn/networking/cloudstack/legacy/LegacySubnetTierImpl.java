@@ -47,7 +47,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortMapping;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.cloud.CloudMachineNamer;
+import brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.util.collections.MutableMap;
@@ -129,7 +129,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                             options.gateway(subnet.addressAtOffset(1).getHostAddress()).
                                 netmask(subnet.netmask().getHostAddress());
                         }
-                        String name = new CloudMachineNamer(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this)).generateNewGroupId();
+                        String name = new BasicCloudMachineNamer().generateNewGroupId(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this));
                         Network nw = cloudstackClient.getNetworkClient().createNetworkInZone(zoneId, nwOffering,
                                 name, name+" subnet",
                                 options);

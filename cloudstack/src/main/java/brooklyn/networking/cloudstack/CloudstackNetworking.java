@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.cloud.CloudMachineNamer;
+import brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.net.Cidr;
@@ -112,7 +112,7 @@ public class CloudstackNetworking {
             options.gateway(subnetCidr.addressAtOffset(1).getHostAddress())
                     .netmask(subnetCidr.netmask().getHostAddress());
         }
-        String name = new CloudMachineNamer(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this)).generateNewGroupId();
+        String name = new BasicCloudMachineNamer().generateNewGroupId(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this));
         String displayText = name+" subnet";
         Network network = client.getNetworkClient().createNetworkInZone(zoneId, nwOfferingId, name, displayText, options);
         String networkId = network.getId();
