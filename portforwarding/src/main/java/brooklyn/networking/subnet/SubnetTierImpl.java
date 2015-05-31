@@ -210,7 +210,12 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                     optionalPublicPort,
                     protocol,
                     Cidr.UNIVERSAL);
-            pfm.associate(node.getId(), result, targetPort);
+            if (result != null) {
+                pfm.associate(node.getId(), result, targetPort);
+            } else {
+                throw new IllegalStateException("Failed to open port-forwarding for "+node+", port "+targetPort);
+            }
+            
             return result;
         }
 
