@@ -134,7 +134,8 @@ public class CloudstackPortForwarder implements PortForwarder {
                 }
 
                 log.info(format("Opening port:%s on vm:%s with IP:%s", targetPort, vm.get().getId(), publicIpAddress.getIPAddress()));
-                client.createPortForwardRuleForVpc(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, targetPort, vm.get().getId(), targetPort);
+                String jobid = client.createPortForwardRuleForVpc(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, targetPort, vm.get().getId(), targetPort);
+                client.waitForJobSuccess(jobid);
                 log.debug("Enabled port-forwarding on {}", publicIpAddress.getIPAddress() + ":" + targetPort);
                 return HostAndPort.fromParts(publicIpAddress.getIPAddress(), targetPort);
             }
