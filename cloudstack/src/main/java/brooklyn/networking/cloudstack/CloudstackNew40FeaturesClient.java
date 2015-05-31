@@ -101,9 +101,9 @@ public class CloudstackNew40FeaturesClient {
         final String account;
         final String domainId;
 
-        public static Optional<AccountAndDomain> newOptional(Map<String, String> templateOptions) {
+        public static Optional<AccountAndDomain> newOptional(Map<String, Object> templateOptions) {
             if (templateOptions != null) {
-                return newOptional(templateOptions.get("account"), templateOptions.get("domainId"));
+                return newOptional((String)templateOptions.get("account"), (String)templateOptions.get("domainId"));
             } else {
                 return Optional.<AccountAndDomain>absent();
             }
