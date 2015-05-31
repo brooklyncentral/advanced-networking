@@ -25,7 +25,7 @@ import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.JcloudsMachineLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.management.internal.LocalManagementContext;
 
@@ -49,7 +49,7 @@ public class CloudStackPrivateNetworkLocationCustomizerLiveTest {
     private BrooklynProperties brooklynProperties;
     private ManagementContext managementContext;
     private JcloudsLocation loc;
-    private JcloudsSshMachineLocation machine;
+    private JcloudsMachineLocation machine;
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
@@ -74,7 +74,7 @@ public class CloudStackPrivateNetworkLocationCustomizerLiveTest {
         LOG.info("AssignableLocations=" + Joiner.on("\n\t").join(loc.getComputeService().listAssignableLocations()));
         LOG.info("Nodes=" + Joiner.on("\n\t").join(loc.getComputeService().listNodes()));
 
-        machine = loc.obtain(ImmutableMap.of(
+        machine = (JcloudsMachineLocation) loc.obtain(ImmutableMap.of(
                 "openPorts", ImmutableList.of(22),
                 "customizer", new CloudStackPrivateNetworkLocationCustomizer()));
         LOG.info("Created machine {}", machine);

@@ -48,7 +48,7 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.PortRanges;
-import brooklyn.location.cloud.CloudMachineNamer;
+import brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.internal.LocalManagementContext;
@@ -155,7 +155,7 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
         String nwOffering = client.getNetworkOfferingWithName("DefaultIsolatedNetworkOfferingWithSourceNatService");
         // FIXME hardcoded identifier above
         CreateNetworkOptions options = new CreateNetworkOptions();
-        String name = new CloudMachineNamer(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this)).generateNewGroupId();
+        String name = new BasicCloudMachineNamer().generateNewGroupId(new ConfigBag().configure(LocationConfigKeys.CALLER_CONTEXT, this));
         Network nw = client.getNetworkClient().createNetworkInZone(zoneId, nwOffering, name, name+" subnet", options);
         return nw.getId();
     }

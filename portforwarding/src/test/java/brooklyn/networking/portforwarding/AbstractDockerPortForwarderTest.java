@@ -89,7 +89,7 @@ public abstract class AbstractDockerPortForwarderTest {
 
         Future<SshMachineLocation> privateFuture = executor.submit(new Callable<SshMachineLocation>() {
             public SshMachineLocation call() throws Exception {
-                return loc.obtain(MutableMap.<String, Object>builder()
+                return (SshMachineLocation) loc.obtain(MutableMap.<String, Object>builder()
                         .put("imageId", LOC_IMAGE_ID)
                         .put("hardwareId", LOC_HARDWARE_ID)
                         .put("inboundPorts", ImmutableList.of(22, 8080))

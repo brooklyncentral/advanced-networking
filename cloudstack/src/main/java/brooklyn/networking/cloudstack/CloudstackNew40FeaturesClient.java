@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -32,7 +33,6 @@ import org.jclouds.cloudstack.CloudStackContext;
 import org.jclouds.cloudstack.CloudStackGlobalApi;
 import org.jclouds.cloudstack.domain.AsyncJob;
 import org.jclouds.cloudstack.domain.AsyncJob.Status;
-import org.jclouds.cloudstack.domain.IPForwardingRule;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.domain.NetworkOffering;
 import org.jclouds.cloudstack.domain.PortForwardingRule;
@@ -59,12 +59,20 @@ import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.http.HttpToolResponse;
+import brooklyn.util.stream.Streams;
+import brooklyn.util.time.Time;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -75,12 +83,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.inject.Module;
 
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.http.HttpToolResponse;
-import brooklyn.util.time.Time;
-
 public class CloudstackNew40FeaturesClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(CloudstackNew40FeaturesClient.class);
@@ -90,14 +92,48 @@ public class CloudstackNew40FeaturesClient {
     //context knows it and gives us the signer; included for completeness only
     @SuppressWarnings("unused")
     private final String secretKey;
+    private Optional<AccountAndDomain> accAndDomain;
 
     private final CloudStackContext context;
 
+
+    private static class AccountAndDomain {
+        final String account;
+        final String domainId;
+
+        public static Optional<AccountAndDomain> newOptional(Map<String, Object> templateOptions) {
+            if (templateOptions != null) {
+                return newOptional((String)templateOptions.get("account"), (String)templateOptions.get("domainId"));
+            } else {
+                return Optional.<AccountAndDomain>absent();
+            }
+        }
+        
+        public static Optional<AccountAndDomain> newOptional(String account, String domainId) {
+            if (account != null) {
+                return Optional.of(new AccountAndDomain(account, domainId));
+            } else {
+                if (domainId != null) throw new IllegalArgumentException("Account and domainId must either both be null, or both be set: account="+account+"; domainId="+domainId);
+                return Optional.<AccountAndDomain>absent();
+            }
+        }
+        
+        public AccountAndDomain(String account, String domainId) {
+            this.account = account;
+            this.domainId = domainId;
+        }
+    }
+    
     public static CloudstackNew40FeaturesClient newInstance(JcloudsLocation loc) {
-        return newInstance(loc.getConfig(JcloudsLocation.CLOUD_ENDPOINT), loc.getIdentity(), loc.getCredential());
+        Optional<AccountAndDomain> accAndDomain = AccountAndDomain.newOptional(loc.getConfig(JcloudsLocation.TEMPLATE_OPTIONS));
+        return newInstance(loc.getConfig(JcloudsLocation.CLOUD_ENDPOINT), loc.getIdentity(), loc.getCredential(), accAndDomain);
     }
 
     public static CloudstackNew40FeaturesClient newInstance(String endpoint, String apiKey, String secretKey) {
+        return newInstance(endpoint, apiKey, secretKey, Optional.<AccountAndDomain>absent());
+    }
+    
+    public static CloudstackNew40FeaturesClient newInstance(String endpoint, String apiKey, String secretKey, Optional<AccountAndDomain> accAndDomain) {
         Properties overrides = new Properties();
         overrides.setProperty(Constants.PROPERTY_TRUST_ALL_CERTS, "true");
         overrides.setProperty(Constants.PROPERTY_RELAX_HOSTNAME, "true");
@@ -113,13 +149,18 @@ public class CloudstackNew40FeaturesClient {
                 .overrides(overrides);
 
         CloudStackContext context = builder.buildView(CloudStackContext.class);
-        return new CloudstackNew40FeaturesClient(endpoint, apiKey, secretKey, context);
+        return new CloudstackNew40FeaturesClient(endpoint, apiKey, secretKey, accAndDomain, context);
     }
 
     public CloudstackNew40FeaturesClient(String endpoint, String apiKey, String secretKey, CloudStackContext context) {
+        this(endpoint, apiKey, secretKey, Optional.<AccountAndDomain>absent(), context);
+    }
+    
+    public CloudstackNew40FeaturesClient(String endpoint, String apiKey, String secretKey, Optional<AccountAndDomain> accAndDomain, CloudStackContext context) {
+        this.endpoint = endpoint;
         this.apiKey = apiKey;
         this.secretKey = secretKey;
-        this.endpoint = endpoint;
+        this.accAndDomain = accAndDomain;
         this.context = context;
     }
 
@@ -220,6 +261,10 @@ public class CloudstackNew40FeaturesClient {
     protected JsonArray listVpcsJson() {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listVPCs");
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -250,7 +295,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("name", name);
         params.put("vpcOfferingId", vpcOfferingId);
         params.put("zoneId", zoneId);
-
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 
@@ -267,7 +315,7 @@ public class CloudstackNew40FeaturesClient {
         // todo: handle non-2xx response
 
         try {
-            return waitForJobCompletion(response);
+            return waitForJobCompletion(response, "createVpc("+cidr+", "+displayText+", "+name+", "+vpcOfferingId+", "+zoneId+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -294,7 +342,7 @@ public class CloudstackNew40FeaturesClient {
         // todo: handle non-2xx response
 
         try {
-            return waitForJobCompletion(response);
+            return waitForJobCompletion(response, "deleteVpc("+vpcId+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -304,17 +352,30 @@ public class CloudstackNew40FeaturesClient {
      * gets the ID of the thing whose job we were waiting on, if applicable
      */
     protected String waitForJobCompletion(HttpToolResponse response) throws InterruptedException {
+        return waitForJobCompletion(response, "HTTP response");
+    }
+    
+    protected String waitForJobCompletion(HttpToolResponse response, String message) throws InterruptedException {
         // FIXME response.getMessage(), to do something like httpUrlConnection.getResponseMessage()
-        return waitForJobCompletion(response.getResponseCode(), new ByteArrayInputStream(response.getContent()), "HTTP response");
+        String fullMessage = message + (response.getReasonPhrase() == null ? "" : " - "+response.getReasonPhrase());
+        return waitForJobCompletion(response.getResponseCode(), new ByteArrayInputStream(response.getContent()), fullMessage);
     }
 
     protected String waitForJobCompletion(HttpResponse response) throws InterruptedException, IOException {
-        return waitForJobCompletion(response.getStatusCode(), response.getPayload().openStream(), response.getMessage());
+        String fullMessage = response.getMessage()+"; "+response.getStatusLine();
+        return waitForJobCompletion(response.getStatusCode(), response.getPayload().openStream(), fullMessage);
     }
 
     protected String waitForJobCompletion(int statusCode, InputStream payload, String message) throws InterruptedException {
         if (statusCode < 200 || statusCode >= 300) {
-            throw new RuntimeException("Error: " + message);
+            String payloadStr = null;
+            try {
+                payloadStr = Streams.readFullyString(payload);
+            } catch (Exception e) {
+                Exceptions.propagateIfFatal(e);
+                LOG.debug("On HttpResponse failure, failed to get string payload; continuing with reporting error", e);
+            }
+            throw new RuntimeException("Error "+statusCode+": " + message + (payloadStr != null ? "; "+payloadStr : ""));
         }
 
         JsonElement jr = json(payload);
@@ -428,6 +489,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("vpcid", vpcId);
         params.put("gateway", gateway);
         params.put("netmask", netmask);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -738,7 +803,7 @@ public class CloudstackNew40FeaturesClient {
 //        JsonElement jr = json(response);
 //        log.debug("createNetworkAcl GOT "+jr);
         try {
-            waitForJobCompletion(response);
+            waitForJobCompletion(response, "createVpcNetworkAcl("+networkid+", "+protocol+", "+cidrlist+", "+startport+"-"+endport+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -749,6 +814,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("command", "associateIpAddress");
 
         params.put("vpcid", vpcId);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -768,7 +837,7 @@ public class CloudstackNew40FeaturesClient {
         // TODO does non-2xx response need to be handled separately ?
 
         try {
-            String result = waitForJobCompletion(response);
+            String result = waitForJobCompletion(response, "createIpAddressForVpc("+vpcId+")");
             return getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(result);
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
@@ -780,6 +849,10 @@ public class CloudstackNew40FeaturesClient {
         params.put("command", "listPublicIpAddresses");
 
         params.put("vpcid", vpcId);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -915,9 +988,9 @@ public class CloudstackNew40FeaturesClient {
         HttpToolResponse job2 = disableEgressFirewallForProtocol(networkId, "UDP");
         HttpToolResponse job3 = disableEgressFirewallForProtocol(networkId, "ICMP");
         try {
-            waitForJobCompletion(job1);
-            waitForJobCompletion(job2);
-            waitForJobCompletion(job3);
+            waitForJobCompletion(job1, "disableEgressFirewall("+networkId+", TCP)");
+            waitForJobCompletion(job2, "disableEgressFirewall("+networkId+", UDP)");
+            waitForJobCompletion(job3, "disableEgressFirewall("+networkId+", ICMP)");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -968,15 +1041,24 @@ public class CloudstackNew40FeaturesClient {
         return Maybe.of(Iterables.tryFind(vms, new Predicate<VirtualMachine>() {
             @Override
             public boolean apply(VirtualMachine vm) {
-                //check first NIC for ip address
-                return vm.getNICs().iterator().next().getIPAddress().equals(ipAddress);
+                //check all NICs for ip address
+                return CloudstackFunctions.vmIpAddresses().apply(vm).contains(ipAddress);
             }
         }));
+    }
+
+    public Map<VirtualMachine, List<String>> getVmIps() {
+        Set<VirtualMachine> vms = getVirtualMachineClient().listVirtualMachines();
+        return Maps.toMap(vms, CloudstackFunctions.vmIpAddresses());
     }
 
     public Maybe<String> findVpcIdFromNetworkId(final String networkId) {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listNetworks");
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
 

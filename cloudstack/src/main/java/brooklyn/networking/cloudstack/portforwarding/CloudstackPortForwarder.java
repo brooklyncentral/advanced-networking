@@ -3,17 +3,14 @@ package brooklyn.networking.cloudstack.portforwarding;
 import static java.lang.String.format;
 
 import java.util.List;
+import java.util.Map;
 
+import org.jclouds.cloudstack.domain.NIC;
 import org.jclouds.cloudstack.domain.PortForwardingRule;
 import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.domain.VirtualMachine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -31,6 +28,12 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
 
 public class CloudstackPortForwarder implements PortForwarder {
 
@@ -99,14 +102,19 @@ public class CloudstackPortForwarder implements PortForwarder {
     public HostAndPort openPortForwarding(HasNetworkAddresses targetVm, int targetPort, Optional<Integer> optionalPublicPort,
                                           Protocol protocol, Cidr accessingCidr) {
         Preconditions.checkNotNull(client);
-        String ipAddress = String.valueOf(targetVm.getPrivateAddresses().toArray()[0]);
+        final String ipAddress = String.valueOf(targetVm.getPrivateAddresses().toArray()[0]);
         Maybe<VirtualMachine> vm = client.findVmByIp(ipAddress);
 
         if (vm.isAbsentOrNull()) {
-            log.error("Could not find any VMs with Ip Address:{}", ipAddress);
+            Map<VirtualMachine, List<String>> vmIpMapping = client.getVmIps();
+            log.error("Could not find any VMs with Ip Address {}; contenders: {}", ipAddress, vmIpMapping);
             return null;
         }
-        String networkId = Iterables.getFirst(vm.get().getNICs(), null).getNetworkId();
+        NIC nic = Iterables.find(vm.get().getNICs(), new Predicate<NIC>() {
+            @Override public boolean apply(NIC input) {
+                return (input == null) ? false : ipAddress.equals(input.getIPAddress());
+            }});
+        String networkId = nic.getNetworkId();
         Maybe<String> vpcId = client.findVpcIdFromNetworkId(networkId);
 
         if (vpcId.isAbsent()) {
@@ -126,7 +134,8 @@ public class CloudstackPortForwarder implements PortForwarder {
                 }
 
                 log.info(format("Opening port:%s on vm:%s with IP:%s", targetPort, vm.get().getId(), publicIpAddress.getIPAddress()));
-                client.createPortForwardRuleForVpc(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, targetPort, vm.get().getId(), targetPort);
+                String jobid = client.createPortForwardRuleForVpc(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, targetPort, vm.get().getId(), targetPort);
+                client.waitForJobSuccess(jobid);
                 log.debug("Enabled port-forwarding on {}", publicIpAddress.getIPAddress() + ":" + targetPort);
                 return HostAndPort.fromParts(publicIpAddress.getIPAddress(), targetPort);
             }

@@ -56,6 +56,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.JcloudsMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.networking.NetworkMultiAddressUtils2;
@@ -138,7 +139,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
     }
 
     @Override
-    public JcloudsSshMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
+    public JcloudsMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
         PortableTemplateBuilder<PortableTemplateBuilder<?>> tb = new PortableTemplateBuilder<PortableTemplateBuilder<?>>();
         tb.locationId(getRequiredConfig(CLOUDSTACK_ZONE_ID));
 
@@ -187,7 +188,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
         }
 
         // And finally obtain the machine
-        JcloudsSshMachineLocation m = super.obtain(flags);
+        JcloudsMachineLocation m = (JcloudsMachineLocation) super.obtain(flags);
 
         // if USE_TWO_NICS -- could check they come up assigned correctly (but probably still too dangerous)
 //        String nodeId = m.getNode().getId();
