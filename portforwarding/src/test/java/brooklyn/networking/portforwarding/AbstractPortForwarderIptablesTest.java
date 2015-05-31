@@ -122,7 +122,7 @@ public abstract class AbstractPortForwarderIptablesTest {
                 executor = Executors.newCachedThreadPool();
                 Future<SshMachineLocation> forwarderFuture = executor.submit(new Callable<SshMachineLocation>() {
                     public SshMachineLocation call() throws Exception {
-                        return loc.obtain(MutableMap.<String,Object>builder()
+                        return (SshMachineLocation) loc.obtain(MutableMap.<String,Object>builder()
                             .put("imageId", locImageId)
                             .put("hardwareId", locHardwareId)
                             .put("inboundPorts", ImmutableList.of(22, 11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010))
@@ -133,7 +133,7 @@ public abstract class AbstractPortForwarderIptablesTest {
                 });
                 Future<SshMachineLocation> targetFuture = executor.submit(new Callable<SshMachineLocation>() {
                     public SshMachineLocation call() throws Exception {
-                        return loc.obtain(MutableMap.<String,Object>builder()
+                        return (SshMachineLocation) loc.obtain(MutableMap.<String,Object>builder()
                             .put("imageId", locImageId)
                             .put("hardwareId", locHardwareId)
                             .put("inboundPorts", ImmutableList.of(22))

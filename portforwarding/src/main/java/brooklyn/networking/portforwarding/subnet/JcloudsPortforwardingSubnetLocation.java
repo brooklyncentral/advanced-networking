@@ -35,6 +35,7 @@ import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.access.BrooklynAccessUtils;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.location.jclouds.JcloudsMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.networking.common.subnet.PortForwarder;
@@ -90,7 +91,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     }
 
     @Override
-    public JcloudsSshMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
+    public JcloudsMachineLocation obtain(Map<?,?> flagsIn) throws NoMachinesAvailableException {
         MutableMap<Object, Object> flags2 = MutableMap.builder()
                 .putAll(flagsIn)
                 .put(JcloudsLocation.USE_PORT_FORWARDING, getConfig(USE_PORT_FORWARDING))
@@ -115,7 +116,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
         }
 
         // And finally obtain the machine
-        JcloudsSshMachineLocation m = super.obtain(flags2);
+        JcloudsMachineLocation m = (JcloudsMachineLocation) super.obtain(flags2);
 
         return m;
     }
