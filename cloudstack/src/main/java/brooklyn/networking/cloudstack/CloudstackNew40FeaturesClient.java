@@ -315,7 +315,7 @@ public class CloudstackNew40FeaturesClient {
         // todo: handle non-2xx response
 
         try {
-            return waitForJobCompletion(response);
+            return waitForJobCompletion(response, "createVpc("+cidr+", "+displayText+", "+name+", "+vpcOfferingId+", "+zoneId+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -342,7 +342,7 @@ public class CloudstackNew40FeaturesClient {
         // todo: handle non-2xx response
 
         try {
-            return waitForJobCompletion(response);
+            return waitForJobCompletion(response, "deleteVpc("+vpcId+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -352,17 +352,30 @@ public class CloudstackNew40FeaturesClient {
      * gets the ID of the thing whose job we were waiting on, if applicable
      */
     protected String waitForJobCompletion(HttpToolResponse response) throws InterruptedException {
+        return waitForJobCompletion(response, "HTTP response");
+    }
+    
+    protected String waitForJobCompletion(HttpToolResponse response, String message) throws InterruptedException {
         // FIXME response.getMessage(), to do something like httpUrlConnection.getResponseMessage()
-        return waitForJobCompletion(response.getResponseCode(), new ByteArrayInputStream(response.getContent()), "HTTP response");
+        String fullMessage = message + (response.getReasonPhrase() == null ? "" : " - "+response.getReasonPhrase());
+        return waitForJobCompletion(response.getResponseCode(), new ByteArrayInputStream(response.getContent()), fullMessage);
     }
 
     protected String waitForJobCompletion(HttpResponse response) throws InterruptedException, IOException {
-        return waitForJobCompletion(response.getStatusCode(), response.getPayload().openStream(), response.getMessage());
+        String fullMessage = response.getMessage()+"; "+response.getStatusLine();
+        return waitForJobCompletion(response.getStatusCode(), response.getPayload().openStream(), fullMessage);
     }
 
     protected String waitForJobCompletion(int statusCode, InputStream payload, String message) throws InterruptedException {
         if (statusCode < 200 || statusCode >= 300) {
-            throw new RuntimeException("Error: " + message);
+            String payloadStr = null;
+            try {
+                payloadStr = Streams.readFullyString(payload);
+            } catch (Exception e) {
+                Exceptions.propagateIfFatal(e);
+                LOG.debug("On HttpResponse failure, failed to get string payload; continuing with reporting error", e);
+            }
+            throw new RuntimeException("Error "+statusCode+": " + message + (payloadStr != null ? "; "+payloadStr : ""));
         }
 
         JsonElement jr = json(payload);
@@ -790,7 +803,7 @@ public class CloudstackNew40FeaturesClient {
 //        JsonElement jr = json(response);
 //        log.debug("createNetworkAcl GOT "+jr);
         try {
-            waitForJobCompletion(response);
+            waitForJobCompletion(response, "createVpcNetworkAcl("+networkid+", "+protocol+", "+cidrlist+", "+startport+"-"+endport+")");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
@@ -824,7 +837,7 @@ public class CloudstackNew40FeaturesClient {
         // TODO does non-2xx response need to be handled separately ?
 
         try {
-            String result = waitForJobCompletion(response);
+            String result = waitForJobCompletion(response, "createIpAddressForVpc("+vpcId+")");
             return getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(result);
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
@@ -975,9 +988,9 @@ public class CloudstackNew40FeaturesClient {
         HttpToolResponse job2 = disableEgressFirewallForProtocol(networkId, "UDP");
         HttpToolResponse job3 = disableEgressFirewallForProtocol(networkId, "ICMP");
         try {
-            waitForJobCompletion(job1);
-            waitForJobCompletion(job2);
-            waitForJobCompletion(job3);
+            waitForJobCompletion(job1, "disableEgressFirewall("+networkId+", TCP)");
+            waitForJobCompletion(job2, "disableEgressFirewall("+networkId+", UDP)");
+            waitForJobCompletion(job3, "disableEgressFirewall("+networkId+", ICMP)");
         } catch (InterruptedException e) {
             throw Exceptions.propagate(e);
         }
