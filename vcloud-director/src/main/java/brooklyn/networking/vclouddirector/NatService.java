@@ -19,15 +19,6 @@ import javax.xml.bind.JAXBElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
-
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
@@ -54,23 +45,33 @@ import com.vmware.vcloud.sdk.ReferenceResult;
 import com.vmware.vcloud.sdk.Task;
 import com.vmware.vcloud.sdk.VCloudException;
 import com.vmware.vcloud.sdk.VcloudClient;
+import com.vmware.vcloud.sdk.Vdc;
 import com.vmware.vcloud.sdk.admin.EdgeGateway;
 import com.vmware.vcloud.sdk.admin.extensions.ExtensionQueryService;
 import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
+
 /**
  * For adding/removing NAT rules to vcloud-director.
- * 
+ * <p/>
  * The threading model is that internally all access (to update DNAT rules) is synchronized.
  * The mutex to synchronize on can be passed in (see {@link NatService.Builder#mutex(Object)}).
  * The intent is that the same mutex be passed in for everything accessing the same Edge Gateway.
  * It is extremely important to synchronize because adding NAT rule involves:
  * <ol>
- *   <li>download existing NAT rules;
- *   <li>add new rule to collection;
- *   <li>upload all NAT rules.
+ * <li>download existing NAT rules;
+ * <li>add new rule to collection;
+ * <li>upload all NAT rules.
  * </ol>
  * Therefore if two threads execute concurrently we may not get both new NAT rules in the resulting uploaded set!
  */
@@ -78,9 +79,9 @@ import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
 public class NatService {
 
     // TODO Given a vDC identifier, how do we tell which EdgeGateway that corresponds to?
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(NatService.class);
-    
+
     private static final List<Version> VCLOUD_VERSIONS = ImmutableList.of(Version.V5_5, Version.V5_1, Version.V1_5);
 
     public static Builder builder() {
@@ -92,7 +93,7 @@ public class NatService {
             return new Builder();
         }
     }
-    
+
     public static class Builder {
         private String identity;
         private String credential;
@@ -103,57 +104,84 @@ public class NatService {
         private PortRange portRange = PortRanges.ANY_HIGH_PORT;
         private Level logLevel;
         private Object mutex = new Object();
-        
+
         public Builder identity(String val) {
-            this.identity = val; return this;
+            this.identity = val;
+            return this;
         }
+
         public Builder credential(String val) {
-            this.credential = val; return this;
+            this.credential = val;
+            return this;
         }
+
         public Builder endpoint(String val) {
-            this.endpoint = checkNotNull(val, "endpoint"); return this;
+            this.endpoint = checkNotNull(val, "endpoint");
+            return this;
         }
+
         public Builder vDC(@Nullable String val) {
-            this.vDC = val; return this;
+            this.vDC = val;
+            return this;
         }
+
         public Builder trustStore(String val) {
-            this.trustStore = val; return this;
+            this.trustStore = val;
+            return this;
         }
+
         public Builder trustStorePassword(String val) {
-            this.trustStorePassword = val; return this;
+            this.trustStorePassword = val;
+            return this;
         }
+
         public Builder logLevel(java.util.logging.Level val) {
-            this.logLevel = val; return this;
+            this.logLevel = val;
+            return this;
         }
+
         public Builder portRange(PortRange val) {
-            portRange = val; return this;
+            portRange = val;
+            return this;
         }
+
         public Builder mutex(Object mutex) {
-            this.mutex = checkNotNull(mutex, "mutex"); return this;
+            this.mutex = checkNotNull(mutex, "mutex");
+            return this;
         }
+
         public NatService build() {
             return new NatService(this);
         }
     }
-    
+
     public static class Delta {
         protected final List<PortForwardingConfig> toOpen = Lists.newArrayList();
         protected final List<PortForwardingConfig> toClose = Lists.newArrayList();
-        
+
         public Delta() {
         }
+
         public Delta toOpen(Iterable<PortForwardingConfig> vals) {
-            Iterables.addAll(toOpen, vals); return this;
+            Iterables.addAll(toOpen, vals);
+            return this;
         }
+
         public Delta toOpen(PortForwardingConfig val) {
-            toOpen.add(val); return this;
+            toOpen.add(val);
+            return this;
         }
+
         public Delta toClose(Iterable<PortForwardingConfig> vals) {
-            Iterables.addAll(toClose, vals); return this;
+            Iterables.addAll(toClose, vals);
+            return this;
         }
+
         public Delta toClose(PortForwardingConfig val) {
-            toClose.add(val); return this;
+            toClose.add(val);
+            return this;
         }
+
         public void checkValid() {
             for (PortForwardingConfig arg : toOpen) {
                 arg.checkValid();
@@ -162,45 +190,57 @@ public class NatService {
                 arg.checkValid();
             }
         }
-        @Override public String toString() {
+
+        @Override
+        public String toString() {
             return Objects.toStringHelper(this).add("toOpen", toOpen).add("toClose", toClose).toString();
         }
+
         public boolean isEmpty() {
             return toOpen.isEmpty() && toClose.isEmpty();
         }
     }
 
     /**
-     * The result of opening/closing NatServices. Gives a mapping from the args asked for to 
-     * the actual port mappings created/deleted. The input args could include port-ranges 
+     * The result of opening/closing NatServices. Gives a mapping from the args asked for to
+     * the actual port mappings created/deleted. The input args could include port-ranges
      * (leaving it up to the impl to choose the actual public port), so the input/output in
      * the map can be different.
      */
     public static class UpdateResult {
         private final Map<PortForwardingConfig, PortForwardingConfig> opened = Maps.newLinkedHashMap();
         private final Map<PortForwardingConfig, PortForwardingConfig> closed = Maps.newLinkedHashMap();
-        
+
         public UpdateResult() {
         }
+
         protected UpdateResult opened(PortForwardingConfig req, PortForwardingConfig val) {
-            opened.put(req, val); return this;
+            opened.put(req, val);
+            return this;
         }
+
         protected UpdateResult closed(PortForwardingConfig req, PortForwardingConfig val) {
-            closed.put(req, val); return this;
+            closed.put(req, val);
+            return this;
         }
+
         public Map<PortForwardingConfig, PortForwardingConfig> getOpened() {
             return opened;
         }
+
         public Map<PortForwardingConfig, PortForwardingConfig> getClosed() {
             return closed;
         }
-        @Override public String toString() {
+
+        @Override
+        public String toString() {
             return Objects.toStringHelper(this).add("opened", opened.values()).add("closed", closed.values()).toString();
         }
     }
 
     private final String baseUrl; // e.g. "https://p5v1-vcd.vchs.vmware.com:443";
-    @Nullable private final String vDC;
+    @Nullable
+    private final String vDC;
     private final String credential;
     private final String identity;
     private final String trustStore;
@@ -227,15 +267,15 @@ public class NatService {
     public HostAndPort openPortForwarding(PortForwardingConfig args) throws VCloudException {
         return openPortForwarding(ImmutableList.of(args)).get(0);
     }
-    
+
     public List<HostAndPort> openPortForwarding(Iterable<PortForwardingConfig> args) throws VCloudException {
         UpdateResult opened = updatePortForwarding(new Delta().toOpen(args));
-        
+
         List<HostAndPort> result = Lists.newArrayList();
         for (PortForwardingConfig arg : args) {
             PortForwardingConfig argResult = opened.getOpened().get(arg);
             if (argResult == null) {
-                LOG.warn("No result for requested OPEN: "+arg+" (results: "+opened.getOpened()+")");
+                LOG.warn("No result for requested OPEN: " + arg + " (results: " + opened.getOpened() + ")");
                 result.add(null);
             } else {
                 result.add(argResult.publicEndpoint);
@@ -247,15 +287,15 @@ public class NatService {
     public HostAndPort closePortForwarding(PortForwardingConfig args) throws VCloudException {
         return closePortForwarding(ImmutableList.of(args)).get(0);
     }
-    
+
     public List<HostAndPort> closePortForwarding(Iterable<PortForwardingConfig> args) throws VCloudException {
         UpdateResult closed = updatePortForwarding(new Delta().toClose(args));
-        
+
         List<HostAndPort> result = Lists.newArrayList();
         for (PortForwardingConfig arg : args) {
             PortForwardingConfig argResult = closed.getClosed().get(arg);
             if (argResult == null) {
-                LOG.warn("No result for requested CLOSE: "+arg+" (results: "+closed.getClosed()+")");
+                LOG.warn("No result for requested CLOSE: " + arg + " (results: " + closed.getClosed() + ")");
                 result.add(null);
             } else {
                 result.add(argResult.publicEndpoint);
@@ -263,16 +303,16 @@ public class NatService {
         }
         return result;
     }
-    
+
     /**
-     * @return The changes made (in the same order as the delta passed in); important for if the 
-     *         delta left port-choice up to the implementation for example.
+     * @return The changes made (in the same order as the delta passed in); important for if the
+     * delta left port-choice up to the implementation for example.
      */
     public UpdateResult updatePortForwarding(Delta delta) throws VCloudException {
         final int MAX_CONSECUTIVE_FORBIDDEN_REQUESTS = 10;
-        
+
         if (delta.isEmpty()) new Delta();
-        
+
         delta.checkValid();
         if (LOG.isDebugEnabled()) LOG.debug("Updating port forwarding at {}: {}", baseUrl, delta);
 
@@ -290,8 +330,9 @@ public class NatService {
                 // 
                 // TODO Don't hard-code exception messages - dangerous for internationalisation etc.
                 if (e.toString().contains("is busy completing an operation")) {
-                    if (LOG.isDebugEnabled()) LOG.debug("Retrying after iteration {} failed (server busy), updating port forwarding at {}: {} - {}", 
-                            new Object[] {iteration, baseUrl, delta, e});
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Retrying after iteration {} failed (server busy), updating port forwarding at {}: {} - {}",
+                                new Object[]{iteration, baseUrl, delta, e});
                     consecutiveForbiddenCount = 0;
                 } else if (e.toString().contains("Access is forbidden")) {
                     // See https://issues.apache.org/jira/browse/BROOKLYN-116
@@ -299,13 +340,14 @@ public class NatService {
                     if (consecutiveForbiddenCount > MAX_CONSECUTIVE_FORBIDDEN_REQUESTS) {
                         throw e;
                     } else {
-                        if (LOG.isDebugEnabled()) LOG.debug("Retrying after iteration {} failed (access is forbidden - {} consecutive), updating port forwarding at {}: {} - {}", 
-                                new Object[] {iteration, consecutiveForbiddenCount, baseUrl, delta, e});
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Retrying after iteration {} failed (access is forbidden - {} consecutive), updating port forwarding at {}: {} - {}",
+                                    new Object[]{iteration, consecutiveForbiddenCount, baseUrl, delta, e});
                         synchronized (getMutex()) {
                             client = newVcloudClient();
                         }
                         Duration initialDelay = Duration.millis(10);
-                        Duration delay = initialDelay.multiply(Math.pow(1.2, consecutiveForbiddenCount-1));
+                        Duration delay = initialDelay.multiply(Math.pow(1.2, consecutiveForbiddenCount - 1));
                         Time.sleep(delay);
                     }
                 } else {
@@ -330,7 +372,7 @@ public class NatService {
         UpdateResult result = new UpdateResult();
         long timeRetrieve, timePrepare, timeReconfigure, timeChecking;
         Stopwatch stopwatch = Stopwatch.createStarted();
-        
+
         synchronized (getMutex()) {
             EdgeGateway edgeGateway = getEdgeGatewayForPublicIp(publicIps);
             GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
@@ -338,7 +380,7 @@ public class NatService {
             Map<String, GatewayInterfaceType> publicIpToGatewayInterface = getUplinkGatewayInterfacePerPublicIp(edgeGateway, publicIps);
 
             timeRetrieve = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            
+
             // generate and add the new rules
             for (PortForwardingConfig arg : delta.toOpen) {
                 // If not given a public port explicitly, then find one that is not in use
@@ -347,7 +389,7 @@ public class NatService {
                 HostAndPort publicEndpoint = arg.publicEndpoint;
                 GatewayInterfaceType gatewayInterface = publicIpToGatewayInterface.get(publicEndpoint.getHostText());
                 ReferenceType externalNetworkRef = gatewayInterface.getNetwork();
-                
+
                 if (arg.publicEndpoint.hasPort()) {
                     publicEndpoint = arg.publicEndpoint;
                 } else {
@@ -358,22 +400,22 @@ public class NatService {
                     int availablePublicPort = findAvailablePort(portRangeToUse, usedPorts);
                     publicEndpoint = HostAndPort.fromParts(arg.publicEndpoint.getHostText(), availablePublicPort);
                 }
-                
+
                 GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
                         arg.protocol,
                         publicEndpoint,
                         arg.targetEndpoint,
                         externalNetworkRef);
                 NatRuleType dnatRule = generateDnatRule(true, gatewayNatRule);
-    
+
                 natService.getNatRule().add(dnatRule);
-                
+
                 result.opened(arg, new PortForwardingConfig()
                         .protocol(arg.protocol)
                         .publicEndpoint(publicEndpoint)
                         .targetEndpoint(arg.targetEndpoint));
             }
-            
+
             // Remove the closed rules
             for (PortForwardingConfig arg : delta.toClose) {
                 // TODO Could also match on networkId
@@ -382,7 +424,7 @@ public class NatService {
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),
                         NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort())));
                 natService.getNatRule().removeAll(Lists.newArrayList(filtered));
-                
+
                 result.closed(arg, arg);
             }
 
@@ -392,7 +434,7 @@ public class NatService {
             modifiedGatewayFeatures.getNetworkService().add(modifiedNatService);
 
             timePrepare = stopwatch.elapsed(TimeUnit.MILLISECONDS) - timeRetrieve;
-            
+
             // Execute task (i.e. make the actual change, and wait for completion)
             Task task = edgeGateway.configureServices(modifiedGatewayFeatures);
             waitForTask(task, "update NAT rules");
@@ -400,7 +442,7 @@ public class NatService {
 
             // Confirm the updates have been applied.
             // Retrieves a new EdgeGateway instance, to ensure we're not just looking at our local copy.
-            List<NatRuleType> rules = getNatRules(getEdgeGateway(edgeGateway.getReference()));
+            List<NatRuleType> rules = getNatRules(EdgeGateway.getEdgeGatewayByReference(client, edgeGateway.getReference()));
 
             // Confirm that the newly created rules exist,
             // with the expected translated (i.e internal) and original (i.e. public) addresses,
@@ -409,11 +451,11 @@ public class NatService {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),
                         NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort())));
-    
+
                 Iterable<NatRuleType> conflicts = Iterables.filter(rules, Predicates.and(
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),
                         Predicates.not(NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort()))));
-    
+
                 if (Iterables.isEmpty(matches)) {
                     throw new IllegalStateException(
                             String.format("Gateway NAT Rules: cannot find translated %s and original %s:%s at %s",
@@ -428,31 +470,31 @@ public class NatService {
                                     arg.targetEndpoint, arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort(), baseUrl));
                 }
             }
-            
+
             // Confirm that deleted rules don't exist.
             for (PortForwardingConfig arg : result.getClosed().values()) {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
                         NatPredicates.protocolMatches(arg.protocol),
                         NatPredicates.originalEndpointEquals(arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort()),
                         NatPredicates.translatedEndpointEquals(arg.targetEndpoint.getHostText(), arg.targetEndpoint.getPort())));
-        
+
                 if (!Iterables.isEmpty(matches)) {
                     throw new IllegalStateException(
                             String.format("Gateway NAT Rules: the rule with translated %s and original %s:%s at %s has NOT " +
-                                            "been deleted", arg.targetEndpoint, arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort(), baseUrl));
+                                    "been deleted", arg.targetEndpoint, arg.publicEndpoint.getHostText(), arg.publicEndpoint.getPort(), baseUrl));
                 }
             }
-            
+
             timeChecking = stopwatch.elapsed(TimeUnit.MILLISECONDS) - timeReconfigure;
         }
-        
-        LOG.info("Finished updating NAT rules on {}@{}; took retrieve={}, prepare={}, reconfigure={}, checking={}; mods: {}", 
-                new Object[] {identity, baseUrl, Time.makeTimeStringRounded(timeRetrieve), 
-                        Time.makeTimeStringRounded(timePrepare), Time.makeTimeStringRounded(timeReconfigure), 
+
+        LOG.info("Finished updating NAT rules on {}@{}; took retrieve={}, prepare={}, reconfigure={}, checking={}; mods: {}",
+                new Object[]{identity, baseUrl, Time.makeTimeStringRounded(timeRetrieve),
+                        Time.makeTimeStringRounded(timePrepare), Time.makeTimeStringRounded(timeReconfigure),
                         Time.makeTimeStringRounded(timeChecking), delta});
         return result;
     }
-    
+
     public Set<Integer> getUsedPublicPorts(Iterable<NatRuleType> existingRules) {
         Set<Integer> result = Sets.newHashSet();
         for (NatRuleType rule : existingRules) {
@@ -461,20 +503,20 @@ public class NatService {
                     result.add(Integer.parseInt(rule.getGatewayNatRule().getOriginalPort()));
                 } catch (NumberFormatException e) {
                     // e.g. could be "any"
-                    LOG.debug("Gateway NAT Rule "+rule+" original port is not a number; ignoring");
+                    LOG.debug("Gateway NAT Rule " + rule + " original port is not a number; ignoring");
                 }
             }
         }
         return result;
     }
-    
+
     public int findAvailablePort(PortRange portRange, Collection<Integer> usedPorts) {
         for (int port : portRange) {
             if (!usedPorts.contains(port)) return port;
         }
-        throw new IllegalStateException("No free ports in range "+portRange);
+        throw new IllegalStateException("No free ports in range " + portRange);
     }
-    
+
     public List<NatRuleType> getNatRules() throws VCloudException {
         // Append DNAT rule to NAT service; retrieve the existing, modify it, and upload.
         // If instead we create new objects then risk those having different config - this is *not* a delta!
@@ -490,18 +532,18 @@ public class NatService {
 
     public void enableNatService() throws VCloudException {
         if (LOG.isDebugEnabled()) LOG.debug("Enabling NAT Service at {}", baseUrl);
-        
+
         synchronized (getMutex()) {
             for (EdgeGateway edgeGateway : getEdgeGateways()) {
                 GatewayFeaturesType gatewayFeatures = getGatewayFeatures(edgeGateway);
                 Maybe<NatServiceType> natService = tryFindService(gatewayFeatures.getNetworkService(), NatServiceType.class);
-        
+
                 if (natService.isPresent()) {
-                    LOG.info("Enabling NAT Service for {} @ {}, EdgeGateway {}", new Object[] {identity, baseUrl, edgeGateway});
-                    
+                    LOG.info("Enabling NAT Service for {} @ {}, EdgeGateway {}", new Object[]{identity, baseUrl, edgeGateway});
+
                     // Modify
                     natService.get().setIsEnabled(true);
-                    
+
                     // Execute task
                     Task task = edgeGateway.configureServices(gatewayFeatures);
                     waitForTask(task, "enable nat-service");
@@ -513,7 +555,7 @@ public class NatService {
     protected Object getMutex() {
         return mutex;
     }
-    
+
     protected void waitForTask(Task task, String summary) throws VCloudException {
         checkNotNull(task, "task null for %s", summary);
         try {
@@ -533,7 +575,7 @@ public class NatService {
 
     private boolean includesPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
         if (subnetParticipations == null) return false;
-        
+
         for (SubnetParticipationType subnetParticipation : subnetParticipations) {
             if (subnetParticipation.getIpRanges() != null && subnetParticipation.getIpRanges().getIpRange() != null) {
                 for (IpRangeType ipRangeType : subnetParticipation.getIpRanges().getIpRange()) {
@@ -548,7 +590,7 @@ public class NatService {
         }
         return false;
     }
-    
+
     private void checkPublicIps(Iterable<String> publicIps, List<SubnetParticipationType> subnetParticipations) {
         for (String publicIp : publicIps) {
             checkPublicIp(publicIp, subnetParticipations);
@@ -577,7 +619,7 @@ public class NatService {
             } else {
                 builder.append("<no subnet participants>");
             }
-            LOG.error(builder.toString()+" (rethrowing)");
+            LOG.error(builder.toString() + " (rethrowing)");
             throw new IllegalArgumentException(builder.toString());
         }
     }
@@ -594,20 +636,24 @@ public class NatService {
 
     protected List<EdgeGateway> getEdgeGateways() throws VCloudException {
         List<EdgeGateway> result = Lists.newArrayList();
-        List<ReferenceType> edgeGatewayRef = queryEdgeGateways();
-        for (ReferenceType ref : edgeGatewayRef) {
-            result.add(EdgeGateway.getEdgeGatewayById(client, ref.getId()));
+
+        if (vDC != null) {
+            ReferenceType vDCRef = new ReferenceType();
+            vDCRef.setHref(vDC);
+            for (ReferenceType edgeGatewayRef : Vdc.getVdcByReference(client, vDCRef).getEdgeGatewayRefs().getReferences()) {
+                result.add(EdgeGateway.getEdgeGatewayByReference(client, edgeGatewayRef));
+            }
+        } else {
+            for (ReferenceType ref : queryEdgeGateways()) {
+                result.add(EdgeGateway.getEdgeGatewayById(client, ref.getId()));
+            }
         }
         return result;
     }
 
-    protected EdgeGateway getEdgeGateway(ReferenceType edgeGatewayRef) throws VCloudException {
-        return EdgeGateway.getEdgeGatewayById(client, edgeGatewayRef.getId());
-    }
-
     protected EdgeGateway getEdgeGatewayForPublicIp(Iterable<String> publicIps) throws VCloudException {
         Map<EdgeGateway, String> errs = Maps.newLinkedHashMap();
-        
+
         for (EdgeGateway edgeGateway : getEdgeGateways()) {
             // extract the EdgeGateway's subnet participations to validate public IPs
             List<SubnetParticipationType> subnetParticipations = Lists.newArrayList();
@@ -621,12 +667,12 @@ public class NatService {
                 errs.put(edgeGateway, e.getMessage());
             }
         }
-        
+
         StringBuilder builder = new StringBuilder();
-        builder.append("No EdgeGateway for publicIps "+publicIps+":\n");
+        builder.append("No EdgeGateway for publicIps " + publicIps + ":\n");
         for (Map.Entry<EdgeGateway, String> entry : errs.entrySet()) {
             builder.append("\t");
-            builder.append("edgeGateway="+entry.getKey().getReference().getId()+"; "+entry.getValue());
+            builder.append("edgeGateway=" + entry.getKey().getReference().getId() + "; " + entry.getValue());
             builder.append("\n");
         }
         String err = builder.toString();
@@ -646,12 +692,12 @@ public class NatService {
                 }
             }
             if (!found) {
-                throw new IllegalStateException("No Gateway Interface for public IP "+publicIp+" in edge gateway "+edgeGateway.getReference().getId());
+                throw new IllegalStateException("No Gateway Interface for public IP " + publicIp + " in edge gateway " + edgeGateway.getReference().getId());
             }
         }
         return result;
     }
-    
+
     // extract the external network attached to the EdgeGateway
     private List<GatewayInterfaceType> getUplinkGatewayInterfaces(EdgeGateway edgeGateway) {
         List<GatewayInterfaceType> result = Lists.newArrayList();
@@ -681,9 +727,9 @@ public class NatService {
                 return Maybe.of(type.cast(service.getValue()));
             }
         }
-        return Maybe.absent("No service of type "+type.getSimpleName());
+        return Maybe.absent("No service of type " + type.getSimpleName());
     }
-    
+
     protected List<NatRuleType> getNatRules(EdgeGateway edgeGateway) {
         List<JAXBElement<? extends NetworkServiceType>> services = getNetworkServices(edgeGateway);
         Maybe<NatServiceType> natService = tryFindService(services, NatServiceType.class);
@@ -737,7 +783,7 @@ public class NatService {
             if (!versionFound) {
                 throw new IllegalStateException("Cannot login to " + endpoint + " using any of " + VCLOUD_VERSIONS);
             }
-            
+
             // Performing Certificate Validation
             if (Strings.isNonBlank(trustStore)) {
                 System.setProperty("javax.net.ssl.trustStore", trustStore);
@@ -755,7 +801,7 @@ public class NatService {
     }
 
     private GatewayNatRuleType generateGatewayNatRule(Protocol protocol, HostAndPort original,
-            HostAndPort translated, ReferenceType interfaceRef) {
+                                                      HostAndPort translated, ReferenceType interfaceRef) {
         GatewayNatRuleType gatewayNatRule = new GatewayNatRuleType();
         gatewayNatRule.setProtocol(protocol.toString());
         gatewayNatRule.setOriginalIp(original.getHostText());

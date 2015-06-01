@@ -20,6 +20,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+
 import brooklyn.basic.BrooklynObjectInternal.ConfigurationSupportInternal;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -40,11 +45,6 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
 
@@ -159,7 +159,8 @@ public class PortForwarderVcloudDirector implements PortForwarder {
             Protocol protocol, Cidr accessingCidr) {
         String targetIp = Iterables.getFirst(Iterables.concat(targetVm.getPrivateAddresses(), targetVm.getPublicAddresses()), null);
         if (targetIp==null) {
-            throw new IllegalStateException("Failed to open port-forarding for machine "+targetVm+" because its location has no target ip: "+targetVm);
+            throw new IllegalStateException("Failed to open port-forwarding for machine "+targetVm+" because its " +
+                    "location has no target ip: "+targetVm);
         }
 
         HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);

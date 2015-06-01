@@ -1,14 +1,6 @@
 
 package brooklyn.networking.vclouddirector.natmicroservice;
 
-import io.airlift.command.Arguments;
-import io.airlift.command.Cli;
-import io.airlift.command.Cli.CliBuilder;
-import io.airlift.command.Command;
-import io.airlift.command.Help;
-import io.airlift.command.Option;
-import io.airlift.command.ParseException;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +14,8 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import brooklyn.BrooklynVersion;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
@@ -34,8 +28,13 @@ import brooklyn.util.exceptions.UserFacingException;
 import brooklyn.util.javalang.Threads;
 import brooklyn.util.stream.Streams;
 import brooklyn.util.text.Strings;
-
-import com.google.common.annotations.VisibleForTesting;
+import io.airlift.command.Arguments;
+import io.airlift.command.Cli;
+import io.airlift.command.Cli.CliBuilder;
+import io.airlift.command.Command;
+import io.airlift.command.Help;
+import io.airlift.command.Option;
+import io.airlift.command.ParseException;
 
 public class NatMicroServiceMain {
 
@@ -178,12 +177,13 @@ public class NatMicroServiceMain {
             } finally {
                 Streams.closeQuietly(in);
             }
-            
-            NatServiceDispatcher dispatcher = NatServiceDispatcher.builder()
-                    .endpoints(endpoints)
-                    .portRange(publicPortRange == null ? PortRanges.ANY_HIGH_PORT : PortRanges.fromString(publicPortRange))
-                    .build();
-            
+
+            NatServiceDispatcher.Builder dispatcherBuilder = NatServiceDispatcher.builder().endpoints(endpoints);
+            if (publicPortRange != null) {
+                dispatcherBuilder.portRange(PortRanges.fromString(publicPortRange));
+            }
+            NatServiceDispatcher dispatcher = dispatcherBuilder.build();
+
             final NatMicroService service = NatMicroService.builder()
                     .dispatcher(dispatcher)
                     .bindAddress(bindAddress)
