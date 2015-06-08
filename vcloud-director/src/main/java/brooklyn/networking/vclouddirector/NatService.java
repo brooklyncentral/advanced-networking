@@ -549,37 +549,17 @@ public class NatService {
         return false;
     }
     
-    private void checkPublicIps(Iterable<String> publicIps, List<SubnetParticipationType> subnetParticipations) {
+    private boolean checkPublicIps(Iterable<String> publicIps, List<SubnetParticipationType> subnetParticipations) {
         for (String publicIp : publicIps) {
-            checkPublicIp(publicIp, subnetParticipations);
+            if (!checkPublicIp(publicIp, subnetParticipations)) {
+                return false;
+            }
         }
+        return true;
     }
 
-    private void checkPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
-        boolean found = includesPublicIp(publicIp, subnetParticipations);
-        if (!found) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("PublicIp '" + publicIp + "' is not valid. Public IP must fall in the following ranges: ");
-            if (subnetParticipations == null) {
-                for (SubnetParticipationType subnetParticipation : subnetParticipations) {
-                    IpRangesType range = subnetParticipation.getIpRanges();
-                    if (range != null && range.getIpRange() != null) {
-                        for (IpRangeType ipRangeType : range.getIpRange()) {
-                            builder.append(ipRangeType.getStartAddress());
-                            builder.append(" - ");
-                            builder.append(ipRangeType.getEndAddress());
-                            builder.append(", ");
-                        }
-                    } else {
-                        builder.append("<no ip range>, ");
-                    }
-                }
-            } else {
-                builder.append("<no subnet participants>");
-            }
-            LOG.error(builder.toString()+" (rethrowing)");
-            throw new IllegalArgumentException(builder.toString());
-        }
+    private boolean checkPublicIp(final String publicIp, List<SubnetParticipationType> subnetParticipations) {
+        return includesPublicIp(publicIp, subnetParticipations);
     }
 
     private static long ipToLong(InetAddress ip) {
@@ -615,8 +595,9 @@ public class NatService {
                 subnetParticipations.addAll(gatewayInterfaceType.getSubnetParticipation());
             }
             try {
-                checkPublicIps(publicIps, subnetParticipations);
-                return edgeGateway;
+                if (checkPublicIps(publicIps, subnetParticipations)) {
+                    return edgeGateway;
+                }
             } catch (IllegalArgumentException e) {
                 errs.put(edgeGateway, e.getMessage());
             }
