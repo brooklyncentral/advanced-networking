@@ -206,7 +206,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             };
             HostAndPort result = pf.openPortForwarding(
                     hasNetworkAddresses,
-                    node.getLoginPort(),
+                    targetPort,
                     optionalPublicPort,
                     protocol,
                     Cidr.UNIVERSAL);
