@@ -19,9 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
-import brooklyn.event.AttributeSensor;
+import brooklyn.event.Sensor;
 import brooklyn.event.SensorEvent;
 import brooklyn.event.SensorEventListener;
 import brooklyn.location.MachineLocation;
@@ -99,10 +100,11 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());
             }});
         subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);
+        subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
         updater.apply(privatePort.getEntity(), privatePort.getValue());
     }
 
-    protected <T> void subscribe(Entity entity, AttributeSensor<T> attribute, SensorEventListener<? super T> listener) {
+    protected <T> void subscribe(Entity entity, Sensor<T> attribute, SensorEventListener<? super T> listener) {
         adjunctEntity.subscribe(entity, attribute, listener);
     }
 
