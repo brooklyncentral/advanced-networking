@@ -87,7 +87,6 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         NatMicroServiceMain.StaticRefs.service = null;
         
         super.setUp();
-        mgmt.getBrooklynProperties().put(PortForwardManager.PORT_FORWARD_MANAGER_STARTING_PORT, STARTING_PORT);
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
         publicIp = checkNotNull(loc.getConfig(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP), "publicip");
         executor = Executors.newCachedThreadPool();
@@ -155,9 +154,10 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     
     @Test(groups={"Live", "Live-sanity"})
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVmsWithExplicitPublicPort() throws Exception {
-        String microserviceUrl = mgmt.getConfig().getConfig(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT);
-        assertNotNull(microserviceUrl);
-        
+        String microserviceUrl = startVcdNatMicroservice();
+        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
+
+        runOpenPortForwardingAndAdvertise(null, false);
         runOpenPortForwardingAndAdvertise(STARTING_PORT+5, false);
     }
     
@@ -287,7 +287,8 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         // Create the NAT Micro-service
         String endpointsProperties = "my-vcloud.endpoint="+NatDirectClient.transformEndpoint(loc.getEndpoint()) + "\n"
                 + "my-vcloud.trustStore=\n"
-                + "my-vcloud.trustStorePassword=\n";
+                + "my-vcloud.trustStorePassword=\n"
+                + String.format("my-vcloud.portRange=%s+\n", "12000");
         endpointsPropertiesFile = File.createTempFile("endpoints", "properties");
         Files.write(endpointsProperties.getBytes(), endpointsPropertiesFile);
         
@@ -296,8 +297,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                 // Don't use NatMicroServiceMain.main directly, because that will do System.exit at the end
                 try {
                     Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse(
-                            "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath(),
-                            "--publicPortRange", STARTING_PORT+"+");
+                            "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
                     command.call();
                 } catch (Exception e) {
                     LOG.error("Launch NAT micro-service failed", e);

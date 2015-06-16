@@ -7,7 +7,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -18,12 +17,6 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.task.SingleThreadedScheduler;
-import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -36,6 +29,12 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.sdk.VCloudException;
+
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.task.SingleThreadedScheduler;
+import brooklyn.util.text.Strings;
 
 /**
  * Dispatches NAT service updates to handle concurrent access by multiple users
@@ -101,7 +100,11 @@ public class NatServiceDispatcher {
             this.trustStore = trustStore;
             this.trustStorePassword = trustStorePassword;
         }
-        
+
+        public PortRange getPortRange() {
+            return portRange;
+        }
+
         @Override
         public int hashCode() {
             return Objects.hashCode(portRange, trustStore, trustStorePassword);

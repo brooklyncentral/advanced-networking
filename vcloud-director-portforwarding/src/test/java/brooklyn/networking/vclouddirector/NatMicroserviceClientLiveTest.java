@@ -16,6 +16,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.io.Files;
+import com.google.common.net.HostAndPort;
+
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.location.PortRange;
 import brooklyn.location.basic.PortRanges;
@@ -24,9 +27,6 @@ import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
 import brooklyn.test.Asserts;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Protocol;
-
-import com.google.common.io.Files;
-import com.google.common.net.HostAndPort;
 
 public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
 
@@ -53,7 +53,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
     private File endpointsPropertiesFile;
 
     private NatMicroserviceClient client;
-    
+
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
@@ -66,7 +66,8 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
         // Create the NAT Micro-service
         String endpointsProperties = "my-vcloud.endpoint="+NatDirectClient.transformEndpoint(loc.getEndpoint()) + "\n"
                 + "my-vcloud.trustStore=\n"
-                + "my-vcloud.trustStorePassword=\n";
+                + "my-vcloud.trustStorePassword=\n"
+                + String.format("my-vcloud.portRange=%s+\n", "12000");
         endpointsPropertiesFile = File.createTempFile("endpoints", "properties");
         Files.write(endpointsProperties.getBytes(), endpointsPropertiesFile);
         
@@ -77,7 +78,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
                try {
                    Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse(
                            "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath(),
-                           "--publicPortRange", STARTING_PORT+"+");
+                           "--publicPortRange", STARTING_PORT+"+"); // this will be overridden by endpointsProperties.portRange if defined
                    command.call();
                } catch (Exception e) {
                    LOG.error("Launch NAT micro-service failed", e);
@@ -90,7 +91,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
                 assertNotNull(NatMicroServiceMain.StaticRefs.service);
             }});
         microserviceUrl = NatMicroServiceMain.StaticRefs.service.getRootUrl();
-        
+
         client = new NatMicroserviceClient(microserviceUrl, loc);
     }
     

@@ -15,6 +15,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
+import com.sun.jersey.api.core.DefaultResourceConfig;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.api.json.JSONConfiguration;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.natservice.api.NatServiceRestApi;
@@ -24,12 +30,6 @@ import brooklyn.util.crypto.SecureKeys;
 import brooklyn.util.net.Networking;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
-
-import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.api.core.DefaultResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.api.json.JSONConfiguration;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class NatMicroService {
 
@@ -126,7 +126,7 @@ public class NatMicroService {
     public String getRootUrl() {
         return rootUrl;
     }
-    
+
     protected void addHttpsConnector() throws KeyStoreException {
         SslContextFactory sslContextFactory = new SslContextFactory();
 
