@@ -393,7 +393,9 @@ public class NatService {
                 if (arg.publicEndpoint.hasPort()) {
                     publicEndpoint = arg.publicEndpoint;
                 } else {
-                    PortRange portRangeToUse = (arg.publicPortRange != null) ? arg.publicPortRange : portRange;
+                    // FIXME: Allow port range to be passed in to REST API
+                    // This is a temporary workaround, until Brooklyn has been updated to pass null port range by default
+                    PortRange portRangeToUse = portRange;
                     Set<Integer> usedPorts = getUsedPublicPorts(Iterables.filter(natService.getNatRule(), Predicates.and(
                             NatPredicates.protocolMatches(arg.protocol),
                             NatPredicates.originalIpEquals(arg.publicEndpoint.getHostText()))));
