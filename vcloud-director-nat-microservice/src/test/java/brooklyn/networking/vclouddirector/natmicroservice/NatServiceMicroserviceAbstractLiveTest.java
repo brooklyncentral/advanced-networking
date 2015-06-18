@@ -108,12 +108,14 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
         runOpenAndDeleteNatRule(null, null);
     }
 
-    @Test(groups="Live")
+    // FIXME: explicit ports / port ranges have been temporarily disabled
+    @Test(groups={"Live","WIP"})
     public void testOpenAndDeleteNatRuleWithExplicitPublicPort() throws Exception {
         runOpenAndDeleteNatRule(STARTING_PORT+10, null);
     }
-    
-    @Test(groups="Live")
+
+    // FIXME: explicit ports / port ranges have been temporarily disabled
+    @Test(groups={"Live","WIP"})
     public void testOpenAndDeleteNatRuleWithExplicitPublicPortRange() throws Throwable {
         runOpenAndDeleteNatRule(null, PortRanges.fromString((STARTING_PORT+5)+"-"+(STARTING_PORT+10)));
     }
