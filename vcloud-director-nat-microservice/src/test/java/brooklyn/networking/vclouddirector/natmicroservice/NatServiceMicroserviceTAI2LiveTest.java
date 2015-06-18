@@ -15,7 +15,7 @@ public class NatServiceMicroserviceTAI2LiveTest extends NatServiceMicroserviceAb
 
     @Override
     protected String getLocationSpec() {
-        return "Canopy_TAI_2";
+        return "Canopy_TAI_2_CCT001_WIN";
     }
     
     @Test(groups="Live")
