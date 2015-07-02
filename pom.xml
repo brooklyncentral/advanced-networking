@@ -37,7 +37,7 @@
     </parent>
 
     <properties>
-        <brooklyn.version>0.8.0-SNAPSHOT</brooklyn.version> <!--  BROOKLYN_VERSION -->
+        <brooklyn.version>0.8.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
     </properties>
 
