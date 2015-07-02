@@ -48,16 +48,16 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
     
     private static final String INTERNAL_MACHINE_IP = "192.168.109.10";
 
-    private LocalManagementContext mgmt;
-    private JcloudsLocation loc;
-    private String endpoint;
-    private String vDC;
-    private String identity;
-    private String credential;
-    private String publicIp;
-    private Random random = new Random(getClass().getName().hashCode());
+    protected LocalManagementContext mgmt;
+    protected JcloudsLocation loc;
+    protected String endpoint;
+    protected String vDC;
+    protected String identity;
+    protected String credential;
+    protected String publicIp;
+    protected Random random = new Random(getClass().getName().hashCode());
 
-    private Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
+    protected Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
     
     protected abstract String getLocationSpec();
 
