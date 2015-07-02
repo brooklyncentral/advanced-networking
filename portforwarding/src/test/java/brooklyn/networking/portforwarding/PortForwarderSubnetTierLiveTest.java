@@ -51,7 +51,8 @@ public class PortForwarderSubnetTierLiveTest extends AbstractPortForwarderIptabl
         return true;
     }
 
-    @Test(groups={"Live"})
+    // FIXME: explicit ports / port ranges have been temporarily disabled
+    @Test(groups={"Live","WIP"})
     public void testOpenPortForwardingAndAdvertise() throws Exception {
         final AttributeSensor<Integer> TARGET_PORT = new BasicAttributeSensor<Integer>(Integer.class, "target.port");
         final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
