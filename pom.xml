@@ -37,7 +37,7 @@
 
     <properties>
         <brooklyn.version>0.8.0-SNAPSHOT</brooklyn.version> <!--  BROOKLYN_VERSION -->
-        <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
+        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
     </properties>
 
     <scm>
