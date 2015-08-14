@@ -18,6 +18,9 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.sdk.VCloudException;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -27,11 +30,10 @@ import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.sdk.VCloudException;
 
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.task.SingleThreadedScheduler;
 import brooklyn.util.text.Strings;

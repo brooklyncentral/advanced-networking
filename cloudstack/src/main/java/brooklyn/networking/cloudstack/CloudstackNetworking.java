@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+
 import org.jclouds.cloudstack.domain.Account;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.domain.Zone;
@@ -27,17 +33,13 @@ import org.jclouds.cloudstack.options.CreateNetworkOptions;
 import org.jclouds.cloudstack.options.ListAccountsOptions;
 import org.jclouds.cloudstack.options.ListNetworksOptions;
 import org.jclouds.cloudstack.options.ListZonesOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.cloud.names.BasicCloudMachineNamer;
-import brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.basic.LocationConfigKeys;
+import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 
 public class CloudstackNetworking {
 

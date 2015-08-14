@@ -7,13 +7,15 @@ import java.util.List;
 
 import org.testng.annotations.Test;
 
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 import com.google.common.net.HostAndPort;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
+
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
+import brooklyn.util.net.Protocol;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.

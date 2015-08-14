@@ -22,12 +22,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.jclouds.compute.domain.NodeMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
+
+import org.jclouds.compute.domain.NodeMetadata;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+
 import brooklyn.enricher.basic.Transformer;
-import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Attributes;
@@ -35,16 +50,10 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
-import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.ServiceStateLogic.ServiceProblemsLogic;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.trait.StartableMethods;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.Location;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
 import brooklyn.management.internal.CollectionChangeListener;
 import brooklyn.management.internal.ManagementContextInternal;
 import brooklyn.networking.AttributeMunger;
@@ -53,7 +62,6 @@ import brooklyn.networking.common.subnet.PortForwarderAsync;
 import brooklyn.networking.common.subnet.PortForwarderAsyncImpl;
 import brooklyn.networking.common.subnet.PortForwarderClient;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
-import brooklyn.policy.EnricherSpec;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.javalang.Reflections;
@@ -62,12 +70,6 @@ import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Time;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
 
 public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 

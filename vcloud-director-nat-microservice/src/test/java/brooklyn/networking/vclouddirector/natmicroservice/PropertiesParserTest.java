@@ -7,10 +7,11 @@ import java.util.Map;
 
 import org.testng.annotations.Test;
 
-import brooklyn.location.basic.PortRanges;
-import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
-
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.brooklyn.location.basic.PortRanges;
+
+import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 
 public class PropertiesParserTest {
 

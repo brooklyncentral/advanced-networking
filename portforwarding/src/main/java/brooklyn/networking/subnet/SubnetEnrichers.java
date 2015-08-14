@@ -23,30 +23,30 @@ import java.net.URISyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.event.SensorEvent;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.access.PortForwardManager.AssociationMetadata;
+import org.apache.brooklyn.location.basic.Machines;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.enricher.basic.Transformer;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.SensorEvent;
 import brooklyn.event.basic.BasicSensorEvent;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManager.AssociationMetadata;
-import brooklyn.location.basic.Machines;
-import brooklyn.policy.EnricherSpec;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.text.Strings;
-
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HostAndPort;
 
 public class SubnetEnrichers {
 

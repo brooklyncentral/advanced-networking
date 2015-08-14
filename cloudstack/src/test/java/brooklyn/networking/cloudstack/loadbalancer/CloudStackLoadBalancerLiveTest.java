@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,17 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
 import org.jclouds.cloudstack.domain.AsyncCreateResponse;
 import org.jclouds.cloudstack.domain.FirewallRule;
 import org.jclouds.cloudstack.domain.Network;
@@ -31,39 +42,30 @@ import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.options.AssociateIPAddressOptions;
 import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
 import org.jclouds.cloudstack.options.CreateNetworkOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.access.PortForwardManagerAuthority;
+import org.apache.brooklyn.location.basic.LocationConfigKeys;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.test.HttpTestUtils;
 
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.webapp.jboss.JBoss7Server;
-import brooklyn.location.Location;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerAuthority;
-import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.cloud.names.BasicCloudMachineNamer;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
 import brooklyn.test.Asserts;
-import brooklyn.test.HttpTestUtils;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Identifiers;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
 

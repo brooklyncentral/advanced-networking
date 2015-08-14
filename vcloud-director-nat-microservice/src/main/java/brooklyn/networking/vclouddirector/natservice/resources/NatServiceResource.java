@@ -25,20 +25,22 @@ import javax.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.location.basic.PortRanges;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.sdk.VCloudException;
+
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.FluentIterable;
+import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.networking.vclouddirector.PortForwardingConfig;
 import brooklyn.networking.vclouddirector.natservice.api.NatServiceApi;
 import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.text.Strings;
-
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.FluentIterable;
-import com.google.common.net.HostAndPort;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.sdk.VCloudException;
 
 public class NatServiceResource extends AbstractRestResource implements NatServiceApi {
 

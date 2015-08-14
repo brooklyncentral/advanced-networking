@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,23 @@ package brooklyn.networking.cloudstack;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
+
 import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.domain.Zone;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.options.TemplateOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.brooklyn.location.jclouds.BasicJcloudsLocationCustomizer;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.location.jclouds.BasicJcloudsLocationCustomizer;
-import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.base.Optional;
 
 public class CloudStackPrivateNetworkLocationCustomizer extends BasicJcloudsLocationCustomizer {
 

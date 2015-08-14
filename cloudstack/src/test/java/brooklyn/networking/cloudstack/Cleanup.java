@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@ package brooklyn.networking.cloudstack;
 
 import java.util.Set;
 
+import com.google.common.base.Joiner;
+
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.options.ListNetworksOptions;
 
-import brooklyn.entity.basic.Entities;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.management.internal.LocalManagementContext;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 
-import com.google.common.base.Joiner;
+import brooklyn.entity.basic.Entities;
+import brooklyn.management.internal.LocalManagementContext;
 
 public class Cleanup {
 

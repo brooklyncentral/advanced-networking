@@ -10,15 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
+import com.google.api.client.util.Lists;
+import com.google.common.collect.Maps;
+
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.os.Os;
 import brooklyn.util.stream.Streams;
-
-import com.google.api.client.util.Lists;
-import com.google.common.collect.Maps;
 
 public class PropertiesParser {
 

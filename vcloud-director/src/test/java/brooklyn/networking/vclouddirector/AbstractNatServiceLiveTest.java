@@ -18,12 +18,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -34,9 +31,14 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
+
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
+import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.net.Protocol;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.

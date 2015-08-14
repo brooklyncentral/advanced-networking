@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,20 +25,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.basic.BasicAttributeSensor;
-import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.test.Asserts;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.event.AttributeSensor;
+
+import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.event.basic.BasicAttributeSensor;
+import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.test.Asserts;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Protocol;
 
 public class DockerSubnetTierLiveTest extends AbstractDockerPortForwarderTest {
 

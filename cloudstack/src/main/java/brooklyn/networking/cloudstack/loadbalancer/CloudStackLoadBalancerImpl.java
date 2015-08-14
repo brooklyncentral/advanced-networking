@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Collection;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
+
 import org.jclouds.cloudstack.domain.AsyncJob;
 import org.jclouds.cloudstack.domain.LoadBalancerRule;
 import org.jclouds.cloudstack.domain.LoadBalancerRule.Algorithm;
@@ -28,31 +37,24 @@ import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.domain.VirtualMachine;
 import org.jclouds.cloudstack.features.LoadBalancerApi;
 import org.jclouds.cloudstack.options.CreateLoadBalancerRuleOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedControllerImpl;
+import org.apache.brooklyn.entity.proxy.LoadBalancer;
+import org.apache.brooklyn.location.access.BrooklynAccessUtils;
+import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.config.ConfigKey.HasConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Lifecycle;
-import brooklyn.entity.proxy.AbstractNonProvisionedControllerImpl;
-import brooklyn.entity.proxy.LoadBalancer;
 import brooklyn.event.feed.ConfigToAttributes;
-import brooklyn.location.Location;
-import brooklyn.location.access.BrooklynAccessUtils;
-import brooklyn.location.cloud.names.BasicCloudMachineNamer;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.util.config.ConfigBag;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
-
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
 
 public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedControllerImpl implements CloudStackLoadBalancer {
 

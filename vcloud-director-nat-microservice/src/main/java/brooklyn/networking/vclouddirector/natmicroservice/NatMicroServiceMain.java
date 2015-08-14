@@ -1,6 +1,14 @@
 
 package brooklyn.networking.vclouddirector.natmicroservice;
 
+import io.airlift.command.Arguments;
+import io.airlift.command.Cli;
+import io.airlift.command.Cli.CliBuilder;
+import io.airlift.command.Command;
+import io.airlift.command.Help;
+import io.airlift.command.Option;
+import io.airlift.command.ParseException;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,8 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.BrooklynVersion;
-import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.util.ResourceUtils;
@@ -28,13 +37,6 @@ import brooklyn.util.exceptions.UserFacingException;
 import brooklyn.util.javalang.Threads;
 import brooklyn.util.stream.Streams;
 import brooklyn.util.text.Strings;
-import io.airlift.command.Arguments;
-import io.airlift.command.Cli;
-import io.airlift.command.Cli.CliBuilder;
-import io.airlift.command.Command;
-import io.airlift.command.Help;
-import io.airlift.command.Option;
-import io.airlift.command.ParseException;
 
 public class NatMicroServiceMain {
 

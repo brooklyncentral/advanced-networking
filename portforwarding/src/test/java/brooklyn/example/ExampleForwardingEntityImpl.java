@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,19 @@ package brooklyn.example;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
+import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.java.VanillaJavaAppImpl;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.DependentConfiguration;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.tunnelling.SshTunnelling;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.task.Tasks;
-
-import com.google.common.collect.Iterables;
 
 // FIXME An example entity; where to put this?
 public class ExampleForwardingEntityImpl extends VanillaJavaAppImpl implements ExampleForwardingEntity {

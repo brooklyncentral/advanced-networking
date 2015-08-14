@@ -1,15 +1,14 @@
 package brooklyn.networking.vclouddirector.natmicroservice;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import org.apache.brooklyn.rest.apidoc.ApidocEndpoint;
+import org.apache.brooklyn.rest.apidoc.ApidocRoot;
+
 import brooklyn.networking.vclouddirector.natservice.resources.NatServiceResource;
-import brooklyn.rest.apidoc.ApidocEndpoint;
-import brooklyn.rest.apidoc.ApidocRoot;
 
 public class ApidocResourceTest extends AbstractRestApiTest {
 

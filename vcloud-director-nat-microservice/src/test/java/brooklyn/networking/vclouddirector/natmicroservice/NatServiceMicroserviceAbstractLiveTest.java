@@ -17,23 +17,25 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.google.common.escape.Escaper;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.UrlEscapers;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.GenericType;
 
+import com.google.common.escape.Escaper;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.UrlEscapers;
+
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.test.entity.LocalManagementContextForTests;
+
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.networking.vclouddirector.PortForwardingConfig;
 import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
-import brooklyn.test.entity.LocalManagementContextForTests;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Protocol;

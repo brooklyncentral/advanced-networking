@@ -12,13 +12,14 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
-import brooklyn.rest.apidoc.Apidoc;
-
 import com.wordnik.swagger.core.ApiError;
 import com.wordnik.swagger.core.ApiErrors;
 import com.wordnik.swagger.core.ApiOperation;
 import com.wordnik.swagger.core.ApiParam;
+
+import org.apache.brooklyn.rest.apidoc.Apidoc;
+
+import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
 
 /**
  * REST api for accessing/updating NAT rules on vCloud Director's Edge Gateway.

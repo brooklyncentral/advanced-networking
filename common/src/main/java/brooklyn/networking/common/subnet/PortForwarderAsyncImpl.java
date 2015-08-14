@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,28 @@ package brooklyn.networking.common.subnet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.event.Sensor;
-import brooklyn.event.SensorEvent;
-import brooklyn.event.SensorEventListener;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.basic.Machines;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.networking.AttributeMunger;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.event.Sensor;
+import org.apache.brooklyn.api.event.SensorEvent;
+import org.apache.brooklyn.api.event.SensorEventListener;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.location.basic.PortRanges;
+
+import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.networking.AttributeMunger;
+import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Protocol;
 
 public class PortForwarderAsyncImpl implements PortForwarderAsync {
 

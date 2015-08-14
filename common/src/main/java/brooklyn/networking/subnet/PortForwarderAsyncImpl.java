@@ -1,18 +1,34 @@
+/*
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package brooklyn.networking.subnet;
-
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.basic.Machines;
-import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.basic.Machines;
+
+import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Protocol;
 
 /** 
  * Kept for persisted state backwards compatibility.

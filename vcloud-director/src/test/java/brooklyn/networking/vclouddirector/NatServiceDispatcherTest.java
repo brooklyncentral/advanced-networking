@@ -11,9 +11,9 @@ import java.util.logging.Level;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.location.PortRange;
-import brooklyn.networking.vclouddirector.NatService.Builder;
-import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.sdk.VCloudException;
+import com.vmware.vcloud.sdk.VcloudClient;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -23,9 +23,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.sdk.VCloudException;
-import com.vmware.vcloud.sdk.VcloudClient;
+
+import org.apache.brooklyn.api.location.PortRange;
+
+import brooklyn.networking.vclouddirector.NatService.Builder;
+import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 
 public class NatServiceDispatcherTest {
 

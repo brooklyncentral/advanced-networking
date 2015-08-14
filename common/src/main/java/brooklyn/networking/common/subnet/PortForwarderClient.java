@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,25 @@ package brooklyn.networking.common.subnet;
 
 import java.util.List;
 
-import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
-import brooklyn.event.AttributeSensor;
-import brooklyn.location.Location;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortForwardManagerClient;
-import brooklyn.management.ManagementContext;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
-
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.access.PortForwardManagerClient;
+
+import brooklyn.config.ConfigKey;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.HasNetworkAddresses;
+import brooklyn.util.net.Protocol;
 
 /**
  * Delegating instance of {@link PortForwarder}, for persistence-safety.

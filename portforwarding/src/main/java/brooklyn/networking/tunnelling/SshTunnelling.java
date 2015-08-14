@@ -22,11 +22,12 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.location.basic.SshMachineLocation;
+import com.google.common.io.Files;
+
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
-
-import com.google.common.io.Files;
 
 public class SshTunnelling {
 

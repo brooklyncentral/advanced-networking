@@ -20,10 +20,10 @@ package brooklyn.networking.vclouddirector.natservice.api;
 
 import javax.ws.rs.Path;
 
-import brooklyn.rest.apidoc.Apidoc;
+import org.apache.brooklyn.rest.apidoc.Apidoc;
 
 @Apidoc("API Documentation")
 @Path("/v1/apidoc")
-public class ApidocResource extends brooklyn.rest.apidoc.ApidocResource {
+public class ApidocResource extends org.apache.brooklyn.rest.apidoc.ApidocResource {
 
 }

@@ -3,11 +3,13 @@ package brooklyn.networking.vclouddirector;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import brooklyn.location.PortRange;
-import brooklyn.util.net.Protocol;
-
 import com.google.common.base.Objects;
 import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.location.PortRange;
+
+import brooklyn.util.net.Protocol;
+
 
 public class PortForwardingConfig {
     Protocol protocol;

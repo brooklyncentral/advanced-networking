@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,17 @@ package brooklyn.networking.cloudstack;
 
 import static org.testng.Assert.assertNotNull;
 
-import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.basic.Entities;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.management.ManagementContext;
-
 import com.google.common.collect.ImmutableMap;
+
+import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
+
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
+import brooklyn.entity.basic.Entities;
 
 public class CloudstackNew40FeaturesClientLiveTest {
 

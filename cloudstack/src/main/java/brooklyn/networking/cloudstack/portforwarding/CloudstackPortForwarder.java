@@ -1,3 +1,18 @@
+/*
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package brooklyn.networking.cloudstack.portforwarding;
 
 import static java.lang.String.format;
@@ -5,22 +20,30 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+
 import org.jclouds.cloudstack.domain.NIC;
 import org.jclouds.cloudstack.domain.PortForwardingRule;
 import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.domain.VirtualMachine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.location.Location;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.management.ManagementContext;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
@@ -28,12 +51,6 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
 
 public class CloudstackPortForwarder implements PortForwarder {
 

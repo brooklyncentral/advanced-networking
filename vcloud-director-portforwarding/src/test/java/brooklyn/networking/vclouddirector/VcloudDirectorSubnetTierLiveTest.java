@@ -1,3 +1,18 @@
+/*
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package brooklyn.networking.vclouddirector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -19,32 +34,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.machine.MachineEntity;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.trait.Startable;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.basic.Sensors;
-import brooklyn.location.LocationSpec;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.basic.Machines;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.management.internal.LocalManagementContext;
-import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
-import brooklyn.test.Asserts;
-import brooklyn.test.EntityTestUtils;
-import brooklyn.test.entity.TestEntity;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -52,7 +42,32 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import com.google.common.net.HostAndPort;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.test.EntityTestUtils;
+import org.apache.brooklyn.test.entity.TestEntity;
+
+import brooklyn.entity.BrooklynAppLiveTestSupport;
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.machine.MachineEntity;
+import brooklyn.entity.trait.Startable;
+import brooklyn.event.basic.Sensors;
+import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
+import brooklyn.test.Asserts;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Protocol;
 
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions. 

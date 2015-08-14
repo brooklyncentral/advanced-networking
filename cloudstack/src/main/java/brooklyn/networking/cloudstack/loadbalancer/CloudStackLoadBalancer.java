@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@ package brooklyn.networking.cloudstack.loadbalancer;
 
 import java.util.Set;
 
+import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedController;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.MethodEffector;
-import brooklyn.entity.proxy.AbstractNonProvisionedController;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensor;
-
-import com.google.common.reflect.TypeToken;
 
 @ImplementedBy(CloudStackLoadBalancerImpl.class)
 public interface CloudStackLoadBalancer extends AbstractNonProvisionedController {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,23 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import brooklyn.entity.Application;
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.rebind.RebindTestUtils;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.access.PortMapping;
-import brooklyn.management.ManagementContext;
-import brooklyn.management.internal.LocalManagementContext;
-import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.test.entity.TestEntity;
-import brooklyn.util.net.Cidr;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
+
+import org.apache.brooklyn.api.entity.Application;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.access.PortMapping;
+import org.apache.brooklyn.test.entity.TestEntity;
+
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.rebind.RebindTestUtils;
+import brooklyn.management.internal.LocalManagementContext;
+import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.util.net.Cidr;
 
 public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarderIptablesTest {
 
