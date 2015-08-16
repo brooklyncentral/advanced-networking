@@ -25,13 +25,13 @@ import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.test.entity.LocalManagementContextForTests;
 
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
-import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.networking.vclouddirector.PortForwardingConfig;

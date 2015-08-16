@@ -24,11 +24,11 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.management.ManagementContextInjectable;
 import org.apache.brooklyn.location.access.PortForwardManager;
 
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.management.ManagementContextInjectable;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.HasNetworkAddresses;
 import brooklyn.util.net.Protocol;

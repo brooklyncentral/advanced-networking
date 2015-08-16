@@ -45,6 +45,7 @@ import org.jclouds.cloudstack.options.CreateNetworkOptions;
 
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerAuthority;
@@ -59,7 +60,6 @@ import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
 import brooklyn.test.Asserts;

@@ -31,13 +31,13 @@ import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortMapping;
 import org.apache.brooklyn.test.entity.TestEntity;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.rebind.RebindTestUtils;
-import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.net.Cidr;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 by Cloudsoft Corporation Limited
+ * Copyright 2013-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.core.management.internal.CollectionChangeListener;
+import org.apache.brooklyn.core.management.internal.ManagementContextInternal;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -54,8 +56,6 @@ import brooklyn.entity.basic.ServiceStateLogic.ServiceProblemsLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.event.basic.Sensors;
-import brooklyn.management.internal.CollectionChangeListener;
-import brooklyn.management.internal.ManagementContextInternal;
 import brooklyn.networking.AttributeMunger;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.common.subnet.PortForwarderAsync;
