@@ -41,8 +41,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.http.HttpToolResponse;
+import org.apache.brooklyn.core.util.http.HttpToolResponse;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 
 /**
  * HTTP convenience static methods.

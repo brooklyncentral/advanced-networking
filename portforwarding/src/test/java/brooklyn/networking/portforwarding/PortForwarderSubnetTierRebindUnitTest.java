@@ -35,11 +35,11 @@ import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortMapping;
 import org.apache.brooklyn.test.entity.TestEntity;
+import org.apache.brooklyn.util.net.Cidr;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.rebind.RebindTestUtils;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.util.net.Cidr;
 
 public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarderIptablesTest {
 

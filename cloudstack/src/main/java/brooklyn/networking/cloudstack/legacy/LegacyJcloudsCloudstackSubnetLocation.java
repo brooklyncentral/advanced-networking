@@ -57,6 +57,12 @@ import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
 
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.ResourceUtils;
+import org.apache.brooklyn.core.util.config.ConfigBag;
+import org.apache.brooklyn.core.util.internal.Repeater;
+import org.apache.brooklyn.core.util.internal.ssh.SshTool;
+import org.apache.brooklyn.core.util.text.TemplateProcessor;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
@@ -66,25 +72,19 @@ import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.location.jclouds.templates.PortableTemplateBuilder;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.networking.NetworkMultiAddressUtils2;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
-import brooklyn.util.ResourceUtils;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.config.ConfigBag;
-import brooklyn.util.internal.ssh.SshTool;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
-import brooklyn.util.repeat.Repeater;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.text.Strings;
-import brooklyn.util.text.TemplateProcessor;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
 
 /**
  * Legacy {@link JcloudsLocation} for a CloudStack subnet.

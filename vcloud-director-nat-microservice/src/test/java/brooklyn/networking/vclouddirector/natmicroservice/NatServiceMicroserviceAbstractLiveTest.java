@@ -25,20 +25,20 @@ import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.config.BrooklynProperties;
 import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.test.entity.LocalManagementContextForTests;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.Entities;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.networking.vclouddirector.PortForwardingConfig;
 import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
 
 
 public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRestApiTest {

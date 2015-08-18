@@ -22,7 +22,7 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.net.Networking;
 
 /**
  * Given several strings, determines which have the longest, and shorted, initial matching prefix.

@@ -15,11 +15,11 @@ import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.stream.Streams;
 
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.os.Os;
-import brooklyn.util.stream.Streams;
 
 public class PropertiesParser {
 

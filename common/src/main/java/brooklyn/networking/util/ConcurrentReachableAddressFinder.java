@@ -35,10 +35,10 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Networking;
-import brooklyn.util.repeat.Repeater;
-import brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.time.Duration;
 
 @Beta
 public class ConcurrentReachableAddressFinder {

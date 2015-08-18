@@ -53,8 +53,12 @@ import org.apache.brooklyn.location.basic.Machines;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.entity.TestEntity;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Entities;
@@ -64,10 +68,6 @@ import brooklyn.entity.trait.Startable;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
-import brooklyn.test.Asserts;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions. 

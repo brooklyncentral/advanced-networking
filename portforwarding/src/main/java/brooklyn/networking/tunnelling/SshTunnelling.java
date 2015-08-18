@@ -25,9 +25,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.Files;
 
 import org.apache.brooklyn.location.basic.SshMachineLocation;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
 
 public class SshTunnelling {
 

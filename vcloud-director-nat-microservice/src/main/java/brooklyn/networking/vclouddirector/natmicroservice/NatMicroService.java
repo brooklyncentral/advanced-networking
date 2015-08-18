@@ -21,15 +21,16 @@ import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
+import org.apache.brooklyn.core.util.crypto.FluentKeySigner;
+import org.apache.brooklyn.core.util.crypto.SecureKeys;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.text.Identifiers;
+import org.apache.brooklyn.util.text.Strings;
+
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.natservice.api.NatServiceRestApi;
 import brooklyn.networking.vclouddirector.natservice.resources.AbstractRestResource;
-import brooklyn.util.crypto.FluentKeySigner;
-import brooklyn.util.crypto.SecureKeys;
-import brooklyn.util.net.Networking;
-import brooklyn.util.text.Identifiers;
-import brooklyn.util.text.Strings;
 
 public class NatMicroService {
 

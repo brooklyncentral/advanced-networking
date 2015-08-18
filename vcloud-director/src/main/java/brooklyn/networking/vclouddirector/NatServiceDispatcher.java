@@ -32,11 +32,10 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.util.task.SingleThreadedScheduler;
 import org.apache.brooklyn.location.basic.PortRanges;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.task.SingleThreadedScheduler;
-import brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
 
 /**
  * Dispatches NAT service updates to handle concurrent access by multiple users

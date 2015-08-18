@@ -33,13 +33,13 @@ import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.Machines;
 import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.networking.AttributeMunger;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 public class PortForwarderAsyncImpl implements PortForwarderAsync {
 

@@ -47,9 +47,15 @@ import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.management.ManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.entity.TestApplication;
 import org.apache.brooklyn.test.entity.TestEntity;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
@@ -58,12 +64,6 @@ import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.portforwarding.NoopPortForwarder;
-import brooklyn.test.Asserts;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Networking;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.time.Duration;
 
 public class SubnetTierTest {
 

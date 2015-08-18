@@ -34,12 +34,11 @@ import org.jclouds.cloudstack.options.ListAccountsOptions;
 import org.jclouds.cloudstack.options.ListNetworksOptions;
 import org.jclouds.cloudstack.options.ListZonesOptions;
 
+import org.apache.brooklyn.core.util.config.ConfigBag;
 import org.apache.brooklyn.location.basic.LocationConfigKeys;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.util.config.ConfigBag;
-import brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Cidr;
 
 public class CloudstackNetworking {
 

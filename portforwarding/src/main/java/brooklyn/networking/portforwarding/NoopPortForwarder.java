@@ -38,10 +38,10 @@ import org.apache.brooklyn.location.access.PortForwardManager;
 
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.util.ConcurrentReachableAddressFinder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.time.Duration;
 
 public class NoopPortForwarder implements PortForwarder {
 

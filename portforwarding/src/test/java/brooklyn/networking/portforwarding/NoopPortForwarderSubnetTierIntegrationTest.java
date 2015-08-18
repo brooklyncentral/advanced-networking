@@ -38,16 +38,16 @@ import org.apache.brooklyn.api.management.ManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.LocalhostMachineProvisioningLocation;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.test.Asserts;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
-import brooklyn.util.net.Protocol;
 
 public class NoopPortForwarderSubnetTierIntegrationTest {
 

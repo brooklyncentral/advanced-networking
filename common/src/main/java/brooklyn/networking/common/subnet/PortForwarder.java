@@ -26,12 +26,12 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.management.ManagementContextInjectable;
 import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
 
 /**
  * Utility for setting up network routing (e.g. NAT, port-forwarding, etc).

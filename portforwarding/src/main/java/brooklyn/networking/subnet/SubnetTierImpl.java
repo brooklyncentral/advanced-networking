@@ -39,10 +39,18 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.policy.EnricherSpec;
 import org.apache.brooklyn.core.management.internal.CollectionChangeListener;
 import org.apache.brooklyn.core.management.internal.ManagementContextInternal;
+import org.apache.brooklyn.core.util.config.ConfigBag;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.javalang.Reflections;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.enricher.basic.Transformer;
 import brooklyn.entity.annotation.Effector;
@@ -62,14 +70,6 @@ import brooklyn.networking.common.subnet.PortForwarderAsync;
 import brooklyn.networking.common.subnet.PortForwarderAsyncImpl;
 import brooklyn.networking.common.subnet.PortForwarderClient;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
-import brooklyn.util.config.ConfigBag;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.javalang.Reflections;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Time;
 
 public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
 

@@ -21,16 +21,16 @@ import org.slf4j.LoggerFactory;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.task.Tasks;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.task.Tasks;
 
 public class VirtualPrivateCloud {
 

@@ -40,11 +40,11 @@ import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Networking;
 
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Networking;
 
 // TODO Tests currently written to be fast: they assume existing VMs are configured.
 // Could re-write to create the VMs (and terminate them obviously) for each run.

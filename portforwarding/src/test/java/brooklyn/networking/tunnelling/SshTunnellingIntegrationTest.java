@@ -35,13 +35,13 @@ import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.management.ManagementContext;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Identifiers;
 
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
-import brooklyn.util.net.Networking;
-import brooklyn.util.os.Os;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.text.Identifiers;
 
 public class SshTunnellingIntegrationTest {
 

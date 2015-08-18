@@ -27,8 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 
 public class NatDirectClient implements NatClient {
 

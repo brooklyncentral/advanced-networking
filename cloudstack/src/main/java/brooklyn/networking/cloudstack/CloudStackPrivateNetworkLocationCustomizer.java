@@ -28,12 +28,12 @@ import org.jclouds.cloudstack.domain.Zone;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.options.TemplateOptions;
 
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.jclouds.BasicJcloudsLocationCustomizer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.util.net.Cidr;
 
 public class CloudStackPrivateNetworkLocationCustomizer extends BasicJcloudsLocationCustomizer {
 

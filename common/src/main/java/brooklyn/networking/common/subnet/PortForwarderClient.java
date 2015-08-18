@@ -28,14 +28,13 @@ import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerClient;
-
-import brooklyn.config.ConfigKey;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
 
 /**
  * Delegating instance of {@link PortForwarder}, for persistence-safety.

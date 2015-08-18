@@ -15,16 +15,17 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.camp.brooklyn.AbstractYamlTest;
+import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.test.EntityTestUtils;
+import org.apache.brooklyn.util.net.UserAndHostAndPort;
+
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.EmptySoftwareProcess;
 import brooklyn.entity.basic.Entities;
 import brooklyn.event.basic.Sensors;
-import org.apache.brooklyn.location.basic.Machines;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
-import org.apache.brooklyn.test.EntityTestUtils;
-import brooklyn.util.net.UserAndHostAndPort;
-import org.apache.brooklyn.camp.brooklyn.AbstractYamlTest;
 
 public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
     @SuppressWarnings("unused")

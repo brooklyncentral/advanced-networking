@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Duration;
 
 public class ConcurrentReachableAddressFinderTest {
 

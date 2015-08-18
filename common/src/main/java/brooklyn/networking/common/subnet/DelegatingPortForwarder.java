@@ -27,10 +27,9 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.management.ManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
-
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
 
 public class DelegatingPortForwarder implements PortForwarder {
 

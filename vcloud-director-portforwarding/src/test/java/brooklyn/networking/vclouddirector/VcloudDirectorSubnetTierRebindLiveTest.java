@@ -31,16 +31,16 @@ import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.entity.TestEntity;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.rebind.RebindTestFixtureWithApp;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.test.Asserts;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWithApp {
 

@@ -15,8 +15,8 @@
  */
 package brooklyn.networking.portforwarding;
 
-import static brooklyn.util.ssh.BashCommands.sudo;
 import static org.testng.Assert.assertTrue;
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -42,13 +42,13 @@ import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.ssh.BashCommands;
 
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Networking;
-import brooklyn.util.os.Os;
-import brooklyn.util.ssh.BashCommands;
 
 // TODO Tests currently written to be fast: they assume existing VMs are configured.
 // Could re-write to create the VMs (and terminate them obviously) for each run.

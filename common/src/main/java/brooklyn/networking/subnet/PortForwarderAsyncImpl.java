@@ -24,11 +24,11 @@ import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 /** 
  * Kept for persisted state backwards compatibility.

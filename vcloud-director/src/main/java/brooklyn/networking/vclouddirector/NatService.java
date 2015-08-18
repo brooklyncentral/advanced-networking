@@ -55,13 +55,12 @@ import com.google.common.net.InetAddresses;
 
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.basic.PortRanges;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 
 /**
  * For adding/removing NAT rules to vcloud-director.

@@ -45,7 +45,9 @@ import org.jclouds.cloudstack.options.CreateNetworkOptions;
 
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.config.BrooklynProperties;
 import org.apache.brooklyn.core.management.internal.LocalManagementContext;
+import org.apache.brooklyn.core.util.config.ConfigBag;
 import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerAuthority;
@@ -54,18 +56,16 @@ import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.HttpTestUtils;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.Identifiers;
 
-import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
-import brooklyn.test.Asserts;
-import brooklyn.util.config.ConfigBag;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.text.Identifiers;
 
 public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
 

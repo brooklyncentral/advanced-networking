@@ -7,8 +7,7 @@ import com.google.common.base.Objects;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.location.PortRange;
-
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Protocol;
 
 
 public class PortForwardingConfig {

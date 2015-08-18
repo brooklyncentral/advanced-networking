@@ -29,9 +29,9 @@ import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.api.management.ManagementContext;
 import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
 
 public class PredefinedPortForwarder implements PortForwarder {
 

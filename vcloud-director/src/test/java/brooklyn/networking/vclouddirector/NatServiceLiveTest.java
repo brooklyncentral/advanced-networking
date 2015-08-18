@@ -14,8 +14,7 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Protocol;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.

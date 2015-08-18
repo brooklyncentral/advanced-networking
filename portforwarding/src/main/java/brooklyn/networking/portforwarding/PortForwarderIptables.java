@@ -15,9 +15,9 @@
  */
 package brooklyn.networking.portforwarding;
 
-import static brooklyn.util.ssh.BashCommands.sudo;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.util.List;
 
@@ -35,19 +35,20 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.ssh.IptablesCommands;
+import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
+import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.HasNetworkAddresses;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.ssh.IptablesCommands;
-import brooklyn.util.ssh.IptablesCommands.Chain;
-import brooklyn.util.ssh.IptablesCommands.Policy;
+
 
 public class PortForwarderIptables implements PortForwarder {
 

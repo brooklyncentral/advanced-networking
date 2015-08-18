@@ -30,12 +30,11 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
+import org.apache.brooklyn.core.util.http.HttpTool;
+import org.apache.brooklyn.core.util.http.HttpToolResponse;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.util.http.HttpTool;
-import brooklyn.util.http.HttpToolResponse;
-import brooklyn.util.net.Urls;
-import brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.Strings;
 
 /**
  * For adding/removing NAT rules to vcloud-director.

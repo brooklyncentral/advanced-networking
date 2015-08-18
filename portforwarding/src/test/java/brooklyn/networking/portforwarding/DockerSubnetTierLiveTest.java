@@ -33,13 +33,13 @@ import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.test.Asserts;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 public class DockerSubnetTierLiveTest extends AbstractDockerPortForwarderTest {
 

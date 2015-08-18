@@ -46,12 +46,17 @@ import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.event.SensorEvent;
 import org.apache.brooklyn.api.event.SensorEventListener;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.util.config.ConfigBag;
+import org.apache.brooklyn.core.util.flags.TypeCoercions;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortMapping;
 import org.apache.brooklyn.location.basic.AbstractLocation;
 import org.apache.brooklyn.location.basic.LocationConfigKeys;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Attributes;
@@ -59,11 +64,6 @@ import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.config.ConfigBag;
-import brooklyn.util.flags.TypeCoercions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.text.Strings;
 
 public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnetTier {
 

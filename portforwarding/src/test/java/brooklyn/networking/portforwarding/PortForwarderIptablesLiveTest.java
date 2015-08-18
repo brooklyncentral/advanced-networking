@@ -22,8 +22,8 @@ import org.testng.annotations.Test;
 import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
 public class PortForwarderIptablesLiveTest extends AbstractPortForwarderIptablesTest {
 

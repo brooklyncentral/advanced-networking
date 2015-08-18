@@ -34,13 +34,13 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.networking.vclouddirector.PortForwardingConfig;
 import brooklyn.networking.vclouddirector.natservice.api.NatServiceApi;
 import brooklyn.networking.vclouddirector.natservice.domain.NatRuleSummary;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.text.Strings;
 
 public class NatServiceResource extends AbstractRestResource implements NatServiceApi {
 

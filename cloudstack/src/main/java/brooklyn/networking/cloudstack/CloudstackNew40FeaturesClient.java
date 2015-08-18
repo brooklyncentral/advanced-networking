@@ -77,13 +77,12 @@ import org.jclouds.http.HttpRequest;
 import org.jclouds.http.HttpResponse;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
+import org.apache.brooklyn.core.util.http.HttpToolResponse;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.http.HttpToolResponse;
-import brooklyn.util.stream.Streams;
-import brooklyn.util.time.Time;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.stream.Streams;
+import org.apache.brooklyn.util.time.Time;
 
 public class CloudstackNew40FeaturesClient {
 

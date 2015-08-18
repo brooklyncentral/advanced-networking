@@ -19,10 +19,10 @@ import com.google.common.base.Supplier;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.exceptions.Exceptions;
 
 /** 
  * Kept for persisted state backwards compatibility.

@@ -37,12 +37,12 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.test.Asserts;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
-import brooklyn.test.Asserts;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Protocol;
 
 public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
 

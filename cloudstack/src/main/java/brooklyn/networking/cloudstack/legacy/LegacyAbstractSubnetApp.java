@@ -20,17 +20,17 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.BrooklynNetworkUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Networking;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.StartableApplication;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.BasicConfigKey;
-import brooklyn.util.BrooklynNetworkUtils;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
 
 public abstract class LegacyAbstractSubnetApp extends AbstractApplication implements StartableApplication {
 

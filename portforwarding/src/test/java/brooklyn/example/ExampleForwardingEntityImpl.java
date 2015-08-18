@@ -23,14 +23,14 @@ import com.google.common.collect.Iterables;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.core.util.task.Tasks;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.java.VanillaJavaAppImpl;
 import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.networking.tunnelling.SshTunnelling;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.task.Tasks;
 
 // FIXME An example entity; where to put this?
 public class ExampleForwardingEntityImpl extends VanillaJavaAppImpl implements ExampleForwardingEntity {

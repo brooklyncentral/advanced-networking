@@ -24,19 +24,19 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.brooklyn.core.util.ResourceUtils;
 import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.exceptions.FatalConfigurationRuntimeException;
+import org.apache.brooklyn.util.exceptions.FatalRuntimeException;
+import org.apache.brooklyn.util.exceptions.UserFacingException;
+import org.apache.brooklyn.util.javalang.Threads;
+import org.apache.brooklyn.util.stream.Streams;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.BrooklynVersion;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
-import brooklyn.util.ResourceUtils;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.exceptions.FatalConfigurationRuntimeException;
-import brooklyn.util.exceptions.FatalRuntimeException;
-import brooklyn.util.exceptions.UserFacingException;
-import brooklyn.util.javalang.Threads;
-import brooklyn.util.stream.Streams;
-import brooklyn.util.text.Strings;
 
 public class NatMicroServiceMain {
 

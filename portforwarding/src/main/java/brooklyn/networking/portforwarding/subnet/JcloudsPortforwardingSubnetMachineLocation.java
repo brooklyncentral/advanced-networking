@@ -20,15 +20,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
 
 public class JcloudsPortforwardingSubnetMachineLocation extends AbstractJcloudsSubnetSshMachineLocation {
     private static final long serialVersionUID = 252415164250662535L;

@@ -22,15 +22,15 @@ import org.jclouds.cloudstack.domain.FirewallRule;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.trait.Startable;
 import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.event.basic.BasicConfigKey;
-import brooklyn.util.net.Cidr;
 
 @ImplementedBy(LegacySubnetTierImpl.class)
 public interface LegacySubnetTier extends Entity, Startable {

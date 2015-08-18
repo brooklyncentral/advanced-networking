@@ -36,6 +36,7 @@ import org.apache.brooklyn.api.event.SensorEventListener;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.location.basic.SimulatedLocation;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.entity.TestApplication;
 
@@ -43,7 +44,6 @@ import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.event.basic.BasicAttributeSensor;
-import brooklyn.test.Asserts;
 
 public class AttributeMungerTest {
 
