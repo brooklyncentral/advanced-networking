@@ -34,17 +34,16 @@ import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.net.Networking;
-
-import brooklyn.entity.basic.ApplicationBuilder;
-import brooklyn.entity.basic.Entities;
 
 // TODO Tests currently written to be fast: they assume existing VMs are configured.
 // Could re-write to create the VMs (and terminate them obviously) for each run.

@@ -21,24 +21,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.location.MachineLocation;
-import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.util.flags.SetFromFlag;
+import org.apache.brooklyn.core.config.BasicConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.entity.trait.Startable;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerClient;
 import org.apache.brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.trait.Startable;
-import brooklyn.event.basic.BasicAttributeSensor;
-import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.common.subnet.PortForwarderAsync;
 

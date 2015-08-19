@@ -23,9 +23,10 @@ import java.util.Map;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+
 import com.google.api.client.repackaged.com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 public class NatRuleSummary {
 

@@ -32,8 +32,8 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.util.task.SingleThreadedScheduler;
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.util.core.task.SingleThreadedScheduler;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 

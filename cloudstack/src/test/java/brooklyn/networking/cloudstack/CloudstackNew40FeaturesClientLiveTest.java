@@ -24,10 +24,9 @@ import com.google.common.collect.ImmutableMap;
 
 import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
 
-import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.entity.core.Entities;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.entity.basic.Entities;
 
 public class CloudstackNew40FeaturesClientLiveTest {
 

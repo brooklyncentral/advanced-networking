@@ -25,16 +25,16 @@ import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.config.BrooklynProperties;
-import org.apache.brooklyn.core.management.internal.LocalManagementContext;
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.core.internal.BrooklynProperties;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.core.test.entity.LocalManagementContextForTests;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.location.core.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.test.entity.LocalManagementContextForTests;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.Entities;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 import brooklyn.networking.vclouddirector.PortForwardingConfig;

@@ -16,16 +16,15 @@ import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.camp.brooklyn.AbstractYamlTest;
-import org.apache.brooklyn.location.basic.Machines;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.software.base.EmptySoftwareProcess;
+import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.sensor.core.Sensors;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.net.UserAndHostAndPort;
-
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EmptySoftwareProcess;
-import brooklyn.entity.basic.Entities;
-import brooklyn.event.basic.Sensors;
 
 public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
     @SuppressWarnings("unused")
@@ -48,9 +47,9 @@ public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
                 "  brooklyn.config:",
                 "    subnet.portForwarder.type: brooklyn.networking.portforwarding.PredefinedPortForwarder",
                 "  brooklyn.children:",
-                "  - type: brooklyn.entity.basic.EmptySoftwareProcess",
+                "  - type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess",
                 "    brooklyn.initializers:",
-                "    - type: brooklyn.entity.software.StaticSensor",
+                "    - type: org.apache.brooklyn.sensor.core.StaticSensor",
                 "      brooklyn.config:",
                 "        name: http.port",
                 "        targetType: Integer",

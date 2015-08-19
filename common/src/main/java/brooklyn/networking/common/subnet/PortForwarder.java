@@ -24,14 +24,13 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.management.ManagementContextInjectable;
+import org.apache.brooklyn.core.mgmt.ManagementContextInjectable;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
-
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EntityAndAttribute;
 
 /**
  * Utility for setting up network routing (e.g. NAT, port-forwarding, etc).

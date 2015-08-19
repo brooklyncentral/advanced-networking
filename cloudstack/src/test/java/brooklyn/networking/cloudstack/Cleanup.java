@@ -22,10 +22,9 @@ import com.google.common.base.Joiner;
 import org.jclouds.cloudstack.domain.Network;
 import org.jclouds.cloudstack.options.ListNetworksOptions;
 
-import org.apache.brooklyn.core.management.internal.LocalManagementContext;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.entity.core.Entities;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-
-import brooklyn.entity.basic.Entities;
 
 public class Cleanup {
 

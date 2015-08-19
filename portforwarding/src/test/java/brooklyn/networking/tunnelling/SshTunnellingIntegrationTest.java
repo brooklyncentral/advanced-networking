@@ -32,16 +32,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.management.ManagementContext;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
-import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.factory.ApplicationBuilder;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Identifiers;
-
-import brooklyn.entity.basic.ApplicationBuilder;
-import brooklyn.entity.basic.Entities;
 
 public class SshTunnellingIntegrationTest {
 

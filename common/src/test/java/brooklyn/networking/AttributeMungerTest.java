@@ -30,20 +30,19 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import org.apache.brooklyn.api.event.AttributeSensor;
-import org.apache.brooklyn.api.event.SensorEvent;
-import org.apache.brooklyn.api.event.SensorEventListener;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.location.basic.SimulatedLocation;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.api.sensor.SensorEvent;
+import org.apache.brooklyn.api.sensor.SensorEventListener;
+import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.entity.factory.ApplicationBuilder;
+import org.apache.brooklyn.location.core.SimulatedLocation;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
-import org.apache.brooklyn.test.entity.TestApplication;
-
-import brooklyn.entity.basic.ApplicationBuilder;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.event.basic.BasicAttributeSensor;
 
 public class AttributeMungerTest {
 

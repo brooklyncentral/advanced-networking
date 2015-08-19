@@ -45,17 +45,17 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerImpl;
 import org.apache.brooklyn.location.access.PortMapping;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
-
-import brooklyn.networking.common.subnet.PortForwarder;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
+
+import brooklyn.networking.common.subnet.PortForwarder;
 
 public class DockerPortForwarder implements PortForwarder {
 

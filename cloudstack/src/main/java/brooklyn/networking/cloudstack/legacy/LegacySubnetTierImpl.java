@@ -41,28 +41,28 @@ import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
 import org.jclouds.cloudstack.options.CreateNetworkOptions;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
-import org.apache.brooklyn.api.event.AttributeSensor;
-import org.apache.brooklyn.api.event.SensorEvent;
-import org.apache.brooklyn.api.event.SensorEventListener;
+import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.core.util.config.ConfigBag;
-import org.apache.brooklyn.core.util.flags.TypeCoercions;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.api.sensor.SensorEvent;
+import org.apache.brooklyn.api.sensor.SensorEventListener;
+import org.apache.brooklyn.entity.core.AbstractEntity;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
+import org.apache.brooklyn.entity.trait.StartableMethods;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortMapping;
-import org.apache.brooklyn.location.basic.AbstractLocation;
-import org.apache.brooklyn.location.basic.LocationConfigKeys;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
+import org.apache.brooklyn.location.core.AbstractLocation;
+import org.apache.brooklyn.location.core.LocationConfigKeys;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.trait.StartableMethods;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 
 public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnetTier {

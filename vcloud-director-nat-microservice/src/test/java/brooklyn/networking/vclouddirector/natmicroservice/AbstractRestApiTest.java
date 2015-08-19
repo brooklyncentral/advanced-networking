@@ -23,16 +23,16 @@ import java.util.logging.Level;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-import brooklyn.networking.vclouddirector.NatServiceDispatcher;
-import brooklyn.networking.vclouddirector.natservice.api.NatServiceRestApi;
-import brooklyn.networking.vclouddirector.natservice.resources.AbstractRestResource;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.inject.Errors;
 import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.JerseyTest;
 import com.sun.jersey.test.framework.LowLevelAppDescriptor;
+
+import brooklyn.networking.vclouddirector.NatServiceDispatcher;
+import brooklyn.networking.vclouddirector.natservice.api.NatServiceRestApi;
+import brooklyn.networking.vclouddirector.natservice.resources.AbstractRestResource;
 
 public abstract class AbstractRestApiTest {
 

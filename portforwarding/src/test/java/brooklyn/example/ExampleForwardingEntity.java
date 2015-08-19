@@ -16,13 +16,12 @@
 package brooklyn.example;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.java.VanillaJavaApp;
-import brooklyn.event.basic.BasicAttributeSensor;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.java.VanillaJavaApp;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 
 @ImplementedBy(ExampleForwardingEntityImpl.class)
 public interface ExampleForwardingEntity extends VanillaJavaApp {

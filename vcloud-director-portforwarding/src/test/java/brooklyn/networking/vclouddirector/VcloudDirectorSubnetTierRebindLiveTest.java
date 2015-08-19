@@ -26,20 +26,20 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.core.mgmt.rebind.RebindTestFixtureWithApp;
+import org.apache.brooklyn.core.test.entity.TestEntity;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.sensor.core.Sensors;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.entity.TestEntity;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.rebind.RebindTestFixtureWithApp;
-import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
 
 public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWithApp {

@@ -43,27 +43,27 @@ import org.jclouds.cloudstack.options.AssociateIPAddressOptions;
 import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
 import org.jclouds.cloudstack.options.CreateNetworkOptions;
 
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.core.config.BrooklynProperties;
-import org.apache.brooklyn.core.management.internal.LocalManagementContext;
-import org.apache.brooklyn.core.util.config.ConfigBag;
+import org.apache.brooklyn.core.internal.BrooklynProperties;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManagerAuthority;
-import org.apache.brooklyn.location.basic.LocationConfigKeys;
-import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
+import org.apache.brooklyn.location.core.LocationConfigKeys;
+import org.apache.brooklyn.location.core.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.HttpTestUtils;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Identifiers;
 
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.entity.basic.Lifecycle;
-import brooklyn.entity.group.DynamicCluster;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
 

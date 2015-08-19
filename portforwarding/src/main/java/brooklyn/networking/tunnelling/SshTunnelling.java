@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
 
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 

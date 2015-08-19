@@ -24,21 +24,21 @@ import com.google.common.base.Predicates;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
-import org.apache.brooklyn.api.event.Sensor;
-import org.apache.brooklyn.api.event.SensorEvent;
-import org.apache.brooklyn.api.event.SensorEventListener;
+import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.sensor.Sensor;
+import org.apache.brooklyn.api.sensor.SensorEvent;
+import org.apache.brooklyn.api.sensor.SensorEventListener;
+import org.apache.brooklyn.entity.core.AbstractEntity;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.basic.Machines;
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.location.core.PortRanges;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.networking.AttributeMunger;
 
 public class PortForwarderAsyncImpl implements PortForwarderAsync {

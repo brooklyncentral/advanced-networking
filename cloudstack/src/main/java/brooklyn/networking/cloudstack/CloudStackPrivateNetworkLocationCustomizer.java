@@ -29,11 +29,10 @@ import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.options.TemplateOptions;
 
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.location.jclouds.BasicJcloudsLocationCustomizer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.net.Cidr;
-
-import brooklyn.entity.basic.ConfigKeys;
 
 public class CloudStackPrivateNetworkLocationCustomizer extends BasicJcloudsLocationCustomizer {
 

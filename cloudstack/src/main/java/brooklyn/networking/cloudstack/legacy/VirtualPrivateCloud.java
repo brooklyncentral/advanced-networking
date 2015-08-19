@@ -19,17 +19,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.util.task.Tasks;
+import org.apache.brooklyn.core.config.BasicConfigKey;
+import org.apache.brooklyn.entity.core.AbstractEntity;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.event.basic.BasicAttributeSensor;
-import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 
 public class VirtualPrivateCloud {

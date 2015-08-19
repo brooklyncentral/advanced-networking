@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.core.PortRanges;
 
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 

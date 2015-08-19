@@ -20,17 +20,16 @@ import java.util.Map;
 import org.jclouds.cloudstack.domain.FirewallRule;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.BasicConfigKey;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.entity.trait.Startable;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.util.net.Cidr;
-
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.trait.Startable;
-import brooklyn.event.basic.BasicAttributeSensor;
-import brooklyn.event.basic.BasicConfigKey;
 
 @ImplementedBy(LegacySubnetTierImpl.class)
 public interface LegacySubnetTier extends Entity, Startable {

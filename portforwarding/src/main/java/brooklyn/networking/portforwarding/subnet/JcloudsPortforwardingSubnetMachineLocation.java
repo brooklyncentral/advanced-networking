@@ -21,13 +21,13 @@ import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.networking.common.subnet.PortForwarder;
 
 public class JcloudsPortforwardingSubnetMachineLocation extends AbstractJcloudsSubnetSshMachineLocation {

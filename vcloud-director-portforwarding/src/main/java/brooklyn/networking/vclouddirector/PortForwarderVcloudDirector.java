@@ -29,12 +29,14 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.management.ManagementContext;
-import org.apache.brooklyn.basic.BrooklynObjectInternal.ConfigurationSupportInternal;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.basic.Machines;
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.location.core.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
@@ -42,8 +44,6 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 

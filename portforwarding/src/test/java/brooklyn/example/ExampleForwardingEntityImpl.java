@@ -21,15 +21,15 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
-import org.apache.brooklyn.api.event.AttributeSensor;
-import org.apache.brooklyn.core.util.task.Tasks;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.api.internal.EntityLocal;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.java.VanillaJavaAppImpl;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.sensor.core.DependentConfiguration;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.java.VanillaJavaAppImpl;
-import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.networking.tunnelling.SshTunnelling;
 
 // FIXME An example entity; where to put this?

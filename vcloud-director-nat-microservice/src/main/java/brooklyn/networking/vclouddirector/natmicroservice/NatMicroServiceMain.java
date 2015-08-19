@@ -24,8 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import org.apache.brooklyn.core.util.ResourceUtils;
-import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.core.BrooklynVersion;
+import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.exceptions.FatalConfigurationRuntimeException;
 import org.apache.brooklyn.util.exceptions.FatalRuntimeException;
@@ -34,7 +35,6 @@ import org.apache.brooklyn.util.javalang.Threads;
 import org.apache.brooklyn.util.stream.Streams;
 import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.BrooklynVersion;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 

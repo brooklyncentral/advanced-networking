@@ -26,13 +26,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
-import org.apache.brooklyn.api.management.ManagementContext;
-import org.apache.brooklyn.core.config.BrooklynProperties;
-import org.apache.brooklyn.core.management.internal.LocalManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.internal.BrooklynProperties;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.entity.core.Entities;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
-
-import brooklyn.entity.basic.Entities;
 
 /**
  * FIXME Test assumes that:

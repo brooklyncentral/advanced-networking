@@ -30,9 +30,9 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
-import org.apache.brooklyn.core.util.http.HttpTool;
-import org.apache.brooklyn.core.util.http.HttpToolResponse;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.core.http.HttpTool;
+import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.text.Strings;
 

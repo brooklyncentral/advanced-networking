@@ -3,9 +3,9 @@ package brooklyn.networking.vclouddirector.natservice.resources;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 
-import brooklyn.networking.vclouddirector.NatServiceDispatcher;
-
 import com.google.common.annotations.VisibleForTesting;
+
+import brooklyn.networking.vclouddirector.NatServiceDispatcher;
 
 public abstract class AbstractRestResource {
 

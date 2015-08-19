@@ -18,7 +18,7 @@ package brooklyn.networking.subnet;
 import com.google.common.base.Supplier;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 

@@ -20,13 +20,12 @@ import com.google.common.base.Optional;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.entity.core.AbstractEntity;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.entity.trait.Startable;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
-
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.trait.Startable;
 
 /**
  * Utility for setting up network routing (e.g. NAT, port-forwarding, etc).

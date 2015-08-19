@@ -19,18 +19,17 @@ import java.util.Set;
 
 import com.google.common.reflect.TypeToken;
 
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.effector.core.MethodEffector;
+import org.apache.brooklyn.entity.annotation.Effector;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedController;
-
-import brooklyn.entity.annotation.Effector;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.Lifecycle;
-import brooklyn.entity.basic.MethodEffector;
-import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.BasicAttributeSensor;
+import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 
 @ImplementedBy(CloudStackLoadBalancerImpl.class)
 public interface CloudStackLoadBalancer extends AbstractNonProvisionedController {

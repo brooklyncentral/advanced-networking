@@ -42,18 +42,18 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.config.ConfigKey.HasConfigKey;
-import org.apache.brooklyn.core.util.config.ConfigBag;
+import org.apache.brooklyn.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedControllerImpl;
 import org.apache.brooklyn.entity.proxy.LoadBalancer;
 import org.apache.brooklyn.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.sensor.feed.ConfigToAttributes;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.entity.basic.Lifecycle;
-import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 
 public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedControllerImpl implements CloudStackLoadBalancer {

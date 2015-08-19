@@ -29,16 +29,16 @@ import com.google.common.io.Files;
 
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
-import org.apache.brooklyn.api.management.ManagementContext;
-import org.apache.brooklyn.core.management.internal.LocalManagementContext;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
+import org.apache.brooklyn.core.mgmt.rebind.RebindTestUtils;
+import org.apache.brooklyn.core.test.entity.TestEntity;
+import org.apache.brooklyn.entity.core.Entities;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortMapping;
-import org.apache.brooklyn.test.entity.TestEntity;
 import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.rebind.RebindTestUtils;
 import brooklyn.networking.subnet.SubnetTier;
 
 public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarderIptablesTest {

@@ -34,11 +34,12 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.basic.PortRanges;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
@@ -46,7 +47,6 @@ import org.apache.brooklyn.util.ssh.IptablesCommands;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.networking.common.subnet.PortForwarder;
 
 

@@ -30,23 +30,23 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.basic.LocalhostMachineProvisioningLocation;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.localhost.LocalhostMachineProvisioningLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.entity.TestApplication;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.net.Protocol;
 
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.event.basic.BasicAttributeSensor;
 import brooklyn.networking.subnet.SubnetTier;
 
 public class NoopPortForwarderSubnetTierIntegrationTest {

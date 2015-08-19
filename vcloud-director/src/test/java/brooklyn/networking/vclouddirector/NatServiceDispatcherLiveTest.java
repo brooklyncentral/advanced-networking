@@ -5,9 +5,9 @@ import java.net.URI;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
-
 import com.google.common.net.HostAndPort;
+
+import brooklyn.networking.vclouddirector.NatServiceDispatcher.EndpointConfig;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS.

@@ -29,24 +29,23 @@ import com.google.common.base.Predicates;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
-import org.apache.brooklyn.api.event.AttributeSensor;
-import org.apache.brooklyn.api.event.SensorEvent;
+import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
-import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.api.sensor.EnricherSpec;
+import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.util.flags.SetFromFlag;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.core.EntityAndAttribute;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.access.PortForwardManager.AssociationMetadata;
-import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.sensor.core.BasicSensorEvent;
+import org.apache.brooklyn.sensor.enricher.Transformer;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.text.Strings;
-
-import brooklyn.enricher.basic.Transformer;
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.event.basic.BasicSensorEvent;
 
 public class SubnetEnrichers {
 

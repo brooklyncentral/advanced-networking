@@ -41,7 +41,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.apache.brooklyn.core.util.http.HttpToolResponse;
+import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
 /**
