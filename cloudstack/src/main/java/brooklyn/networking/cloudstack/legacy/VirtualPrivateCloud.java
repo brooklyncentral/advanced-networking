@@ -23,7 +23,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.BasicConfigKey;
-import org.apache.brooklyn.entity.core.AbstractEntity;
+import org.apache.brooklyn.core.entity.AbstractEntity;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.util.collections.MutableMap;

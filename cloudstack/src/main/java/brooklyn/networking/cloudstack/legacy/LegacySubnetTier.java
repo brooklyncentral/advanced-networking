@@ -24,10 +24,10 @@ import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.BasicConfigKey;
-import org.apache.brooklyn.entity.core.EntityAndAttribute;
-import org.apache.brooklyn.entity.trait.Startable;
-import org.apache.brooklyn.location.access.BrooklynAccessUtils;
-import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.util.net.Cidr;
 

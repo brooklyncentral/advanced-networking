@@ -34,8 +34,8 @@ import org.jclouds.cloudstack.options.ListAccountsOptions;
 import org.jclouds.cloudstack.options.ListNetworksOptions;
 import org.jclouds.cloudstack.options.ListZonesOptions;
 
-import org.apache.brooklyn.location.cloud.names.BasicCloudMachineNamer;
-import org.apache.brooklyn.location.core.LocationConfigKeys;
+import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.net.Cidr;

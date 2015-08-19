@@ -35,8 +35,8 @@ import com.google.common.io.Files;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
-import org.apache.brooklyn.location.core.PortRanges;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.exceptions.Exceptions;

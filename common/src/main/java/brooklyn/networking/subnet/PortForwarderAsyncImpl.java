@@ -19,12 +19,12 @@ import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.internal.EntityLocal;
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.entity.core.EntityAndAttribute;
-import org.apache.brooklyn.location.access.PortForwardManager;
-import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.location.Machines;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 

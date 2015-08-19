@@ -33,7 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.net.HostAndPort;
 
-import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.text.Strings;

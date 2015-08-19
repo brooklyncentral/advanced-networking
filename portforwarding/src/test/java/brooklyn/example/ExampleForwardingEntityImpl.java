@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.internal.EntityLocal;
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.entity.java.VanillaJavaAppImpl;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.sensor.core.DependentConfiguration;

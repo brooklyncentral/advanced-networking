@@ -33,9 +33,9 @@ import com.google.common.collect.ImmutableMap;
 
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.core.test.entity.TestApplication;
-import org.apache.brooklyn.entity.core.Entities;
-import org.apache.brooklyn.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.os.Os;

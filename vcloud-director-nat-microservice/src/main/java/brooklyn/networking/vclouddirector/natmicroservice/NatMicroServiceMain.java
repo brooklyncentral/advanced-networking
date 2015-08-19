@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.brooklyn.core.BrooklynVersion;
-import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.exceptions.FatalConfigurationRuntimeException;

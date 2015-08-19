@@ -14,7 +14,7 @@ import com.google.api.client.util.Lists;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.stream.Streams;

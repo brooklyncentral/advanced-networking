@@ -41,7 +41,7 @@ import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;

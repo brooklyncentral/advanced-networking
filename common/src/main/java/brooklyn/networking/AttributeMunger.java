@@ -26,11 +26,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.internal.EntityLocal;
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
-import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.util.text.Strings;
 
 public class AttributeMunger {

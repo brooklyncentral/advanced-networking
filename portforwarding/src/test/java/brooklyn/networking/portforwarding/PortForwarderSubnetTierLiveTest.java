@@ -29,10 +29,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.entity.core.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.net.Cidr;

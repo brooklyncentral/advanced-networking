@@ -34,7 +34,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;

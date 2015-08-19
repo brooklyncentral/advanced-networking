@@ -21,7 +21,7 @@ import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
-import org.apache.brooklyn.entity.core.AbstractEntity;
+import org.apache.brooklyn.core.entity.AbstractEntity;
 import org.apache.brooklyn.util.core.crypto.FluentKeySigner;
 import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.net.Networking;

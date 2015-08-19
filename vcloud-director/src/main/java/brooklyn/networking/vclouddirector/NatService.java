@@ -54,7 +54,7 @@ import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Protocol;
