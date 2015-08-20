@@ -49,7 +49,7 @@ public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
                 "  brooklyn.children:",
                 "  - type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess",
                 "    brooklyn.initializers:",
-                "    - type: org.apache.brooklyn.sensor.core.StaticSensor",
+                "    - type: org.apache.brooklyn.core.sensor.StaticSensor",
                 "      brooklyn.config:",
                 "        name: http.port",
                 "        targetType: Integer",
