@@ -26,7 +26,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.util.core.BrooklynNetworkUtils;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Networking;

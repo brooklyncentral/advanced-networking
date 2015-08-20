@@ -20,8 +20,8 @@ import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.entity.java.VanillaJavaApp;
-import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 
 @ImplementedBy(ExampleForwardingEntityImpl.class)
 public interface ExampleForwardingEntity extends VanillaJavaApp {

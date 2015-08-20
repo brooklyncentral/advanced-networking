@@ -34,7 +34,7 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
-import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;

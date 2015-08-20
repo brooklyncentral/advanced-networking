@@ -28,7 +28,7 @@ import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.util.net.Cidr;
 
 @ImplementedBy(LegacySubnetTierImpl.class)

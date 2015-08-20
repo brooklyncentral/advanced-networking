@@ -24,12 +24,12 @@ import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
-import org.apache.brooklyn.effector.core.MethodEffector;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedController;
-import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
-import org.apache.brooklyn.sensor.core.BasicAttributeSensor;
 
 @ImplementedBy(CloudStackLoadBalancerImpl.class)
 public interface CloudStackLoadBalancer extends AbstractNonProvisionedController {
