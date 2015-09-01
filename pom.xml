@@ -39,6 +39,7 @@
     <properties>
         <brooklyn.version>0.8.0-cloudsoft-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
+        <vcloud.director.version>1.9.1-20150815.1541</vcloud.director.version>
     </properties>
 
     <scm>
