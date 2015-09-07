@@ -161,13 +161,22 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             if (attributes != null) {
                 portMappedEntities.add(entity);
                 for (AttributeSensor<Integer> attribute : attributes) {
-                    AttributeSensor<String> mappedAttribute = Sensors.newStringSensor("mapped."+attribute.getName());
+                    String attributeName = attribute.getName();
+                    String endpointName;
+                    if (attributeName.contains(".port")) {
+                        endpointName = attributeName.replace(".port", ".endpoint");
+                    } else {
+                        endpointName = attributeName + ".endpoint";
+                    }
+                    AttributeSensor<String> mappedPortAttribute = Sensors.newStringSensor("mapped." + attributeName);
+                    AttributeSensor<String> mappedPortEndpoint = Sensors.newStringSensor("mapped." + endpointName);
                     openPortForwardingAndAdvertise(
                             EntityAndAttribute.create(entity, attribute), 
                             Optional.<Integer>absent(), 
                             Protocol.TCP, 
-                            Cidr.UNIVERSAL, 
-                            EntityAndAttribute.create(entity, mappedAttribute));
+                            Cidr.UNIVERSAL,
+                            Optional.of(EntityAndAttribute.create(entity, mappedPortEndpoint)),
+                            Optional.of(EntityAndAttribute.create(entity, mappedPortAttribute)));
                 }
             }
         }
@@ -470,6 +479,14 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint) {
         getPortForwarderAsync().openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr,
-                whereToAdvertiseEndpoint);
+                Optional.of(whereToAdvertiseEndpoint), Optional.<EntityAndAttribute<String>>absent());
+    }
+
+    @Override
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
+           Protocol protocol, Cidr accessingCidr, Optional<EntityAndAttribute<String>> whereToAdvertiseEndpoint,
+           Optional<EntityAndAttribute<String>> whereToAdvertisePort) {
+        getPortForwarderAsync().openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr,
+                whereToAdvertiseEndpoint, whereToAdvertisePort);
     }
 }

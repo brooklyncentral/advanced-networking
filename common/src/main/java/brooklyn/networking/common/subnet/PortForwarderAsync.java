@@ -110,13 +110,28 @@ public interface PortForwarderAsync {
      * <p>
      * The port-forwarding may not have been set up when this method returns (e.g. if the entity's VM is still 
      * starting, or the the subnet is still being created).
-     * 
-     * @param portSensor
-     * @param optionalPublicPort
-     * @param protocol
-     * @param accessingCidr
-     * @param whereToAdvertiseEndpoint
+     *
+     * @deprecated since 0.9.0 use {@link #openPortForwardingAndAdvertise(EntityAndAttribute, Optional , Protocol , Cidr , Optional, Optional)}
      */
-    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort, 
+    @Deprecated
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint);
+
+    /**
+     * Sets up port-forwarding for this entity's given port, via the public gateway.
+     * <p>
+     * The entity (i.e. {@code privatePort.getEntity()} must have a {@link Attributes#HOSTNAME} attribute.
+     * <p>
+     * Some cloud-specific implementations will ignore the hostname, and instead lookup the entity's
+     * machine location via {@link Entity#getLocations()} to find the VM, and will use that VM's id.
+     * <p>
+     * The endpoint will be advertised as a string of the form ip:port (or hostname:port).
+     * <p>
+     * The port-forwarding may not have been set up when this method returns (e.g. if the entity's VM is still
+     * starting, or the the subnet is still being created).
+     *
+     */
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
+                                               Protocol protocol, Cidr accessingCidr, Optional<EntityAndAttribute<String>> whereToAdvertiseEndpoint,
+                                               Optional<EntityAndAttribute<String>> whereToAdvertisePort);
 }

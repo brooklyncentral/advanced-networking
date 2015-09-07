@@ -44,7 +44,6 @@ import com.google.common.io.Files;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.PortRange;
@@ -216,13 +215,14 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                     22);
 
             // Setup port-forwarding to port 22
-            ((EntityLocal) entity).setAttribute(PRIVATE_PORT, 22);
+            entity.sensors().set(PRIVATE_PORT, 22);
             subnetTier.openPortForwardingAndAdvertise(
                     EntityAndAttribute.create(entity, PRIVATE_PORT),
                     (publicPort == null) ? Optional.<Integer>absent() : Optional.of(publicPort),
                     Protocol.TCP,
                     Cidr.UNIVERSAL,
-                    EntityAndAttribute.create(entity, MAPPED_ENDPOINT));
+                    Optional.of(new EntityAndAttribute<>(entity, MAPPED_ENDPOINT)),
+                    Optional.<EntityAndAttribute<String>>absent());
 
             // Confirm the expected port is advertised
             if (publicPort != null) {

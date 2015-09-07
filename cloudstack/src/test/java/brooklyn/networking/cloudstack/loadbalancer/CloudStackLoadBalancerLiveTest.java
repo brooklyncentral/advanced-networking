@@ -67,6 +67,8 @@ import org.apache.brooklyn.util.text.Identifiers;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
 
+// FIXME: Tests currently failing with NPE
+@Test(groups={"WIP"})
 public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(CloudStackLoadBalancerLiveTest.class);

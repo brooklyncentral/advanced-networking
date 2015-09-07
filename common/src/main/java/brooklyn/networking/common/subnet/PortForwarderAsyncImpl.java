@@ -83,9 +83,15 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     }
 
     @Override
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint) {
+        openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr, Optional.of(whereToAdvertiseEndpoint), Optional.<EntityAndAttribute<String>>absent());
+    }
+
+    @Override
     public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> privatePort, final Optional<Integer> optionalPublicPort,
-            final Protocol protocol, final Cidr accessingCidr, final EntityAndAttribute<String> whereToAdvertiseEndpoint) {
-        DeferredExecutor<Integer> updater = new DeferredExecutor<Integer>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
+            final Protocol protocol, final Cidr accessingCidr, final Optional<EntityAndAttribute<String>> whereToAdvertiseEndpoint,
+            final Optional<EntityAndAttribute<String>> whereToAdvertisePort) {
+        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
             public void run() {
                 Entity entity = privatePort.getEntity();
                 Integer privatePortVal = privatePort.getValue();
@@ -95,10 +101,15 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 }
                 MachineLocation machine = machineLocationMaybe.get();
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-                
+
                 // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
                 portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
-                whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());
+                if (whereToAdvertiseEndpoint.isPresent()) {
+                    whereToAdvertiseEndpoint.get().setValue(publicEndpoint.getHostText() + ":" + publicEndpoint.getPort());
+                }
+                if (whereToAdvertisePort.isPresent()) {
+                    whereToAdvertisePort.get().setValue(String.valueOf(publicEndpoint.getPort()));
+                }
             }});
         subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);
         subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
