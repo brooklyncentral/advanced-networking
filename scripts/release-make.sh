@@ -14,10 +14,10 @@
 
 # Note advanced networking does not have a separate version identifier in code, but it should!
 # BROOKLYN_VERSION_BELOW
-: ${BROOKLYN_GA_VERSION:=0.8.0}
+: ${BROOKLYN_GA_VERSION:=0.9.0}
 # ADVANCED_NETWORKING_VERSION_BELOW
-: ${ADVANCED_NETWORKING_GA_VERSION:=0.8.0}
-: ${BROOKLYN_STABLE_VERSION:=0.8.0-???}
+: ${ADVANCED_NETWORKING_GA_VERSION:=0.9.0}
+: ${BROOKLYN_STABLE_VERSION:=0.9.0-???}
 
 
 # /CUSTOMIZE
