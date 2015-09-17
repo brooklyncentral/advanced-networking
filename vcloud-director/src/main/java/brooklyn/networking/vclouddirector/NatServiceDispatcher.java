@@ -447,11 +447,13 @@ public class NatServiceDispatcher {
     }
     
     protected EndpointConfig getEndpointConfig(String endpoint) {
+        String endpointLower = endpoint.toLowerCase();
         for (String contender : endpoints.keySet()) {
-            if (endpoint.startsWith(contender)) {
-                return endpoints.get(contender);
+            String contenderLower = contender.toLowerCase();
+            if (endpointLower.startsWith(contenderLower)) {
+                return endpoints.get(contenderLower);
             }
-            if (contender.endsWith("/") && endpoint.startsWith(contender.substring(0, contender.length()-1))) {
+            if (contenderLower.endsWith("/") && endpointLower.startsWith(contenderLower.substring(0, contenderLower.length()-1))) {
                 return endpoints.get(contender);
             }
         }
