@@ -111,7 +111,7 @@ public interface PortForwarderAsync {
      * The port-forwarding may not have been set up when this method returns (e.g. if the entity's VM is still 
      * starting, or the the subnet is still being created).
      *
-     * @deprecated since 0.9.0 use {@link #openPortForwardingAndAdvertise(EntityAndAttribute, Optional , Protocol , Cidr , Optional, Optional)}
+     * @deprecated since 0.9.0 use {@link #openPortForwardingAndAdvertise(EntityAndAttribute, Optional, Protocol, Cidr)}
      */
     @Deprecated
     public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
@@ -131,7 +131,6 @@ public interface PortForwarderAsync {
      * starting, or the the subnet is still being created).
      *
      */
-    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
-                                               Protocol protocol, Cidr accessingCidr, Optional<EntityAndAttribute<String>> whereToAdvertiseEndpoint,
-                                               Optional<EntityAndAttribute<String>> whereToAdvertisePort);
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> source, Optional<Integer> optionalPublicPort,
+                                               Protocol protocol, Cidr accessingCidr);
 }

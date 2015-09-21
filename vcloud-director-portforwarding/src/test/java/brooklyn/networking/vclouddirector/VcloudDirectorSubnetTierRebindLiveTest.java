@@ -94,8 +94,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(STARTING_PORT),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                Optional.of(new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT)),
-                Optional.<EntityAndAttribute<String>>absent());
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
         try {
             // Confirm that subnet tier (and port forwarding calls) still work
             origEntity.sensors().set(PRIVATE_PORT, 1234);
@@ -133,8 +132,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                Optional.of(new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT)),
-                Optional.<EntityAndAttribute<String>>absent());
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
 
         // rebind
         rebind();
@@ -173,8 +171,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                Optional.of(new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT)),
-                Optional.<EntityAndAttribute<String>>absent());
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
 
         newEntity.sensors().set(PRIVATE_PORT, 1234);
         

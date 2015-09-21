@@ -75,16 +75,14 @@ public class DockerSubnetTierLiveTest extends AbstractDockerPortForwarderTest {
                         optionalTargetInboundPort,
                         Protocol.TCP,
                         Cidr.UNIVERSAL,
-                        Optional.of(new EntityAndAttribute<>(app, HTTP_ENDPOINT)),
-                        Optional.<EntityAndAttribute<String>>absent());
+                        new EntityAndAttribute<>(app, HTTP_ENDPOINT));
             } else {
                 subnetTier.openPortForwardingAndAdvertise(
                         new EntityAndAttribute<>(app, TARGET_SSH_PORT),
                         optionalTargetInboundPort,
                         Protocol.TCP,
                         Cidr.UNIVERSAL,
-                        Optional.of(new EntityAndAttribute<>(app, SSH_ENDPOINT)),
-                        Optional.<EntityAndAttribute<String>>absent());
+                        new EntityAndAttribute<>(app, SSH_ENDPOINT));
             }
         }
 

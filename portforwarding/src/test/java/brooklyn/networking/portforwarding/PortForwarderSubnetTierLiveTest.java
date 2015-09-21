@@ -74,8 +74,7 @@ public class PortForwarderSubnetTierLiveTest extends AbstractPortForwarderIptabl
                 Optional.<Integer>absent(),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                Optional.of(new EntityAndAttribute<>(app, PUBLIC_ENDPOINT)),
-                Optional.<EntityAndAttribute<String>>absent());
+                new EntityAndAttribute<>(app, PUBLIC_ENDPOINT));
 
         Asserts.succeedsEventually(new Runnable() {
                 public void run() {

@@ -221,8 +221,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
                     (publicPort == null) ? Optional.<Integer>absent() : Optional.of(publicPort),
                     Protocol.TCP,
                     Cidr.UNIVERSAL,
-                    Optional.of(new EntityAndAttribute<>(entity, MAPPED_ENDPOINT)),
-                    Optional.<EntityAndAttribute<String>>absent());
+                    new EntityAndAttribute<>(entity, MAPPED_ENDPOINT));
 
             // Confirm the expected port is advertised
             if (publicPort != null) {
