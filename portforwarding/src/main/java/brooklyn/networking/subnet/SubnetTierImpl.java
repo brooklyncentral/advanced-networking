@@ -161,13 +161,11 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             if (attributes != null) {
                 portMappedEntities.add(entity);
                 for (AttributeSensor<Integer> attribute : attributes) {
-                    AttributeSensor<String> mappedAttribute = Sensors.newStringSensor("mapped."+attribute.getName());
                     openPortForwardingAndAdvertise(
                             EntityAndAttribute.create(entity, attribute), 
                             Optional.<Integer>absent(), 
                             Protocol.TCP, 
-                            Cidr.UNIVERSAL, 
-                            EntityAndAttribute.create(entity, mappedAttribute));
+                            Cidr.UNIVERSAL);
                 }
             }
         }
@@ -472,4 +470,11 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getPortForwarderAsync().openPortForwardingAndAdvertise(privatePort, optionalPublicPort, protocol, accessingCidr,
                 whereToAdvertiseEndpoint);
     }
+
+    @Override
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> source, Optional<Integer> optionalPublicPort,
+                                               Protocol protocol, Cidr accessingCidr) {
+        getPortForwarderAsync().openPortForwardingAndAdvertise(source, optionalPublicPort, protocol, accessingCidr);
+    }
+
 }

@@ -72,7 +72,7 @@ public class PortForwarderAsyncImpl extends brooklyn.networking.common.subnet.Po
                 Integer privatePortVal = privatePort.getValue();
                 MachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations()).get();
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-                
+
                 // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
                 portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
                 whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());

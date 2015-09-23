@@ -94,10 +94,10 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(STARTING_PORT),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
         try {
             // Confirm that subnet tier (and port forwarding calls) still work
-            origEntity.setAttribute(PRIVATE_PORT, 1234);
+            origEntity.sensors().set(PRIVATE_PORT, 1234);
             
             Asserts.succeedsEventually(new Runnable() {
                 public void run() {
@@ -132,7 +132,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
 
         // rebind
         rebind();
@@ -140,7 +140,7 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
         final TestEntity newEntity = (TestEntity) Iterables.find(newSubnetTier.getChildren(), Predicates.instanceOf(TestEntity.class));
         
         // Confirm that the port-forwarding registered pre-rebind picks up the change.
-        newEntity.setAttribute(PRIVATE_PORT, 1234);
+        newEntity.sensors().set(PRIVATE_PORT, 1234);
         
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
@@ -171,9 +171,9 @@ public class VcloudDirectorSubnetTierRebindLiveTest extends RebindTestFixtureWit
                 Optional.of(5678),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                EntityAndAttribute.create(origEntity, MAPPED_ENDPOINT));
+                new EntityAndAttribute<>(origEntity, MAPPED_ENDPOINT));
 
-        newEntity.setAttribute(PRIVATE_PORT, 1234);
+        newEntity.sensors().set(PRIVATE_PORT, 1234);
         
         Asserts.succeedsEventually(new Runnable() {
             public void run() {

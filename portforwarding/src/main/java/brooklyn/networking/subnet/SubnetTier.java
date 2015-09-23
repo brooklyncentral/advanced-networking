@@ -236,9 +236,18 @@ public interface SubnetTier extends Entity, Startable {
      * Opens a firewall port forwarding rule targeting the {@code portSensor}
      * and advertises the firewall endpoint(public host and port, where port is chosen
      * if not supplied) at {@code whereToAdvertiseEndpoint}.
+     * @deprecated since 0.9.0 use {@link #openPortForwardingAndAdvertise(EntityAndAttribute, Optional, Protocol, Cidr)}
      */
     public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint);
+
+    /**
+     * Opens a firewall port forwarding rule targeting the {@code portSensor}
+     * and advertises the firewall endpoint(public host and port, where port is chosen
+     * if not supplied) at {@code whereToAdvertiseEndpoint}.
+     */
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> privatePort, Optional<Integer> optionalPublicPort,
+            Protocol protocol, Cidr accessingCidr);
 
     /*
      * Getters for local state.

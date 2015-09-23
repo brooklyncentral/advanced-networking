@@ -15,6 +15,8 @@
  */
 package brooklyn.networking.common.subnet;
 
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,9 +85,40 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     }
 
     @Override
+    public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
+            final Protocol protocol, final Cidr accessingCidr) {
+        EntityAndAttribute<Integer> privatePort = source;
+        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
+            public void run() {
+                Entity entity = source.getEntity();
+                Integer privatePortVal = source.getValue();
+                Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+                if (machineLocationMaybe.isAbsent()) {
+                    return;
+                }
+                MachineLocation machine = machineLocationMaybe.get();
+                HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+
+                // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+                String sensorToAdvertise = source.getAttribute().getName();
+                portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
+                AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sensorToAdvertise);
+                AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sensorToAdvertise);
+                AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sensorToAdvertise);
+                String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+                entity.sensors().set(mappedSensor, endpoint);
+                entity.sensors().set(mappedEndpointSensor, endpoint);
+                entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
+            }});
+        subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);
+        subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
+        updater.apply(privatePort.getEntity(), privatePort.getValue());
+    }
+
+    @Override
     public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> privatePort, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr, final EntityAndAttribute<String> whereToAdvertiseEndpoint) {
-        DeferredExecutor<Integer> updater = new DeferredExecutor<Integer>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
+        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
             public void run() {
                 Entity entity = privatePort.getEntity();
                 Integer privatePortVal = privatePort.getValue();
@@ -95,7 +128,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 }
                 MachineLocation machine = machineLocationMaybe.get();
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-                
+
                 // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
                 portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
                 whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());

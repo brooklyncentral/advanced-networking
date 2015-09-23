@@ -55,8 +55,8 @@ public class PortForwarderSubnetTierLiveTest extends AbstractPortForwarderIptabl
     // FIXME: explicit ports / port ranges have been temporarily disabled
     @Test(groups={"Live","WIP"})
     public void testOpenPortForwardingAndAdvertise() throws Exception {
-        final AttributeSensor<Integer> TARGET_PORT = new BasicAttributeSensor<Integer>(Integer.class, "target.port");
-        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<String>(String.class, "endpoint");
+        final AttributeSensor<Integer> TARGET_PORT = new BasicAttributeSensor<>(Integer.class, "target.port");
+        final AttributeSensor<String> PUBLIC_ENDPOINT = new BasicAttributeSensor<>(String.class, "endpoint");
 
         subnetTier = app.createAndManageChild(EntitySpec.create(SubnetTier.class)
                 .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager)
@@ -67,14 +67,14 @@ public class PortForwarderSubnetTierLiveTest extends AbstractPortForwarderIptabl
 
         app.start(ImmutableList.of(targetPrivateMachine));
 
-        ((EntityLocal)app).setAttribute(TARGET_PORT, 22);
+        app.sensors().set(TARGET_PORT, 22);
 
         subnetTier.openPortForwardingAndAdvertise(
-                new EntityAndAttribute<Integer>(app, TARGET_PORT),
+                new EntityAndAttribute<>(app, TARGET_PORT),
                 Optional.<Integer>absent(),
                 Protocol.TCP,
                 Cidr.UNIVERSAL,
-                new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
+                new EntityAndAttribute<>(app, PUBLIC_ENDPOINT));
 
         Asserts.succeedsEventually(new Runnable() {
                 public void run() {
