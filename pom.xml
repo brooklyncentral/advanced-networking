@@ -72,21 +72,6 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-        <!-- Cloudsoft repo, for early custom releases of jclouds vcloud-director etc -->
-        <repository>
-            <id>cloudsoft-releases</id>
-            <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
-        </repository>
-        <repository>
-            <id>cloudsoft-snapshots</id>
-            <url>http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
         <repository>
             <id>cloudsoft-developers</id>
             <url>http://developers.cloudsoftcorp.com/download/maven2/</url>
@@ -236,4 +221,3 @@
 
     </profiles>
 </project>
-
