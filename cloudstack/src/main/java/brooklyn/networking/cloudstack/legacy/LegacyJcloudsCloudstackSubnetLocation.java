@@ -29,38 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
-
-import org.jclouds.cloudstack.CloudStackApi;
-import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
-import org.jclouds.cloudstack.domain.AsyncCreateResponse;
-import org.jclouds.cloudstack.domain.FirewallRule;
-import org.jclouds.cloudstack.domain.NIC;
-import org.jclouds.cloudstack.domain.PortForwardingRule;
-import org.jclouds.cloudstack.domain.VirtualMachine;
-import org.jclouds.cloudstack.features.VirtualMachineApi;
-import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
-import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.domain.NodeMetadata;
-import org.jclouds.compute.domain.OperatingSystem;
-import org.jclouds.compute.domain.OsFamily;
-
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.BasicConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
@@ -82,6 +55,31 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
+import org.jclouds.cloudstack.CloudStackApi;
+import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
+import org.jclouds.cloudstack.domain.AsyncCreateResponse;
+import org.jclouds.cloudstack.domain.FirewallRule;
+import org.jclouds.cloudstack.domain.NIC;
+import org.jclouds.cloudstack.domain.PortForwardingRule;
+import org.jclouds.cloudstack.domain.VirtualMachine;
+import org.jclouds.cloudstack.features.VirtualMachineApi;
+import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
+import org.jclouds.compute.ComputeService;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.OperatingSystem;
+import org.jclouds.compute.domain.OsFamily;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.networking.NetworkMultiAddressUtils2;
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
@@ -300,7 +298,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
                     getUser(setup),
                     vmHostname,
                     setup.getDescription(),
-                    Entities.sanitize(sshConfig)
+                    Sanitizer.sanitize(sshConfig)
             });
         }
 
@@ -325,8 +323,8 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
         l.init();
         getManagementContext().getLocationManager().manage(l);
 
-        l.setConfig(SUBNET_HOSTNAME_CONFIG, subnetSpecificHostname);
-        l.setConfig(VM_IDENTIFIER, node.getId());
+        l.config().set(SUBNET_HOSTNAME_CONFIG, subnetSpecificHostname);
+        l.config().set(VM_IDENTIFIER, node.getId());
 
         if (portForwardingMode) {
             // record port 22 forwarding

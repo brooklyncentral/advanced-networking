@@ -116,10 +116,10 @@ public class SubnetTierTest {
                 Optional.of(new EntityAndAttribute<Integer>(app, TARGET_PORT)),
                 new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
 
-        ((EntityLocal)app).setAttribute(Attributes.HOSTNAME, "myprivatehostname");
-        ((EntityLocal)app).setAttribute(TARGET_PORT, 1234);
-        ((EntityLocal)app).setAttribute(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
-        ((EntityLocal)app).setAttribute(PUBLIC_ENDPOINT, "mypublichostname:5678");
+        app.sensors().set(Attributes.HOSTNAME, "myprivatehostname");
+        app.sensors().set(TARGET_PORT, 1234);
+        app.sensors().set(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
+        app.sensors().set(PUBLIC_ENDPOINT, "mypublichostname:5678");
 
         log.info(app.getAttribute(ENDPOINT));
 
@@ -136,12 +136,12 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
+        entity.enrichers().add(subnetTier.hostAndPortTransformingEnricher(
                 new EntityAndAttribute<Integer>(entity, TARGET_PORT),
                 PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(TARGET_PORT, 80);
+        entity.sensors().set(TARGET_PORT, 80);
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
@@ -154,14 +154,14 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
-        entity.subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
+        entity.subscriptions().subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
 
-        entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
+        entity.enrichers().add(subnetTier.hostAndPortTransformingEnricher(
                 new EntityAndAttribute<Integer>(entity, TARGET_PORT),
                 PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(TARGET_PORT, 80);
+        entity.sensors().set(TARGET_PORT, 80);
 
         // TODO It sets the sensor to null (!). We'll rely on that for now, but feels like it 
         // shouldn't bother setting it at all!
@@ -183,10 +183,10 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
+        entity.enrichers().add(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+        entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
@@ -201,10 +201,10 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
+        entity.enrichers().add(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, machineAddress+":80");
+        entity.sensors().set(ENDPOINT, machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
@@ -224,12 +224,12 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
-        entity.subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
+        entity.subscriptions().subscribe(entity, PUBLIC_ENDPOINT, sensorListener);
 
-        entity.addEnricher(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
+        entity.enrichers().add(subnetTier.uriTransformingEnricher(ENDPOINT, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, "http://" + machineAddress + ":80");
+        entity.sensors().set(ENDPOINT, "http://" + machineAddress + ":80");
 
         // TODO It sets the sensor to the original (unmapped) value. However, that is different
         // behaviour from transformPort or transformHostAndPortEnricher which both just set the
@@ -254,7 +254,7 @@ public class SubnetTierTest {
         subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+        entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(entity, ENDPOINT, "http://"+publicAddress+":"+40080);
     }
@@ -272,7 +272,7 @@ public class SubnetTierTest {
         subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT), new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+        entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
         EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
@@ -285,12 +285,12 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
-        entity.subscribe(app, PUBLIC_ENDPOINT, sensorListener);
+        entity.subscriptions().subscribe(app, PUBLIC_ENDPOINT, sensorListener);
 
         subnetTier.transformUri(new EntityAndAttribute<String>(entity, ENDPOINT), new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, "http://"+machineAddress+":80");
+        entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
         sensorListener.assertEventEventually(Duration.THIRTY_SECONDS);
 
@@ -313,7 +313,7 @@ public class SubnetTierTest {
         subnetTier.transformPort(EntityAndAttribute.create(entity, ENDPOINT), EntityAndAttribute.create(app, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, 80);
+        entity.sensors().set(ENDPOINT, 80);
 
         EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
@@ -326,12 +326,12 @@ public class SubnetTierTest {
         String publicIpId = "mypublicipid";
         String publicAddress = "5.6.7.8";
         RecordingSensorEventListener sensorListener = new RecordingSensorEventListener();
-        entity.subscribe(app, PUBLIC_ENDPOINT, sensorListener);
+        entity.subscriptions().subscribe(app, PUBLIC_ENDPOINT, sensorListener);
 
         subnetTier.transformPort(EntityAndAttribute.create(entity, ENDPOINT), EntityAndAttribute.create(app, PUBLIC_ENDPOINT));
 
         entity.addLocations(ImmutableList.of(simulatedMachine));
-        entity.setAttribute(ENDPOINT, 80);
+        entity.sensors().set(ENDPOINT, 80);
         
         // TODO It sets the sensor to null (!). We'll rely on that for now, but feels like it 
         // shouldn't bother setting it at all!

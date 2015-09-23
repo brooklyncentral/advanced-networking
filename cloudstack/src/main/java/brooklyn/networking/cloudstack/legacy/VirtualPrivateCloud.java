@@ -76,7 +76,7 @@ public class VirtualPrivateCloud {
                         log.info("Created VPC "+vpcId+" on start of "+owner);
                     }
                     Tasks.setBlockingDetails(null);
-                    ((AbstractEntity)owner).setAttribute(VPC_ID, vpcId);
+                    owner.sensors().set(VPC_ID, vpcId);
                     return jl.newSubLocation(MutableMap.of(
                             LegacyJcloudsCloudstackSubnetLocation.CLOUDSTACK_VPC_ID, vpcId,
                             LegacyJcloudsCloudstackSubnetLocation.CLOUDSTACK_ZONE_ID, zoneId
@@ -97,7 +97,7 @@ public class VirtualPrivateCloud {
 
                     log.info("Deleting VPC on stop of "+owner);
                     cloudstackClient.deleteVpc(owner.getAttribute(VPC_ID));
-                    ((AbstractEntity)owner).setAttribute(VPC_ID, null);
+                    owner.sensors().set(VPC_ID, null);
                 }
             }
         }

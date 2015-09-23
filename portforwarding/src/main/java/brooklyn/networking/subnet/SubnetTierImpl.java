@@ -120,9 +120,9 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             pfmLive = pfmFromConf;
         }
         
-        setConfig(PORT_FORWARDING_MANAGER, pfmLive);
-        setAttribute(PORT_FORWARD_MANAGER_LIVE, pfmLive);
-        setAttribute(PORT_FORWARDER_LIVE, pf);
+        config().set(PORT_FORWARDING_MANAGER, pfmLive);
+        sensors().set(PORT_FORWARD_MANAGER_LIVE, pfmLive);
+        sensors().set(PORT_FORWARDER_LIVE, pf);
         if (log.isDebugEnabled()) log.debug("Subnet tier {} using PortForwardManager {}, and port forwarder {}", new Object[] {this, pfmLive, pf});
 
         // TODO For rebind, would require to re-register this; same for portMappedEntities field
@@ -143,7 +143,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         super.initEnrichers();
         
         // default app logic; easily overridable by adding a different enricher with the same tag
-        addEnricher(ServiceStateLogic.newEnricherFromChildren().checkChildrenOnly());
+        enrichers().add(ServiceStateLogic.newEnricherFromChildren().checkChildrenOnly());
         ServiceStateLogic.ServiceNotUpLogic.updateNotUpIndicator(this, Attributes.SERVICE_STATE_ACTUAL, "Subnet created but not yet started, at "+Time.makeDateString());
     }
 
@@ -348,7 +348,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         }
         if (result != null) {
             result.injectManagementContext(getManagementContext());
-            setAttribute(PORT_FORWARDER_LIVE, result);
+            sensors().set(PORT_FORWARDER_LIVE, result);
         }
         return result;
     }
@@ -411,21 +411,21 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     public void transformPort(EntityAndAttribute<Integer> original, EntityAndAttribute<String> destinationToPublish) {
         // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?
-        destinationToPublish.getEntity().addEnricher(hostAndPortTransformingEnricher(original, destinationToPublish.getAttribute()));
+        destinationToPublish.getEntity().enrichers().add(hostAndPortTransformingEnricher(original, destinationToPublish.getAttribute()));
     }
     
     public void transformUri(EntityAndAttribute<String> targetToUpdate) {
         // TODO Should we change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?
         Entity entity = targetToUpdate.getEntity();
-        entity.addEnricher(uriTransformingEnricher(targetToUpdate, targetToUpdate.getAttribute())
+        entity.enrichers().add(uriTransformingEnricher(targetToUpdate, targetToUpdate.getAttribute())
                 .configure(Transformer.SUPPRESS_DUPLICATES, true));
     }
     
     public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish) {
         // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?
-        destinationToPublish.getEntity().addEnricher(uriTransformingEnricher(original, destinationToPublish.getAttribute()));
+        destinationToPublish.getEntity().enrichers().add(uriTransformingEnricher(original, destinationToPublish.getAttribute()));
     }
     
     @Override

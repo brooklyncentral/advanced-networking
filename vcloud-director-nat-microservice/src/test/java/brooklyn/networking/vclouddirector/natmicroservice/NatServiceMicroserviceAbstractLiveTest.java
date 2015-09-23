@@ -72,7 +72,7 @@ public abstract class NatServiceMicroserviceAbstractLiveTest extends AbstractRes
         vDC = loc.getRegion();
         identity = loc.getIdentity();
         credential = loc.getCredential();
-        publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        publicIp = (String) checkNotNull(loc.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
 
         super.setUp();
     }

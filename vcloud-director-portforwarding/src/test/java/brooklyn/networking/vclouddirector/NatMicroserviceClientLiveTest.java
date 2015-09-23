@@ -77,7 +77,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
         
         super.setUp();
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
-        publicIp = (String) checkNotNull(loc.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        publicIp = (String) checkNotNull(loc.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
         
         // Create the NAT Micro-service
         String endpointsProperties = "my-vcloud.endpoint="+NatDirectClient.transformEndpoint(loc.getEndpoint()) + "\n"

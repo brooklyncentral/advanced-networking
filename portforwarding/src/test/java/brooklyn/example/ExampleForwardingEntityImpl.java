@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
@@ -53,13 +52,13 @@ public class ExampleForwardingEntityImpl extends VanillaJavaAppImpl implements E
 
             Integer originPort = originEntity.getAttribute(originPortAttribute);
             SshMachineLocation fakeDb = (SshMachineLocation) getMachineOrNull();
-            SshMachineLocation realDb = (SshMachineLocation) Iterables.getFirst( ((EntityLocal)originEntity).getLocations(), null );
+            SshMachineLocation realDb = (SshMachineLocation) Iterables.getFirst(originEntity.getLocations(), null);
             String originPublicKeyData = originEntity.getAttribute(PUBLIC_KEY_DATA);
 
             if (originPublicKeyData==null) {
                 synchronized (realDb) {
                     originPublicKeyData = SshTunnelling.generateRsaKey(realDb);
-                    ((EntityLocal)originEntity).setAttribute(PUBLIC_KEY_DATA, originPublicKeyData );
+                    originEntity.sensors().set(PUBLIC_KEY_DATA, originPublicKeyData );
                 }
             }
 
