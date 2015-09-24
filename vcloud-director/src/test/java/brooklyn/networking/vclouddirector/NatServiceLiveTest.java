@@ -83,7 +83,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     @Test(groups="Live")
     public void testAddNatRuleAtTai2() throws Exception {
         JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2_SPEC);
-        String publicIp2 = (String) checkNotNull(loc2.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        String publicIp2 = (String) checkNotNull(loc2.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
 
         HostAndPort targetEndpoint = HostAndPort.fromParts(INTERNAL_MACHINE_IP_TAI_2, 1);
         HostAndPort publicEndpoint = HostAndPort.fromString(publicIp2);
@@ -112,7 +112,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     @Test(groups="Live")
     public void testAddNatRuleAtTai2b() throws Exception {
         JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2b_SPEC);
-        String publicIp2 = (String) checkNotNull(loc2.getAllConfigBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
+        String publicIp2 = (String) checkNotNull(loc2.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
 
         HostAndPort targetEndpoint = HostAndPort.fromParts(INTERNAL_MACHINE_IP_TAI_2b, 1);
         HostAndPort publicEndpoint = HostAndPort.fromString(publicIp2);

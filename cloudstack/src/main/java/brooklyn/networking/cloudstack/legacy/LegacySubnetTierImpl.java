@@ -149,7 +149,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                     Map<String, Cidr> acl = null;
                     synchronized (LegacySubnetTierImpl.this) {
                         acl = getAttribute(SUBNET_ACL);
-                        setAttribute(NETWORK_ID, tierId);
+                        sensors().set(NETWORK_ID, tierId);
                     }
                     if (acl!=null) openCidrAccess(acl.values());
                     // management inbound is done later, using this
@@ -229,14 +229,14 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                 pfw = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
                 setConfigEvenIfOwned(PORT_FORWARDING_MANAGER, pfw);
             }
-            setAttribute(SUBNET_SERVICE_PORT_FORWARDS, pfw);
+            sensors().set(SUBNET_SERVICE_PORT_FORWARDS, pfw);
         }
         return pfw;
     }
 
     @Override
     public void stop() {
-        setAttribute(NETWORK_ID, null);
+        sensors().set(NETWORK_ID, null);
         StartableMethods.stop(this);
 
         // TODO delete network
@@ -255,7 +255,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             return;
 
         AclUpdater acl = new AclUpdater();
-        subscribe(otherTier, NETWORK_ID, acl);
+        subscriptions().subscribe(otherTier, NETWORK_ID, acl);
         acl.apply(otherTier, otherTier.getAttribute(NETWORK_ID));
     }
 
@@ -286,7 +286,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                         newCidr = cidr;
                 }
 
-                setAttribute(SUBNET_ACL, acl);
+                sensors().set(SUBNET_ACL, acl);
             }
 
             if (oldCidr!=null) {
@@ -338,7 +338,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                 return output;
             }
         });
-        subscribe(target, sensor, mapper);
+        subscriptions().subscribe(target, sensor, mapper);
         mapper.apply( target.getAttribute(sensor) );
     }
 
@@ -389,8 +389,8 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
                 return output;
             }
         });
-        subscribe(sensorToMapFromSource, SoftwareProcess.HOSTNAME, mapper);
-        subscribe(sensorToMapFromSource, sensorToMapFromPropagating, mapper);
+        subscriptions().subscribe(sensorToMapFromSource, SoftwareProcess.HOSTNAME, mapper);
+        subscriptions().subscribe(sensorToMapFromSource, sensorToMapFromPropagating, mapper);
         // assume hostname and port are set before the above subscription
         String newval = mapper.apply(sensorToMapFromSource.getAttribute(sensorToMapFromPropagating));
         if (newval != null) {
@@ -440,13 +440,13 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
     @Override
     public void openPublicIp(EntityAndAttribute<String> whereToAdvertiseHostname) {
         PublicIPUpdater updater = new PublicIPUpdater(whereToAdvertiseHostname);
-        subscribe(this, NETWORK_ID, updater);
+        subscriptions().subscribe(this, NETWORK_ID, updater);
     }
 
     @Override
     public void openStaticNat(Entity serviceToOpen, AttributeSensor<String> sensorAdvertisingHostname) {
         StaticNatUpdater updater = new StaticNatUpdater(serviceToOpen, sensorAdvertisingHostname);
-        subscribe(serviceToOpen, Attributes.HOSTNAME, updater);
+        subscriptions().subscribe(serviceToOpen, Attributes.HOSTNAME, updater);
     }
 
     @Override
@@ -457,7 +457,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
     @Override
     public void openFirewallPortRange(EntityAndAttribute<String> publicIp, int lowerBoundPort, int upperBoundPort, FirewallRule.Protocol protocol, Cidr accessingCidr) {
         SimpleFirewallUpdater updater = new SimpleFirewallUpdater(publicIp, lowerBoundPort, upperBoundPort, protocol, accessingCidr);
-        subscribe(publicIp.getEntity(), publicIp.getAttribute(), updater);
+        subscriptions().subscribe(publicIp.getEntity(), publicIp.getAttribute(), updater);
         updater.apply(publicIp.getEntity(), publicIp.getValue());
     }
 
@@ -466,22 +466,21 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             Integer optionalPublicPort, Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint) {
         FirewallUpdater2 updater = new FirewallUpdater2(publicIp, portSensor, optionalPublicPort, protocol, accessingCidr,
                 whereToAdvertiseEndpoint);
-        subscribe(publicIp.getEntity(), publicIp.getAttribute(), updater);
-        subscribe(portSensor.getEntity(), portSensor.getAttribute(), updater);
+        subscriptions().subscribe(publicIp.getEntity(), publicIp.getAttribute(), updater);
+        subscriptions().subscribe(portSensor.getEntity(), portSensor.getAttribute(), updater);
         updater.apply(publicIp.getEntity(), publicIp.getValue());
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void openFirewallPortAndAssign(Entity serviceToForward, AttributeSensor<?> servicePortSensor, Integer optionalPublicPort, Cidr accessingCidr,
             Entity whereToAdvertisePublicServiceEndpoint, AttributeSensor<String> sensorAdvertisingHostnameAndPort) {
         FirewallUpdater updater = new FirewallUpdater(serviceToForward, servicePortSensor, optionalPublicPort, accessingCidr,
                 whereToAdvertisePublicServiceEndpoint, sensorAdvertisingHostnameAndPort);
-        subscribe(serviceToForward, servicePortSensor, updater);
+        subscriptions().subscribe(serviceToForward, servicePortSensor, updater);
         // either of these may be null when the above comes through
         // FIXME Should PUBLIC_HOSTNAME be subscribed to `this`, rather than serviceToForward
-        subscribe(serviceToForward, Attributes.HOSTNAME, updater);
-        subscribe(serviceToForward, PUBLIC_HOSTNAME, updater);
+        subscriptions().subscribe(serviceToForward, Attributes.HOSTNAME, updater);
+        subscriptions().subscribe(serviceToForward, PUBLIC_HOSTNAME, updater);
     }
 
     protected class StaticNatUpdater implements SensorEventListener<Object> {
@@ -497,7 +496,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             apply(event.getSource(), event.getValue());
         }
         public void apply(Entity source, Object valueIgnored) {
-            Location targetVm = Iterables.getOnlyElement(((EntityLocal)serviceToOpen).getLocations(), null);
+            Location targetVm = Iterables.getOnlyElement(serviceToOpen.getLocations(), null);
             if (targetVm==null) {
                 log.warn("Skipping port forward rule for "+serviceToOpen+" because it does not have a location");
                 return;
@@ -505,7 +504,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
 
             if (isSubnetEnabled()) {
                 PublicIPAddress ip = systemCreatePublicIpHostname();
-                ((EntityLocal)serviceToOpen).setAttribute(sensorAdvertisingHostname, ip.getIPAddress());
+                serviceToOpen.sensors().set(sensorAdvertisingHostname, ip.getIPAddress());
 
                 boolean success = systemEnableStaticNat(ip.getId(), targetVm);
 
@@ -800,8 +799,8 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
 
     protected void systemCreatePublicIpHostnameForForwarding() {
         PublicIPAddress ip = systemCreatePublicIpHostname();
-        setAttribute(PUBLIC_HOSTNAME, ip.getIPAddress());
-        setAttribute(PUBLIC_HOSTNAME_IP_ADDRESS_ID, ip.getId());
+        sensors().set(PUBLIC_HOSTNAME, ip.getIPAddress());
+        sensors().set(PUBLIC_HOSTNAME_IP_ADDRESS_ID, ip.getId());
     }
 
     protected PublicIPAddress systemCreatePublicIpHostname() {
@@ -826,7 +825,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             }
             Map<String,String> newips = MutableMap.<String,String>builder().putAll(ips).put(ip.getIPAddress(), ip.getId()).build();
 
-            setAttribute(PUBLIC_HOSTNAME_IP_IDS, newips);
+            sensors().set(PUBLIC_HOSTNAME_IP_IDS, newips);
         }
 
         return ip;
@@ -932,7 +931,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
     private static <T> void setAttributeIfChanged(Entity entity, AttributeSensor<T> attribute, T val) {
         Object oldval = entity.getAttribute(attribute);
         if (!Objects.equal(oldval, val)) {
-            ((EntityLocal)entity).setAttribute(attribute, val);
+            entity.sensors().set(attribute, val);
         }
     }
 }

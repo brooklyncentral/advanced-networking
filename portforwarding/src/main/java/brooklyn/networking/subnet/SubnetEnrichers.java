@@ -20,14 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.net.HostAndPort;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
@@ -45,6 +37,13 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.text.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.net.HostAndPort;
 
 public class SubnetEnrichers {
 
@@ -168,6 +167,16 @@ public class SubnetEnrichers {
         }
     }
 
+    /**
+     * Transforms a URI (or a HostAndPort) string to the mapped value. Or if there is no
+     * port-forward rule defined for the given port on this entity's machine, then just 
+     * return the source value.
+     * 
+     * We now handle both URI and HostAndPort to assist backwards compatibility. For example,
+     * MongoDBServer.MONGO_SERVER_ENDPOINT changed from being a URI to being a ip:port, but
+     * customers are using the {@link SubnetTier#transformUri(EntityAndAttribute)} to map
+     * that sensor. When it changed from being a URI, the customer blueprints broke.
+     */
     private static class UriTransformingFunction implements Function<SensorEvent<Object>,String> {
 
         private final SubnetTier subnetTier;
@@ -181,32 +190,79 @@ public class SubnetEnrichers {
             String sensorVal = Strings.toString(event.getValue());
             Entity source = event.getSource();
             Maybe<MachineLocation> machine = Machines.findUniqueMachineLocation(source.getLocations());
-            if (sensorVal != null && machine.isPresent()) {
-                URI uri = URI.create(sensorVal);
-                int port = uri.getPort();
-                if (port != -1) {
-                    HostAndPort publicTarget = subnetTier.getPortForwardManager().lookup(machine.get(), port);
-                    if (publicTarget == null) {
-                        // TODO What if publicTarget is still null, but will be set soon? We're not subscribed to changes in the PortForwardManager!
-                        // TODO Should we return null or sensorVal? In this method we always return sensorVal;
-                        //      but in HostAndPortTransformingEnricher we always return null!
-                        log.debug("sensor mapper not transforming {} URI {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine.get()});
-                        return sensorVal;
-                    }
-                    URI result;
-                    try {
-                        result = new URI(uri.getScheme(), uri.getUserInfo(), publicTarget.getHostText(), publicTarget.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
-                    } catch (URISyntaxException e) {
-                        log.debug("Error transforming URI "+uri+", using target "+publicTarget+"; rethrowing");
-                        throw Exceptions.propagate(e);
-                    }
-                    log.debug("sensor mapper transforming URI "+uri+" to "+result+"; target="+publicTarget);
-                    return result.toString();
+            if (Strings.isNonBlank(sensorVal) && machine.isPresent()) {
+                if (isUri(sensorVal)) {
+                    return transformUri(source, machine.get(), sensorVal);
+                } else if (isHostAndPort(sensorVal)) {
+                    return transformHostAndPort(source, machine.get(), sensorVal);
                 } else {
-                    log.debug("sensor mapper not transforming URI "+uri+" because defines no port");
+                    log.debug("sensor mapper not transforming {} URI {} because unknown format", source, sensorVal);
                     return sensorVal;
                 }
             } else {
+                return sensorVal;
+            }
+        }
+        
+        private boolean isUri(String val) {
+            try {
+                URI.create(val);
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        
+        private boolean isHostAndPort(String val) {
+            try {
+                HostAndPort.fromString(val);
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        
+        private String transformUri(Entity source, MachineLocation machine, String sensorVal) {
+            URI uri = URI.create(sensorVal);
+            int port = uri.getPort();
+            if (port != -1) {
+                HostAndPort publicTarget = subnetTier.getPortForwardManager().lookup(machine, port);
+                if (publicTarget == null) {
+                    // TODO What if publicTarget is still null, but will be set soon? We're not subscribed to changes in the PortForwardManager!
+                    // TODO Should we return null or sensorVal? In this method we always return sensorVal;
+                    //      but in HostAndPortTransformingEnricher we always return null!
+                    log.debug("sensor mapper not transforming {} URI {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine});
+                    return sensorVal;
+                }
+                URI result;
+                try {
+                    result = new URI(uri.getScheme(), uri.getUserInfo(), publicTarget.getHostText(), publicTarget.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
+                } catch (URISyntaxException e) {
+                    log.debug("Error transforming URI "+uri+", using target "+publicTarget+"; rethrowing");
+                    throw Exceptions.propagate(e);
+                }
+                log.debug("sensor mapper transforming URI "+uri+" to "+result+"; target="+publicTarget);
+                return result.toString();
+            } else {
+                log.debug("sensor mapper not transforming URI "+uri+" because defines no port");
+                return sensorVal;
+            }
+        }
+        
+        private String transformHostAndPort(Entity source, MachineLocation machine, String sensorVal) {
+            HostAndPort hostAndPort = HostAndPort.fromString(sensorVal);
+            int port = hostAndPort.getPortOrDefault(-1);
+            if (port != -1) {
+                HostAndPort publicTarget = subnetTier.getPortForwardManager().lookup(machine, port);
+                if (publicTarget == null) {
+                    log.debug("sensor mapper not transforming {} URI {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine});
+                    return sensorVal;
+                }
+                String result = publicTarget.getHostText() + ":" + publicTarget.getPort();
+                log.debug("sensor mapper transforming URI "+hostAndPort+" to "+result);
+                return result;
+            } else {
+                log.debug("sensor mapper not transforming URI "+hostAndPort+" because defines no port");
                 return sensorVal;
             }
         }

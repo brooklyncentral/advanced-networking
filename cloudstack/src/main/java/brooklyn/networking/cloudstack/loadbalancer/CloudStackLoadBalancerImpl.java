@@ -102,8 +102,8 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         ConfigToAttributes.apply(this);
 
         addLocations(locations);
-        setAttribute(SERVICE_UP, false);
-        setAttribute(SERVICE_STATE, Lifecycle.STARTING);
+        sensors().set(SERVICE_UP, false);
+        sensors().set(SERVICE_STATE, Lifecycle.STARTING);
         try {
             super.start(locations);
 
@@ -117,11 +117,11 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
             loadBalancerApi = client.getLoadBalancerClient();
 
             startLoadBalancer();
-            setAttribute(SERVICE_UP, true);
-            setAttribute(SERVICE_STATE, Lifecycle.RUNNING);
+            sensors().set(SERVICE_UP, true);
+            sensors().set(SERVICE_STATE, Lifecycle.RUNNING);
             isActive = true;
         } catch (Exception e) {
-            setAttribute(SERVICE_STATE, Lifecycle.ON_FIRE);
+            sensors().set(SERVICE_STATE, Lifecycle.ON_FIRE);
             throw Exceptions.propagate(e);
         }
     }
@@ -130,9 +130,9 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
     public void stop() {
         // TODO Should we delete the load balancer?
         loc = null;
-        setAttribute(SERVICE_STATE, Lifecycle.STOPPING);
-        setAttribute(SERVICE_UP, false);
-        setAttribute(SERVICE_STATE, Lifecycle.STOPPED);
+        sensors().set(SERVICE_STATE, Lifecycle.STOPPING);
+        sensors().set(SERVICE_UP, false);
+        sensors().set(SERVICE_STATE, Lifecycle.STOPPED);
     }
 
     @Override
@@ -197,7 +197,7 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         if (Strings.isBlank(lbName)) {
             ConfigBag setup = ConfigBag.newInstance(getAllConfig());
             lbName = new BasicCloudMachineNamer().generateNewGroupId(setup);
-            setAttribute(LOAD_BALANCER_NAME, lbName);
+            sensors().set(LOAD_BALANCER_NAME, lbName);
         }
         createLoadBalancer(lbName);
     }
@@ -236,11 +236,11 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         LoadBalancerRule rule = (LoadBalancerRule) job.getResult();
         String loadBalancerId = rule.getId();
 
-        setAttribute(LOAD_BALANCER_ID, loadBalancerId);
-        setAttribute(PROXY_HTTP_PORT, loadBalancerPort);
-        setAttribute(HOSTNAME, ip.getIPAddress());
-        setAttribute(PROTOCOL, inferProtocol());
-        setAttribute(ROOT_URL, inferUrl());
+        sensors().set(LOAD_BALANCER_ID, loadBalancerId);
+        sensors().set(PROXY_HTTP_PORT, loadBalancerPort);
+        sensors().set(HOSTNAME, ip.getIPAddress());
+        sensors().set(PROTOCOL, inferProtocol());
+        sensors().set(ROOT_URL, inferUrl());
     }
 
     @Override

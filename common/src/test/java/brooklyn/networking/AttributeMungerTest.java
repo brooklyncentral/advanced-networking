@@ -57,7 +57,7 @@ public class AttributeMungerTest {
         loc = app.getManagementContext().getLocationManager().createLocation(LocationSpec.create(SimulatedLocation.class));
         app.start(ImmutableList.of(loc));
 
-        app.subscribe(app, TestApplication.MY_ATTRIBUTE, new SensorEventListener<String>() {
+        app.subscriptions().subscribe(app, TestApplication.MY_ATTRIBUTE, new SensorEventListener<String>() {
                 @Override public void onEvent(SensorEvent<String> event) {
                     events.add(event.getValue());
                 }});
@@ -99,10 +99,10 @@ public class AttributeMungerTest {
                 ImmutableList.of(TARGET_HOSTNAME, OTHER_HOSTNAME),
                 new EntityAndAttribute<String>(app, PUBLIC_ENDPOINT));
 
-        app.setAttribute(TARGET_HOSTNAME, "myprivatehostname");
-        app.setAttribute(TARGET_PORT, 1234);
-        app.setAttribute(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
-        app.setAttribute(PUBLIC_ENDPOINT, "mypublichostname:5678");
+        app.sensors().set(TARGET_HOSTNAME, "myprivatehostname");
+        app.sensors().set(TARGET_PORT, 1234);
+        app.sensors().set(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
+        app.sensors().set(PUBLIC_ENDPOINT, "mypublichostname:5678");
 
         EntityTestUtils.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
     }
