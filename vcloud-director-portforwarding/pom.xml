@@ -93,7 +93,7 @@
         <dependency>
             <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>vcloud-director</artifactId>
-            <version>1.9.1-20150815.1541</version>
+            <version>${vcloud-director.version}</version>
         </dependency>
 
         <dependency>
