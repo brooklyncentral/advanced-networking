@@ -40,6 +40,7 @@ import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.BasicConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -56,8 +57,16 @@ public class CloudstackPortForwarder implements PortForwarder {
 
     private static final Logger log = LoggerFactory.getLogger(CloudstackPortForwarder.class);
 
-    public static final ConfigKey<String> DEFAULT_GATEWAY = ConfigKeys.newStringConfigKey("default.gateway",
-            "Default gateway IP for public traffic", "10.255.129.1");
+    public static final ConfigKey<String> DEFAULT_GATEWAY = ConfigKeys.newStringConfigKey(
+            "default.gateway",
+            "Default gateway IP for public traffic",
+            "10.255.129.1");
+    
+    public static final ConfigKey<Boolean> USE_VPC = ConfigKeys.newBooleanConfigKey( 
+            "advancednetworking.cloudstack.forwader.useVpc",
+            "Whether to use VPC's",
+            false);
+
     private final Object mutex = new Object();
     private PortForwardManager portForwardManager;
     private CloudstackNew40FeaturesClient client;
@@ -121,7 +130,9 @@ public class CloudstackPortForwarder implements PortForwarder {
         Preconditions.checkNotNull(client);
         final String ipAddress = String.valueOf(targetVm.getPrivateAddresses().toArray()[0]);
         Maybe<VirtualMachine> vm = client.findVmByIp(ipAddress);
-
+        Boolean useVpc = subnetTier.getConfig(USE_VPC);
+        int publicPort = optionalPublicPort.isPresent() ? optionalPublicPort.get() : targetPort;
+        
         if (vm.isAbsentOrNull()) {
             Map<VirtualMachine, List<String>> vmIpMapping = client.getVmIps();
             log.error("Could not find any VMs with Ip Address {}; contenders: {}", ipAddress, vmIpMapping);
@@ -132,32 +143,40 @@ public class CloudstackPortForwarder implements PortForwarder {
                 return (input == null) ? false : ipAddress.equals(input.getIPAddress());
             }});
         String networkId = nic.getNetworkId();
-        Maybe<String> vpcId = client.findVpcIdFromNetworkId(networkId);
-
-        if (vpcId.isAbsent()) {
-            log.error("Could not find associated VPCs with Network:{}", networkId);
-            return null;
+        
+        Maybe<String> vpcId;
+        if (useVpc) {
+            vpcId = client.findVpcIdFromNetworkId(networkId);
+            
+            if (vpcId.isAbsent()) {
+                log.error("Could not find associated VPCs with Network: {}; continuing without opening port-forwarding", networkId);
+                return null;
+            }
+        } else {
+            vpcId = Maybe.absent("use-vpc not enabled");
         }
-
+        
         try {
             synchronized (mutex) {
                 Maybe<PublicIPAddress> allocatedPublicIpAddressId = client.findPublicIpAddressByVmId(vm.get().getId());
                 PublicIPAddress publicIpAddress;
 
-                if (allocatedPublicIpAddressId.isAbsent()) {
+                if (allocatedPublicIpAddressId.isPresent()) {
+                    publicIpAddress = allocatedPublicIpAddressId.get();
+                } else if (useVpc) {
                     publicIpAddress = client.createIpAddressForVpc(vpcId.get());
                 } else {
-                    publicIpAddress = allocatedPublicIpAddressId.get();
+                    publicIpAddress = client.createIpAddressForNetwork(networkId);
                 }
 
                 log.info(format("Opening port:%s on vm:%s with IP:%s", targetPort, vm.get().getId(), publicIpAddress.getIPAddress()));
-                String jobid = client.createPortForwardRuleForVpc(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, targetPort, vm.get().getId(), targetPort);
+                String jobid = client.createPortForwardRule(networkId, publicIpAddress.getId(), PortForwardingRule.Protocol.TCP, publicPort, vm.get().getId(), targetPort);
                 client.waitForJobSuccess(jobid);
-                log.debug("Enabled port-forwarding on {}", publicIpAddress.getIPAddress() + ":" + targetPort);
-                return HostAndPort.fromParts(publicIpAddress.getIPAddress(), targetPort);
+                log.debug("Enabled port-forwarding on {}", publicIpAddress.getIPAddress() + ":" + publicPort);
+                return HostAndPort.fromParts(publicIpAddress.getIPAddress(), publicPort);
             }
         } catch (Exception e) {
-            log.error("Failed creating port forwarding rule on " + this + " to " + targetPort, e);
+            log.error("Failed creating port forwarding rule on " + this + " to " + targetPort+"; continuing", e);
             // it might already be created, so don't crash and burn too hard!
             return null;
         }

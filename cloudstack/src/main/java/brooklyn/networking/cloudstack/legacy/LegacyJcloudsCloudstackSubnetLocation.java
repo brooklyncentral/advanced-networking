@@ -416,10 +416,10 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
             CloudstackNew40FeaturesClient client = CloudstackNew40FeaturesClient.newInstance(getEndpoint(), getIdentity(), getCredential());
             String jobid;
             if (!Strings.isBlank(getConfig(CLOUDSTACK_VPC_ID))) {
-                String tierId = getRequiredConfig(CLOUDSTACK_SUBNET_NETWORK_ID);
-                jobid = client.createPortForwardRuleForVpc(tierId, publicIpId, PortForwardingRule.Protocol.TCP, publicPort, node.getId(), privatePort);
+                String networkId = getRequiredConfig(CLOUDSTACK_SUBNET_NETWORK_ID);
+                jobid = client.createPortForwardRule(networkId, publicIpId, PortForwardingRule.Protocol.TCP, publicPort, node.getId(), privatePort);
                 client.waitForJobSuccess(jobid);
-                client.createVpcNetworkAcl(tierId, "TCP", cidr.toString(), publicPort, publicPort, null, null, "INGRESS");
+                client.createVpcNetworkAcl(networkId, "TCP", cidr.toString(), publicPort, publicPort, null, null, "INGRESS");
                 // private doesn't need to be opened
 //                client.createVpcNetworkAcl(tierId, "TCP", cidr.toString(), privatePort, privatePort, null, null, "INGRESS");
             } else {

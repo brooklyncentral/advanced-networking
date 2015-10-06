@@ -840,17 +840,17 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
         }
 
         try {
-            String tierId = getAttribute(NETWORK_ID);
+            String networkId = getAttribute(NETWORK_ID);
             String jobId = null;
             boolean success = true;
             if (isVpcEnabled()) {
                 // network ID needed
-                jobId = cloudstackClient.createPortForwardRuleForVpc(
-                        tierId,
+                jobId = cloudstackClient.createPortForwardRule(
+                        networkId,
                         publicIpId, PortForwardingRule.Protocol.TCP,
                         publicPort, targetVmId, privatePort);
                 success &= cloudstackClient.waitForJobsSuccess(Arrays.asList(jobId));
-                cloudstackClient.createVpcNetworkAcl(tierId, "TCP", cidr.toString(), publicPort, publicPort, null, null, "INGRESS");
+                cloudstackClient.createVpcNetworkAcl(networkId, "TCP", cidr.toString(), publicPort, publicPort, null, null, "INGRESS");
                 // private doesn't need to be opened
 
             } else {
