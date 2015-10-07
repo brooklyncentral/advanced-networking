@@ -78,7 +78,7 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
     public static final String LOCATION_SPEC_DEFAULT = PROVIDER + (ENDPOINT_OVERRIDE == null ? "" : ":" + ENDPOINT_OVERRIDE);
     public static final String LOCATION_SPEC_OVERRIDE = System.getProperty("brooklyn.cloudstack.locationSpecOverride");
 
-    private URL warUrl = checkNotNull(getClass().getClassLoader().getResource("hello-world.war"));
+    private URL warUrl;
 
     // Image: {id=us-east-1/ami-7d7bfc14, providerId=ami-7d7bfc14, name=RightImage_CentOS_6.3_x64_v5.8.8.5, location={scope=REGION, id=us-east-1, description=us-east-1, parent=aws-ec2, iso3166Codes=[US-VA]}, os={family=centos, arch=paravirtual, version=6.0, description=rightscale-us-east/RightImage_CentOS_6.3_x64_v5.8.8.5.manifest.xml, is64Bit=true}, description=rightscale-us-east/RightImage_CentOS_6.3_x64_v5.8.8.5.manifest.xml, version=5.8.8.5, status=AVAILABLE[available], loginUser=root, userMetadata={owner=411009282317, rootDeviceType=instance-store, virtualizationType=paravirtual, hypervisor=xen}}
     //runTest(ImmutableMap.of("imageId", "us-east-1/ami-7d7bfc14", "hardwareId", SMALL_HARDWARE_ID));
@@ -98,6 +98,8 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
+        warUrl = checkNotNull(getClass().getClassLoader().getResource("hello-world.war"));
+        
         brooklynProperties = BrooklynProperties.Factory.newDefault();
 
         String locationSpec;
