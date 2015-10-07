@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 
@@ -382,10 +383,18 @@ public class CloudstackNew40FeaturesClient {
         JsonElement jr = json(payload);
         LOG.debug(pretty(jr));
 
-        JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
-        JsonElement responseIdJson = jobfields.get("id");
-        String responseId = responseIdJson != null ? responseIdJson.getAsString() : null;
-        String jobId = jobfields.get("jobid").getAsString();
+        String responseId;
+        String jobId;
+        try {
+            JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
+            JsonElement responseIdJson = jobfields.get("id");
+            responseId = responseIdJson != null ? responseIdJson.getAsString() : null;
+            jobId = jobfields.get("jobid").getAsString();
+        } catch (NullPointerException | NoSuchElementException | IllegalStateException e) {
+            // TODO Not good using exceptions for normal control flow; but easiest way to handle
+            // problems in unexpected json structure.
+            throw new IllegalStateException("Problem parsing job response: "+jr.toString());
+        }
 
         do {
             AsyncJob<Object> job = getAsyncJobClient().getAsyncJob(jobId);
@@ -414,7 +423,7 @@ public class CloudstackNew40FeaturesClient {
         try {
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw Exceptions.propagate(e);
         }
         JsonElement el = parser.parse(reader);
         return el;
@@ -845,6 +854,41 @@ public class CloudstackNew40FeaturesClient {
         }
     }
 
+    public PublicIPAddress createIpAddressForNetwork(String networkId) {
+        Multimap<String, String> params = ArrayListMultimap.create();
+        params.put("command", "associateIpAddress");
+
+        params.put("networkid", networkId);
+        if (accAndDomain.isPresent()) {
+            params.put("account", accAndDomain.get().account);
+            params.put("domainid", accAndDomain.get().domainId);
+        }
+
+        params.put("apiKey", this.apiKey);
+        params.put("response", "json");
+
+        LOG.debug("associateIpAddress GET " + params);
+
+        HttpRequest request = HttpRequest.builder()
+                .method("GET")
+                .endpoint(this.endpoint)
+                .addQueryParams(params)
+                .addHeader("Accept", "application/json")
+                .build();
+
+        request = getQuerySigner().filter(request);
+
+        HttpToolResponse response = HttpUtil.invoke(request);
+        // TODO does non-2xx response need to be handled separately ?
+
+        try {
+            String result = waitForJobCompletion(response, "createIpAddressForNetwork("+networkId+")");
+            return getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(result);
+        } catch (InterruptedException e) {
+            throw Exceptions.propagate(e);
+        }
+    }
+
     protected JsonElement listPublicIpAddressesAtVpc(String vpcId) {
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "listPublicIpAddresses");
@@ -890,24 +934,26 @@ public class CloudstackNew40FeaturesClient {
     }
 
     /**
-     * Create port-forward rule for a VPC.
+     * Create port-forward rule.
+     * <p/>
+     * like jclouds version, but takes the networkId which is mandatory for VPCs.
      * <p/>
      * Does <em>NOT</em> open any firewall.
      *
-     * @return job id, like jclouds version but takes the network/tier ID.
+     * @return job id.
      */
-    public String createPortForwardRuleForVpc(String vpcTierId, String ipAddressId, Protocol protocol, int publicPort, String targetVmId, int privatePort) {
+    public String createPortForwardRule(String networkId, String ipAddressId, Protocol protocol, int publicPort, String targetVmId, int privatePort) {
         // needed because jclouds doesn't support supplying tier ID (for VPC's)
         Multimap<String, String> params = ArrayListMultimap.create();
         params.put("command", "createPortForwardingRule");
 
-        params.put("networkid", vpcTierId);
+        params.put("networkid", networkId);
         params.put("ipaddressid", ipAddressId);
         params.put("protocol", protocol.toString());
         params.put("publicport", "" + publicPort);
         params.put("virtualmachineid", targetVmId);
         params.put("privateport", "" + privatePort);
-        params.put("openfirewall", "" + false);
+//        params.put("openfirewall", "" + false);
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -928,10 +974,15 @@ public class CloudstackNew40FeaturesClient {
 
         JsonElement jr = json(response);
         LOG.debug("createPortForwardingRule GOT " + jr);
-
-        JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
-        String jobId = jobfields.get("jobid").getAsString();
-        return jobId;
+        
+        try {
+            JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
+            return jobfields.get("jobid").getAsString();
+        } catch (NullPointerException | NoSuchElementException | IllegalStateException e) {
+            // TODO Not good using exceptions for normal control flow; but easiest way to handle
+            // problems in unexpected json structure.
+            throw new IllegalStateException("Problem executing createPortForwardingRule("+params+")"+": "+jr.toString());
+        }
     }
 
     /**
@@ -954,7 +1005,7 @@ public class CloudstackNew40FeaturesClient {
         params.put("publicport", "" + publicPort);
         params.put("virtualmachineid", targetVmId);
         params.put("privateport", "" + privatePort);
-        params.put("openfirewall", "" + false);
+//        params.put("openfirewall", "" + false);
 
         params.put("apiKey", this.apiKey);
         params.put("response", "json");
@@ -979,9 +1030,14 @@ public class CloudstackNew40FeaturesClient {
         JsonElement jr = json(response);
         LOG.debug("createPortForwardingRule GOT " + jr);
 
-        JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
-        String jobId = jobfields.get("jobid").getAsString();
-        return jobId;
+        try {
+            JsonObject jobfields = jr.getAsJsonObject().entrySet().iterator().next().getValue().getAsJsonObject();
+            return jobfields.get("jobid").getAsString();
+        } catch (NullPointerException | NoSuchElementException | IllegalStateException e) {
+            // TODO Not good using exceptions for normal control flow; but easiest way to handle
+            // problems in unexpected json structure.
+            throw new IllegalStateException("Problem executing createPortForwardingRule("+params+")"+": "+jr.toString());
+        }
     }
 
     public void disableEgressFirewall(String networkId) {
@@ -1076,29 +1132,36 @@ public class CloudstackNew40FeaturesClient {
         JsonElement networks = json(response);
         LOG.debug("LIST NETWORKS\n" + pretty(networks));
         //get the first network object
-        Optional<JsonElement> matchingNetwork = Iterables.tryFind(networks.getAsJsonObject().get("listnetworksresponse")
-                .getAsJsonObject().get("network").getAsJsonArray(), new Predicate<JsonElement>() {
-            @Override
-            public boolean apply(JsonElement jsonElement) {
-                JsonObject matchingNetwork = jsonElement.getAsJsonObject();
-                return matchingNetwork.get("id").getAsString().equals(networkId);
-            }
-        });
-        return Maybe.of(matchingNetwork.get().getAsJsonObject().get("vpcid").getAsString());
+        Optional<JsonElement> matchingNetwork = Iterables.tryFind(
+                networks.getAsJsonObject().get("listnetworksresponse").getAsJsonObject().get("network").getAsJsonArray(), 
+                new Predicate<JsonElement>() {
+                    @Override public boolean apply(JsonElement jsonElement) {
+                        JsonObject contender = jsonElement.getAsJsonObject();
+                        return contender.get("id").getAsString().equals(networkId);
+                    }
+                });
+        if (matchingNetwork == null) {
+            throw new NoSuchElementException("No network found matching "+networkId+"; networks: "+networks);
+        }
+        JsonElement vpcid = matchingNetwork.get().getAsJsonObject().get("vpcid");
+        if (vpcid == null) {
+            return Maybe.absent("No vcpid for network "+networkId);
+        }
+        return Maybe.of(vpcid.getAsString());
     }
 
     public Maybe<PublicIPAddress> findPublicIpAddressByVmId(final String vmId) {
         Set<PortForwardingRule> portForwardingRules = getCloudstackGlobalClient().getFirewallApi().listPortForwardingRules();
-            Optional<PortForwardingRule> pfr = Iterables.tryFind(portForwardingRules, new Predicate<PortForwardingRule>() {
-                @Override
-                public boolean apply(PortForwardingRule portForwardingRule) {
-                    return portForwardingRule.getVirtualMachineId().equals(vmId);
-                }
-            });
-            if (pfr.isPresent()) {
-                return Maybe.of(getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(pfr.get().getIPAddressId()));
-            } else {
-                return Maybe.absent();
+        Optional<PortForwardingRule> pfr = Iterables.tryFind(portForwardingRules, new Predicate<PortForwardingRule>() {
+            @Override
+            public boolean apply(PortForwardingRule portForwardingRule) {
+                return portForwardingRule.getVirtualMachineId().equals(vmId);
             }
+        });
+        if (pfr.isPresent()) {
+            return Maybe.of(getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(pfr.get().getIPAddressId()));
+        } else {
+            return Maybe.absent();
         }
+    }
 }

@@ -15,20 +15,15 @@
  */
 package brooklyn.networking.common.subnet;
 
-import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.core.sensor.Sensors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.net.HostAndPort;
+import java.util.Map;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.Sensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
@@ -37,9 +32,19 @@ import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.networking.AttributeMunger;
 
@@ -89,16 +94,32 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
             final Protocol protocol, final Cidr accessingCidr) {
         EntityAndAttribute<Integer> privatePort = source;
         DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
+            private MachineAndPort updated = null;
             public void run() {
                 Entity entity = source.getEntity();
                 Integer privatePortVal = source.getValue();
+                if (privatePortVal == null) {
+                    if (log.isDebugEnabled()) log.debug("Private port null for entity {}; not opening or advertising mapped port", entity);
+                    return;
+                }
                 Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
                 if (machineLocationMaybe.isAbsent()) {
+                    if (log.isDebugEnabled()) log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
                     return;
                 }
                 MachineLocation machine = machineLocationMaybe.get();
+                MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
+                if (updated != null && machineAndPort.equals(updated)) {
+                    if (log.isDebugEnabled()) log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[] {entity, machine, privatePortVal});
+                    return;
+                }
+                
                 HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-
+                if (publicEndpoint == null) {
+                    log.warn("No host:port obtained for "+machine+" -> "+privatePortVal+"; not advertising mapped port");
+                    return;
+                }
+                
                 // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
                 String sensorToAdvertise = source.getAttribute().getName();
                 portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
@@ -109,10 +130,11 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 entity.sensors().set(mappedSensor, endpoint);
                 entity.sensors().set(mappedEndpointSensor, endpoint);
                 entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
+                updated = machineAndPort;
             }});
-        subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);
+        
+        subscribe(ImmutableMap.of("notifyOfInitialValue", Boolean.TRUE), privatePort.getEntity(), privatePort.getAttribute(), updater);
         subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
-        updater.apply(privatePort.getEntity(), privatePort.getValue());
     }
 
     @Override
@@ -139,7 +161,11 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     }
 
     protected <T> void subscribe(Entity entity, Sensor<T> attribute, SensorEventListener<? super T> listener) {
-        adjunctEntity.subscribe(entity, attribute, listener);
+        adjunctEntity.subscriptions().subscribe(entity, attribute, listener);
+    }
+
+    protected <T> void subscribe(Map<String, ?> flags, Entity entity, Sensor<T> attribute, SensorEventListener<? super T> listener) {
+        adjunctEntity.subscriptions().subscribe(flags, entity, attribute, listener);
     }
 
     protected class DeferredExecutor<T> implements SensorEventListener<Object> {
@@ -172,6 +198,33 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
             }
 
             task.run();
+        }
+    }
+    
+    private static class MachineAndPort {
+        private final MachineLocation machine;
+        private final int port;
+
+        MachineAndPort(MachineLocation machine, int port) {
+            this.machine = checkNotNull(machine, "machine");
+            this.port = port;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof MachineAndPort)) return false;
+            MachineAndPort o = (MachineAndPort) obj;
+            return machine.equals(o.machine) && port == o.port;
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(machine, port);
+        }
+        
+        @Override
+        public String toString() {
+            return machine+" -> "+port;
         }
     }
 }
