@@ -15,18 +15,19 @@
  */
 package brooklyn.networking.cloudstack;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import com.google.common.collect.ImmutableMap;
-
-import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
+import static org.testng.Assert.assertNull;
 
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.jclouds.cloudstack.domain.PortForwardingRule.Protocol;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.google.common.collect.Iterables;
 
 public class CloudstackNew40FeaturesClientLiveTest {
 
@@ -36,13 +37,21 @@ public class CloudstackNew40FeaturesClientLiveTest {
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception {
-        String locSpec = "jclouds:cloudstack:http://HOSTNAME:8080/client/api/";
-        String locIdentity = "IDENTITY";
-        String locCredential = "CREDENTIAL";
 
         managementContext = Entities.newManagementContext();
-        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve(locSpec, ImmutableMap.of("identity", locIdentity, "credential", locCredential));
+        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve("bt-fast1");
+
         client = CloudstackNew40FeaturesClient.newInstance(loc);
+    }
+
+    @Test(groups= { "Live", "WIP" })
+    public void testCreateGetAndDeleteVPC() {
+        String zoneId = checkNotNull(Iterables.getFirst(client.getZoneClient().listZones(), null).getId());
+        String createdVpcId = client.createVpc("10.0.0.0/16", "test", "test", client.getFirstVpcOfferingId(), zoneId);
+        String foundVpcId = client.findVpcIdWithCidr("10.0.0.0/16");
+        assertEquals(foundVpcId, createdVpcId);
+        client.deleteVpc(createdVpcId);
+        assertNull(client.findVpcIdWithCidr("10.0.0.0/16"));
     }
 
     @Test(enabled = false, groups= { "Live", "WIP" })
