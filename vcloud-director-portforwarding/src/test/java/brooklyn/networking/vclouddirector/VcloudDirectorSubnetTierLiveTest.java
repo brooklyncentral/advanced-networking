@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.brooklyn.core.location.Locations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
@@ -70,7 +69,7 @@ import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
 
 /**
- * See {@link NatServiceLiveTest} for details of environment setup assumptions. 
+ * See {@link NatServiceLiveTest} for details of environment setup assumptions.
  */
 public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport {
 
@@ -210,7 +209,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             Entities.manage(subnetTier);
             app.start(ImmutableList.of(loc));
 
-            SshMachineLocation machine = Locations.findUniqueSshMachineLocation(entity.getLocations()).get();
+            SshMachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations(), SshMachineLocation.class).get();
             targetEndpoint = HostAndPort.fromParts(
                     Iterables.get(Iterables.concat(machine.getPrivateAddresses(), machine.getPublicAddresses()), 0),
                     22);
