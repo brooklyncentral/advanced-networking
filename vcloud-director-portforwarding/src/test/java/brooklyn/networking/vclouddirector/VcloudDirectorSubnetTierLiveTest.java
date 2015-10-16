@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.brooklyn.core.location.Locations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
@@ -209,7 +210,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             Entities.manage(subnetTier);
             app.start(ImmutableList.of(loc));
 
-            SshMachineLocation machine = Machines.findUniqueSshMachineLocation(entity.getLocations()).get();
+            SshMachineLocation machine = Locations.findUniqueSshMachineLocation(entity.getLocations()).get();
             targetEndpoint = HostAndPort.fromParts(
                     Iterables.get(Iterables.concat(machine.getPrivateAddresses(), machine.getPublicAddresses()), 0),
                     22);
