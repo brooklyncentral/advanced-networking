@@ -96,7 +96,6 @@
         <module>cloudstack</module>
         <module>vcloud-director</module>
         <module>vcloud-director-portforwarding</module>
-        <module>vcloud-director-nat-microservice</module>
     </modules>
 
     <build>
