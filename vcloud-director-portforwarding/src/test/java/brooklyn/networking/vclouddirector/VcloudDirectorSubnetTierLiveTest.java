@@ -19,29 +19,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.io.Files;
-import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -59,14 +42,23 @@ import org.apache.brooklyn.core.test.entity.TestEntity;
 import org.apache.brooklyn.entity.machine.MachineEntity;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
-import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.networking.vclouddirector.natmicroservice.NatMicroServiceMain;
 
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions. 
@@ -79,6 +71,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
 
     private static final String LOCATION_SPEC = "canopy-vCHS";
 
+    public static final boolean IS_DEDICATED_ENVIRONMENT = Boolean.valueOf(
+            System.getProperty("advancednetworking.vcloud.network.microservice.dedicated"));
+    
     /**
      * A valid looking address for inside `canopy-vCHS`. There doesn't need to be any VM
      * with this name.
@@ -88,7 +83,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     public static final int STARTING_PORT = 19980;
     public static final int ENDING_PORT = 19999;
     public static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString(STARTING_PORT+"-"+ENDING_PORT);
-    
+
     protected JcloudsLocation loc;
     
     private String publicIp;
@@ -98,53 +93,42 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     @BeforeMethod(alwaysRun=true)
     @Override
     public void setUp() throws Exception {
-        NatMicroServiceMain.StaticRefs.service = null;
-        
         super.setUp();
         loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
         publicIp = checkNotNull(loc.getConfig(PortForwarderVcloudDirector.NETWORK_PUBLIC_IP), "publicip");
         executor = Executors.newCachedThreadPool();
+        
+        // If targeting a shared/production vDC, then double-check this points at the right NAT microservice!
+        // If not, then it's fine to risk the concurrent mods and to just run using a NatDirectClient.
+        if (!IS_DEDICATED_ENVIRONMENT) {
+            String microserviceUrl = loc.config().get(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT);
+            assertNotNull(microserviceUrl);
+        }
     }
     
     @AfterMethod(alwaysRun=true)
     @Override
     public void tearDown() throws Exception {
-        if (NatMicroServiceMain.StaticRefs.service != null) {
-            NatMicroServiceMain.StaticRefs.service.stop();
-            NatMicroServiceMain.StaticRefs.service = null;
-        }
         if (endpointsPropertiesFile != null) endpointsPropertiesFile.delete();
         if (executor != null) executor.shutdownNow();
         super.tearDown();
     }
 
-    // Disabled by default: do *not* run at times when production vCD NAT Microservice might be in-use
+    // Disabled by default: if using a production vDC then first double-check your configuration points
+    // at the right NAT Microservice.
     @Test(groups="Live", enabled=false)
     public void testOpenPortForwardingAndAdvertise() throws Exception {
-        // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
-        String microserviceUrl = startVcdNatMicroservice();
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
-        
         runOpenPortForwardingAndAdvertise(null, true);
     }
     
     @Test(groups="Live")
     public void testOpenPortForwardingAndAdvertiseWithExplicitPublicPort() throws Exception {
-        String microserviceUrl = mgmt.getConfig().getConfig(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT);
-        assertNotNull(microserviceUrl);
-        
         runOpenPortForwardingAndAdvertise(STARTING_PORT+5, true);
     }
     
     // Disabled by default: do *not* run at times when production vCD NAT Microservice might be in-use
     @Test(groups={"Live", "Live-sanity"}, enabled=false)
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVms() throws Exception {
-        // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
-        String microserviceUrl = startVcdNatMicroservice();
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
-        
         runOpenPortForwardingAndAdvertise(null, false);
     }
     
@@ -152,9 +136,6 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     @Test(groups={"Live", "Live-sanity"}, enabled=false)
     public void testOpenPortForwardingAndAdvertiseUsingPortRangeOnLocationWithoutCreatingVms() throws Exception {
         // TODO When production vCD NAT Microservice is upgraded to support this, then just connect to that.
-        String microserviceUrl = startVcdNatMicroservice();
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_AUTO_ALLOCATES_PORT, "true");
         mgmt.getBrooklynProperties().put("brooklyn.location.named."+LOCATION_SPEC+"."+PortForwarderVcloudDirector.PORT_RANGE.getName(),
                 (STARTING_PORT+5)+"-"+ENDING_PORT);
 
@@ -168,9 +149,6 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
     
     @Test(groups={"Live", "Live-sanity"})
     public void testOpenPortForwardingAndAdvertiseWithoutCreatingVmsWithExplicitPublicPort() throws Exception {
-        String microserviceUrl = startVcdNatMicroservice();
-        mgmt.getBrooklynProperties().put(PortForwarderVcloudDirector.NAT_MICROSERVICE_ENDPOINT, microserviceUrl);
-
         runOpenPortForwardingAndAdvertise(null, false);
         runOpenPortForwardingAndAdvertise(STARTING_PORT+5, false);
     }
@@ -295,37 +273,6 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
         return publicEndpoint;
     }
 
-    protected String startVcdNatMicroservice() throws Exception {
-        assertNull(NatMicroServiceMain.StaticRefs.service);
-        
-        // Create the NAT Micro-service
-        String endpointsProperties = "my-vcloud.endpoint="+NatDirectClient.transformEndpoint(loc.getEndpoint()) + "\n"
-                + "my-vcloud.trustStore=\n"
-                + "my-vcloud.trustStorePassword=\n"
-                + String.format("my-vcloud.portRange=%s+\n", "12000");
-        endpointsPropertiesFile = File.createTempFile("endpoints", "properties");
-        Files.write(endpointsProperties.getBytes(), endpointsPropertiesFile);
-        
-        executor.submit(new Runnable() {
-            public void run() {
-                // Don't use NatMicroServiceMain.main directly, because that will do System.exit at the end
-                try {
-                    Callable<?> command = new NatMicroServiceMain().cliBuilder().build().parse(
-                            "launch", "--endpointsProperties", endpointsPropertiesFile.getAbsolutePath());
-                    command.call();
-                } catch (Exception e) {
-                    LOG.error("Launch NAT micro-service failed", e);
-                    throw Exceptions.propagate(e);
-                }
-            }});
-         
-         Asserts.succeedsEventually(new Runnable() {
-             public void run() {
-                 assertNotNull(NatMicroServiceMain.StaticRefs.service);
-             }});
-         return NatMicroServiceMain.StaticRefs.service.getRootUrl();
-    }
-    
     protected boolean contains(PortRange range, int port) {
         for (int contender : range) {
             if (contender == port) return true;

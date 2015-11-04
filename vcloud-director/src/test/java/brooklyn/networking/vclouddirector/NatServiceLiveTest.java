@@ -26,11 +26,16 @@ import org.apache.brooklyn.util.net.Protocol;
  * brooklyn.location.named.canopy-vCHS.credential=pa55w0rd
  * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.id=041e176a-befc-4b28-89e2-3c5343ff4d12
  * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.publicip=23.92.230.21
+ * brooklyn.location.named.canopy-vCHS.advancednetworking.vcloud.network.microservice.endpoint=https://1.2.3.4:8443
  *
  * brooklyn.location.named.canopy-TAI=jclouds:vcloud-director:https://svdc.it-solutions.atos.net/api
  * brooklyn.location.named.canopy-TAI.identity=jo.blogs@myvorg_01
  * brooklyn.location.named.canopy-TAI.credential=pa55w0rd
- * </pre> 
+ * brooklyn.location.named.canopy-TAI.advancednetworking.vcloud.network.microservice.endpoint=https://1.2.3.4:8443
+ * </pre>
+ * 
+ * The advancednetworking.vcloud.network.microservice.endpoint is required if using a production vDC,
+ * to avoid the problem of concurrent modification to the Edge Gateway's nat rules overwriting each other.
  */
 public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
 
