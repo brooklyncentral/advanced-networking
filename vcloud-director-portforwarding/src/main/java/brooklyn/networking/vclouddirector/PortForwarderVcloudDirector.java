@@ -276,6 +276,9 @@ public class PortForwarderVcloudDirector implements PortForwarder {
         if (client == null) {
             String microserviceUrl = subnetTier.config().get(NAT_MICROSERVICE_ENDPOINT);
             if (microserviceUrl == null) {
+                microserviceUrl = jcloudsLocation.config().get(NAT_MICROSERVICE_ENDPOINT);
+            }
+            if (microserviceUrl == null) {
                 microserviceUrl = managementContext.getConfig().getConfig(NAT_MICROSERVICE_ENDPOINT);
             }
 
