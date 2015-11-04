@@ -31,8 +31,8 @@ import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.core.http.HttpTool;
-import org.apache.brooklyn.util.core.http.HttpToolResponse;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.http.HttpToolResponse;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -91,6 +91,8 @@ public class NatMicroserviceClient implements NatClient {
                 + (args.publicPortRange == null ? "" : "&originalPortRange="+args.publicPortRange.toString())
                 + "&translated=" + args.targetEndpoint));
 
+        if (LOG.isDebugEnabled()) LOG.debug("POST {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
+        
         HttpToolResponse response = HttpTool.httpPut(client, uri, ImmutableMap.<String, String>of(), new byte[0]);
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
             String msg = "Open NAT Rule failed for "+args+": "+response.getResponseCode()+"; "+response.getReasonPhrase()+": "+response.getContentAsString();
@@ -117,6 +119,8 @@ public class NatMicroserviceClient implements NatClient {
                 + "&original=" + args.publicEndpoint
                 + "&translated=" + args.targetEndpoint));
 
+        if (LOG.isDebugEnabled()) LOG.debug("DELETE {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
+        
         HttpToolResponse response = HttpTool.httpDelete(client, uri, ImmutableMap.<String, String>of());
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
             String msg = "Delete NAT Rule failed for "+args+": "+response.getResponseCode()+"; "+response.getReasonPhrase()+": "+response.getContentAsString();
