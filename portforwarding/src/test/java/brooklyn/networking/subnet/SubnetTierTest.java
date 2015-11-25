@@ -373,7 +373,7 @@ public class SubnetTierTest {
         StubPortForwarder(Map<HostAndPort, HostAndPort> mapping) {
             this.mapping = mapping;
         }
-        @Override public void injectManagementContext(ManagementContext managementContext) {
+        @Override public void setManagementContext(ManagementContext managementContext) {
             // no-op
         }
         @Override public void inject(Entity owner, List<Location> locations) {

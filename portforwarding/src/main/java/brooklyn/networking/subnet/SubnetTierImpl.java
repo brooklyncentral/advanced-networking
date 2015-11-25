@@ -347,7 +347,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             }
         }
         if (result != null) {
-            result.injectManagementContext(getManagementContext());
+            result.setManagementContext(getManagementContext());
             sensors().set(PORT_FORWARDER_LIVE, result);
         }
         return result;
