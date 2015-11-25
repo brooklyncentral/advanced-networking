@@ -79,7 +79,7 @@ import org.jclouds.http.HttpResponse;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.core.http.HttpToolResponse;
+import org.apache.brooklyn.util.http.HttpToolResponse;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.stream.Streams;
