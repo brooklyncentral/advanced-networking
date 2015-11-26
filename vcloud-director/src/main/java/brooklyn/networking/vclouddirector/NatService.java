@@ -605,15 +605,17 @@ public class NatService {
         if (!found) {
             StringBuilder builder = new StringBuilder();
             builder.append("PublicIp '" + publicIp + "' is not valid. Public IP must fall in the following ranges: ");
-            if (subnetParticipations == null) {
+            if (subnetParticipations != null) {
                 for (SubnetParticipationType subnetParticipation : subnetParticipations) {
                     IpRangesType range = subnetParticipation.getIpRanges();
                     if (range != null && range.getIpRange() != null) {
                         for (IpRangeType ipRangeType : range.getIpRange()) {
-                            builder.append(ipRangeType.getStartAddress());
-                            builder.append(" - ");
-                            builder.append(ipRangeType.getEndAddress());
-                            builder.append(", ");
+                            if (ipRangeType != null) {
+                                builder.append(ipRangeType.getStartAddress());
+                                builder.append(" - ");
+                                builder.append(ipRangeType.getEndAddress());
+                                builder.append(", ");
+                            }
                         }
                     } else {
                         builder.append("<no ip range>, ");
