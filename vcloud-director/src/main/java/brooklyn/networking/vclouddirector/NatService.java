@@ -570,7 +570,7 @@ public class NatService {
                 an alternative workaround would be to put the call to waitForTask(2*60*1000) inside a thread so that
                 we can time it out ourselves, with a while loop around it for retry
              */
-            task.waitForTask(0);
+            task.waitForTask(0, 5000);
         } catch (TimeoutException e) {
             throw Exceptions.propagate(e);
         }
