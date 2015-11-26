@@ -312,7 +312,11 @@ public class NatService {
     public UpdateResult updatePortForwarding(Delta delta) throws VCloudException {
         final int MAX_CONSECUTIVE_FORBIDDEN_REQUESTS = 10;
 
-        if (delta.isEmpty()) new Delta();
+        if (delta.isEmpty()) {
+            LOG.info("Skipping updating NAT rules on {}@{}; delta is empty", 
+                    new Object[] {identity, baseUrl});
+           return new UpdateResult();
+        }
 
         delta.checkValid();
         if (LOG.isDebugEnabled()) LOG.debug("Updating port forwarding at {}: {}", baseUrl, delta);

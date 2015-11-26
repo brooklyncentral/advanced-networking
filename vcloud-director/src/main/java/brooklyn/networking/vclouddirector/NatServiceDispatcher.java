@@ -15,11 +15,13 @@ import java.util.logging.Level;
 
 import javax.annotation.Nullable;
 
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.location.PortRanges;
+import org.apache.brooklyn.util.core.task.SingleThreadedScheduler;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.sdk.VCloudException;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -30,12 +32,10 @@ import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.sdk.VCloudException;
 
-import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.location.PortRanges;
-import org.apache.brooklyn.util.core.task.SingleThreadedScheduler;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.text.Strings;
+import brooklyn.networking.vclouddirector.NatService.UpdateResult;
 
 /**
  * Dispatches NAT service updates to handle concurrent access by multiple users
@@ -370,8 +370,15 @@ public class NatServiceDispatcher {
             NatService service = getService(creds);
             
             NatService.Delta delta = new NatService.Delta().toOpen(toOpen).toClose(toClose);
-            NatService.UpdateResult updated = service.updatePortForwarding(delta);
-            
+            NatService.UpdateResult updated;
+            if (delta.isEmpty()) {
+                LOG.info("Skipping updating NAT rules on {}@{}; delta is empty, given actions {}", 
+                        new Object[] {creds.identity, creds.endpoint, actions});
+               updated = new UpdateResult();
+            } else {
+               updated = service.updatePortForwarding(delta);
+            }
+
             for (NatServiceAction action : actions) {
                 switch (action.actionType) {
                 case OPEN:
