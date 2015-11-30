@@ -73,6 +73,10 @@ public class CloudstackPortForwarder implements PortForwarder {
     private SubnetTier subnetTier;
     private JcloudsLocation jcloudsLocation;
 
+    public CloudstackPortForwarder() {
+
+    }
+
     public CloudstackPortForwarder(PortForwardManager portForwardManager) {
         this.portForwardManager = portForwardManager;
     }
