@@ -5,6 +5,7 @@ import static org.testng.Assert.assertEquals;
 import java.io.StringReader;
 import java.util.Map;
 
+import org.apache.brooklyn.core.location.Machines;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -19,7 +20,6 @@ import org.apache.brooklyn.camp.brooklyn.AbstractYamlTest;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.EmptySoftwareProcess;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -60,7 +60,7 @@ public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
 
         Entity app = createStartWaitAndLogApplication(new StringReader(yaml));
         EmptySoftwareProcess entity = (EmptySoftwareProcess) Iterables.find(Entities.descendants(app), Predicates.instanceOf(EmptySoftwareProcess.class));
-        SshMachineLocation machine = Machines.findUniqueSshMachineLocation(entity.getLocations()).get();
+        SshMachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations(), SshMachineLocation.class).get();
         
         assertMachine(machine, UserAndHostAndPort.fromParts("myuser", "83.222.229.1", 12001), ImmutableMap.of(
                 SshMachineLocation.PASSWORD.getName(), "mypassword"));

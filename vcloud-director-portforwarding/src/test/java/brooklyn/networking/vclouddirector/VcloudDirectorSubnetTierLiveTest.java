@@ -61,7 +61,7 @@ import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
- * See {@link NatServiceLiveTest} for details of environment setup assumptions. 
+ * See {@link NatServiceLiveTest} for details of environment setup assumptions.
  */
 public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport {
 
@@ -187,7 +187,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             Entities.manage(subnetTier);
             app.start(ImmutableList.of(loc));
 
-            SshMachineLocation machine = Machines.findUniqueSshMachineLocation(entity.getLocations()).get();
+            SshMachineLocation machine = Machines.findUniqueMachineLocation(entity.getLocations(), SshMachineLocation.class).get();
             targetEndpoint = HostAndPort.fromParts(
                     Iterables.get(Iterables.concat(machine.getPrivateAddresses(), machine.getPublicAddresses()), 0),
                     22);
