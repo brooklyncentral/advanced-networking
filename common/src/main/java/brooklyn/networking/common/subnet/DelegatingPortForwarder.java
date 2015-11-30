@@ -49,7 +49,7 @@ public class DelegatingPortForwarder implements PortForwarder {
 
     public void injectDelegate(PortForwarder delegate) {
         this.delegate = checkNotNull(delegate, "delegate");
-        if (managementContext != null) delegate.injectManagementContext(managementContext);
+        if (managementContext != null) delegate.setManagementContext(managementContext);
         if (owner != null || locations != null) delegate.inject(owner, locations);
     }
     
@@ -62,9 +62,9 @@ public class DelegatingPortForwarder implements PortForwarder {
     }
     
     @Override
-    public void injectManagementContext(ManagementContext managementContext) {
+    public void setManagementContext(ManagementContext managementContext) {
         this.managementContext = managementContext;
-        if (delegate != null) delegate.injectManagementContext(managementContext);
+        if (delegate != null) delegate.setManagementContext(managementContext);
     }
 
     @Override

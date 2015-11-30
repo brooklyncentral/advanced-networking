@@ -115,8 +115,8 @@ public class PortForwarderClient implements PortForwarder {
     }
 
     @Override
-    public void injectManagementContext(ManagementContext managementContext) {
-        getDelegate().injectManagementContext(managementContext);
+    public void setManagementContext(ManagementContext managementContext) {
+        getDelegate().setManagementContext(managementContext);
     }
     
     @Override

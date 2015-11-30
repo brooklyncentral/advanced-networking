@@ -78,7 +78,7 @@ public class CloudstackPortForwarder implements PortForwarder {
     }
 
     @Override
-    public void injectManagementContext(ManagementContext managementContext) {
+    public void setManagementContext(ManagementContext managementContext) {
         if (portForwardManager == null) {
             portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
         }

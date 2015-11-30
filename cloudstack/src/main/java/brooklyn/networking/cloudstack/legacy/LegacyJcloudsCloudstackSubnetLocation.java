@@ -68,6 +68,7 @@ import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.domain.LoginCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -205,7 +206,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
     }
 
     @Override
-    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, String vmHostname1, Optional<HostAndPort> sshHostAndPort, ConfigBag setup) throws IOException {
+    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, String vmHostname1, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
         String subnetSpecificHostname = null;
         String vmHostname = vmHostname1;
         String sshHost = vmHostname;
@@ -295,7 +296,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
                     new Object[] {
                     getRequiredConfig(CLOUDSTACK_SUBNET_NETWORK_ID),
                     getConfig(CLOUDSTACK_SERVICE_NETWORK_ID),
-                    getUser(setup),
+                    userCredentials.getUser(),
                     vmHostname,
                     setup.getDescription(),
                     Sanitizer.sanitize(sshConfig)
@@ -306,11 +307,13 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
                 MutableMap.builder()
                         .put("address", Networking.getInetAddressWithFixedName(vmHostname))
                         .put("displayName", vmHostname)
-                        .put("user", getUser(setup))
+                        .put("user", userCredentials.getUser())
                         // don't think "config" does anything
                         .putAll(sshConfig)
                         .put("config", sshConfig)
                         .put("jcloudsParent", this)
+                        .put(SshMachineLocation.PASSWORD, userCredentials.getOptionalPassword().orNull())
+                        .put(SshMachineLocation.PRIVATE_KEY_DATA, userCredentials.getOptionalPrivateKey().orNull())
                         .put("node", node)
                         .put("port", sshPort)
                         .put(CALLER_CONTEXT, setup.get(CALLER_CONTEXT))
