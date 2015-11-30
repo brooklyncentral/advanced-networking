@@ -312,7 +312,11 @@ public class NatService {
     public UpdateResult updatePortForwarding(Delta delta) throws VCloudException {
         final int MAX_CONSECUTIVE_FORBIDDEN_REQUESTS = 10;
 
-        if (delta.isEmpty()) new Delta();
+        if (delta.isEmpty()) {
+            LOG.info("Skipping updating NAT rules on {}@{}; delta is empty", 
+                    new Object[] {identity, baseUrl});
+           return new UpdateResult();
+        }
 
         delta.checkValid();
         if (LOG.isDebugEnabled()) LOG.debug("Updating port forwarding at {}: {}", baseUrl, delta);
@@ -570,7 +574,7 @@ public class NatService {
                 an alternative workaround would be to put the call to waitForTask(2*60*1000) inside a thread so that
                 we can time it out ourselves, with a while loop around it for retry
              */
-            task.waitForTask(0);
+            task.waitForTask(0, 5000);
         } catch (TimeoutException e) {
             throw Exceptions.propagate(e);
         }
@@ -605,15 +609,17 @@ public class NatService {
         if (!found) {
             StringBuilder builder = new StringBuilder();
             builder.append("PublicIp '" + publicIp + "' is not valid. Public IP must fall in the following ranges: ");
-            if (subnetParticipations == null) {
+            if (subnetParticipations != null) {
                 for (SubnetParticipationType subnetParticipation : subnetParticipations) {
                     IpRangesType range = subnetParticipation.getIpRanges();
                     if (range != null && range.getIpRange() != null) {
                         for (IpRangeType ipRangeType : range.getIpRange()) {
-                            builder.append(ipRangeType.getStartAddress());
-                            builder.append(" - ");
-                            builder.append(ipRangeType.getEndAddress());
-                            builder.append(", ");
+                            if (ipRangeType != null) {
+                                builder.append(ipRangeType.getStartAddress());
+                                builder.append(" - ");
+                                builder.append(ipRangeType.getEndAddress());
+                                builder.append(", ");
+                            }
                         }
                     } else {
                         builder.append("<no ip range>, ");
