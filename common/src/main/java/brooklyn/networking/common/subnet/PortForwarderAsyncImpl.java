@@ -15,14 +15,18 @@
  */
 package brooklyn.networking.common.subnet;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.Map;
-
+import brooklyn.networking.AttributeMunger;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.Sensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
@@ -33,20 +37,18 @@ import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.core.task.TaskBuilder;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.net.HostAndPort;
+import java.util.Map;
 
-import brooklyn.networking.AttributeMunger;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class PortForwarderAsyncImpl implements PortForwarderAsync {
 
@@ -93,45 +95,53 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr) {
         EntityAndAttribute<Integer> privatePort = source;
-        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
-            private MachineAndPort updated = null;
-            public void run() {
-                Entity entity = source.getEntity();
-                Integer privatePortVal = source.getValue();
-                if (privatePortVal == null) {
-                    if (log.isDebugEnabled()) log.debug("Private port null for entity {}; not opening or advertising mapped port", entity);
-                    return;
-                }
-                Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
-                if (machineLocationMaybe.isAbsent()) {
-                    if (log.isDebugEnabled()) log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
-                    return;
-                }
-                MachineLocation machine = machineLocationMaybe.get();
-                MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
-                if (updated != null && machineAndPort.equals(updated)) {
-                    if (log.isDebugEnabled()) log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[] {entity, machine, privatePortVal});
-                    return;
-                }
-                
-                HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-                if (publicEndpoint == null) {
-                    log.warn("No host:port obtained for "+machine+" -> "+privatePortVal+"; not advertising mapped port");
-                    return;
-                }
-                
-                // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
-                String sensorToAdvertise = source.getAttribute().getName();
-                portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
-                AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sensorToAdvertise);
-                AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sensorToAdvertise);
-                AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sensorToAdvertise);
-                String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
-                entity.sensors().set(mappedSensor, endpoint);
-                entity.sensors().set(mappedEndpointSensor, endpoint);
-                entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
-                updated = machineAndPort;
-            }});
+        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), Boolean.FALSE,
+                new Runnable() {
+
+                    private MachineAndPort updated = null;
+
+                    @Override
+                    public void run() {
+                        Entity entity = source.getEntity();
+                        Integer privatePortVal = source.getValue();
+                        if (privatePortVal == null) {
+                            if (log.isDebugEnabled())
+                                log.debug("Private port null for entity {}; not opening or advertising mapped port", entity);
+                            return;
+                        }
+                        Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+                        if (machineLocationMaybe.isAbsent()) {
+                            if (log.isDebugEnabled())
+                                log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
+                            return;
+                        }
+                        MachineLocation machine = machineLocationMaybe.get();
+                        MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
+                        if (updated != null && machineAndPort.equals(updated)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[]{entity, machine, privatePortVal});
+                            return;
+                        }
+
+                        HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+                        if (publicEndpoint == null) {
+                            log.warn("No host:port obtained for " + machine + " -> " + privatePortVal + "; not advertising mapped port");
+                            return;
+                        }
+
+                        // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+                        String sensorToAdvertise = source.getAttribute().getName();
+                        portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
+                        AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sensorToAdvertise);
+                        AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sensorToAdvertise);
+                        AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sensorToAdvertise);
+                        String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+                        entity.sensors().set(mappedSensor, endpoint);
+                        entity.sensors().set(mappedEndpointSensor, endpoint);
+                        entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
+                        updated = machineAndPort;
+                    }
+                });
         
         subscribe(ImmutableMap.of("notifyOfInitialValue", Boolean.TRUE), privatePort.getEntity(), privatePort.getAttribute(), updater);
         subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
@@ -140,21 +150,25 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     @Override
     public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> privatePort, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr, final EntityAndAttribute<String> whereToAdvertiseEndpoint) {
-        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), new Runnable() {
-            public void run() {
-                Entity entity = privatePort.getEntity();
-                Integer privatePortVal = privatePort.getValue();
-                Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
-                if (machineLocationMaybe.isAbsent()) {
-                    return;
-                }
-                MachineLocation machine = machineLocationMaybe.get();
-                HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+        final DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", privatePort, Predicates.notNull(), Boolean.FALSE,
+                new Runnable() {
 
-                // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
-                portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
-                whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText()+":"+publicEndpoint.getPort());
-            }});
+                    @Override
+                    public void run() {
+                        Entity entity = privatePort.getEntity();
+                        Integer privatePortVal = privatePort.getValue();
+                        Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+                        if (machineLocationMaybe.isAbsent()) {
+                            return;
+                        }
+                        MachineLocation machine = machineLocationMaybe.get();
+                        HostAndPort publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+
+                        // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+                        portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
+                        whereToAdvertiseEndpoint.setValue(publicEndpoint.getHostText() + ":" + publicEndpoint.getPort());
+                    }
+                });
         subscribe(privatePort.getEntity(), privatePort.getAttribute(), updater);
         subscribe(privatePort.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
         updater.apply(privatePort.getEntity(), privatePort.getValue());
@@ -171,18 +185,26 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
     protected class DeferredExecutor<T> implements SensorEventListener<Object> {
         private final EntityAndAttribute<T> attribute;
         private final Predicate<? super T> readiness;
-        private final Runnable task;
+        private final Runnable runnable;
         private final String description;
+        private final Boolean blockUntilEnded;
 
-        public DeferredExecutor(String description, EntityAndAttribute<T> attribute, Runnable task) {
-            this(description, attribute, Predicates.notNull(), task);
+        public DeferredExecutor(final String description, final EntityAndAttribute<T> attribute, final Runnable runnable) {
+            this(description, attribute, Predicates.notNull(), runnable);
         }
 
-        public DeferredExecutor(String description, EntityAndAttribute<T> attribute, Predicate<? super T> readiness, Runnable task) {
+        public DeferredExecutor(final String description, final EntityAndAttribute<T> attribute,
+                                final Predicate<? super T> readiness, final Runnable runnable) {
+            this(description, attribute, readiness, Boolean.TRUE, runnable);
+        }
+
+        public DeferredExecutor(final String description, final EntityAndAttribute<T> attribute,
+                                final Predicate<? super T> readiness, final Boolean blockUntilEnded, final Runnable runnable) {
             this.description = description;
             this.attribute = attribute;
             this.readiness = readiness;
-            this.task = task;
+            this.runnable = runnable;
+            this.blockUntilEnded = blockUntilEnded;
         }
 
         @Override
@@ -190,14 +212,22 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
             apply(event.getSource(), event.getValue());
         }
 
-        public void apply(Entity source, Object valueIgnored) {
+        public void apply(final Entity source, final Object valueIgnored) {
             T val = (T) attribute.getValue();
             if (!readiness.apply(val)) {
-                log.warn("Skipping {} for {} because attribute {} not ready", new Object[] {description, attribute.getEntity(), attribute.getAttribute()});
+                log.warn("Skipping {} for {} because attribute {} not ready", new Object[]{description, attribute.getEntity(), attribute.getAttribute()});
                 return;
             }
-
-            task.run();
+            final Task<Void> task = TaskBuilder.<Void>builder().displayName(description).body(runnable).build();
+            DynamicTasks.queueIfPossible(task).orSubmitAsync(source).asTask();
+            if (blockUntilEnded) {
+                final String originalBlock = Tasks.setBlockingDetails(description);
+                try {
+                    task.blockUntilEnded();
+                } finally {
+                    Tasks.setBlockingDetails(originalBlock);
+                }
+            }
         }
     }
     
