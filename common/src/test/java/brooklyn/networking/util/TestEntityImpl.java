@@ -22,7 +22,8 @@ package brooklyn.networking.util;
 
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.entity.AbstractApplication;
-import org.apache.brooklyn.core.entity.AbstractEntity;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * @author m4rkmckenna on 11/12/2015.
@@ -35,6 +36,6 @@ public class TestEntityImpl extends AbstractApplication implements TestEntity {
 
     @Override
     public void addLocation(final Location location) {
-        sensors().emit(AbstractEntity.LOCATION_ADDED, location);
+        super.addLocations(ImmutableList.of(location));
     }
 }
