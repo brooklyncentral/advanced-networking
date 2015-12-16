@@ -86,10 +86,10 @@ public class NatMicroserviceClient implements NatClient {
                 + (Strings.isNonBlank(vDC) ? "&vdc="+escaper.escape(vDC) : "")
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
-                + "&protocol=" + args.protocol
-                + "&original=" + args.publicEndpoint
-                + (args.publicPortRange == null ? "" : "&originalPortRange="+args.publicPortRange.toString())
-                + "&translated=" + args.targetEndpoint));
+                + "&protocol=" + args.getProtocol()
+                + "&original=" + args.getPublicEndpoint()
+                + (args.getPublicPortRange() == null ? "" : "&originalPortRange="+args.getPublicPortRange().toString())
+                + "&translated=" + args.getTargetEndpoint()));
 
         if (LOG.isDebugEnabled()) LOG.debug("POST {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
         
@@ -115,9 +115,9 @@ public class NatMicroserviceClient implements NatClient {
                 + (Strings.isNonBlank(vDC) ? "&vdc="+escaper.escape(vDC) : "")
                 + "&identity="+escaper.escape(identity)
                 + "&credential="+escaper.escape(credential)
-                + "&protocol=" + args.protocol
-                + "&original=" + args.publicEndpoint
-                + "&translated=" + args.targetEndpoint));
+                + "&protocol=" + args.getProtocol()
+                + "&original=" + args.getPublicEndpoint()
+                + "&translated=" + args.getTargetEndpoint()));
 
         if (LOG.isDebugEnabled()) LOG.debug("DELETE {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
         
@@ -127,6 +127,6 @@ public class NatMicroserviceClient implements NatClient {
             LOG.info(msg+"; rethrowing");
             throw new RuntimeException(msg);
         }
-        return args.publicEndpoint;
+        return args.getPublicEndpoint();
     }
 }

@@ -11,10 +11,10 @@ import org.apache.brooklyn.util.net.Protocol;
 
 
 public class PortForwardingConfig {
-    Protocol protocol;
-    HostAndPort publicEndpoint;
-    HostAndPort targetEndpoint;
-    PortRange publicPortRange;
+    private Protocol protocol;
+    private HostAndPort publicEndpoint;
+    private HostAndPort targetEndpoint;
+    private PortRange publicPortRange;
     
     public PortForwardingConfig protocol(Protocol val) {
         this.protocol = val;
@@ -59,7 +59,23 @@ public class PortForwardingConfig {
     public int hashCode() {
         return Objects.hashCode(protocol, publicEndpoint, publicPortRange, targetEndpoint);
     }
-    
+
+    public Protocol getProtocol() {
+        return protocol;
+    }
+
+    public HostAndPort getPublicEndpoint() {
+        return publicEndpoint;
+    }
+
+    public HostAndPort getTargetEndpoint() {
+        return targetEndpoint;
+    }
+
+    public PortRange getPublicPortRange() {
+        return publicPortRange;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this).add("protocol", protocol).add("targetEndpoint", targetEndpoint)
