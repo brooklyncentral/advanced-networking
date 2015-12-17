@@ -68,6 +68,7 @@ import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.OperatingSystem;
 import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.Template;
 import org.jclouds.domain.LoginCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,7 +207,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
     }
 
     @Override
-    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, String vmHostname1, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
+    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template, String vmHostname1, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
         String subnetSpecificHostname = null;
         String vmHostname = vmHostname1;
         String sshHost = vmHostname;
@@ -315,6 +316,7 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
                         .put(SshMachineLocation.PASSWORD, userCredentials.getOptionalPassword().orNull())
                         .put(SshMachineLocation.PRIVATE_KEY_DATA, userCredentials.getOptionalPrivateKey().orNull())
                         .put("node", node)
+                        .put("template", template.orNull())
                         .put("port", sshPort)
                         .put(CALLER_CONTEXT, setup.get(CALLER_CONTEXT))
                         .build(), this, node) {
