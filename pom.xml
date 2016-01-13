@@ -39,7 +39,7 @@
     <properties>
         <brooklyn.version>0.9.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <vcloud-director.version>1.9.1-20150924.2315</vcloud-director.version>
-        <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
+        <jclouds.groupId>org.apache.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
     </properties>
 
     <scm>
