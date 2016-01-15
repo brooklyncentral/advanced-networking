@@ -46,6 +46,7 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic.ServiceProblemsLogic;
 import org.apache.brooklyn.core.entity.trait.StartableMethods;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.mgmt.internal.CollectionChangeListener;
@@ -275,6 +276,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         portForwarder.inject(getProxy(), ImmutableList.copyOf(locations));
         
         addLocations(locations);
+        locations = Locations.getLocationsCheckingAncestors(getLocations(), this);
         
         ServiceProblemsLogic.clearProblemsIndicator(this, START);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
