@@ -87,6 +87,16 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
         super.tearDown();
     }
 
+    // Test assumes there is at least one pre-existing NAT rule
+    @Test(groups="Live")
+    public void testList() throws Exception {
+        String result = client.list();
+        LOG.info("Listed: "+result);
+        
+        String regex = "\\[\\{.*network.*protocol.*originalIp.*originalPort.*translatedIp.*translatedPort.*\\}\\]";
+        assertTrue(result.matches(regex), "result="+result);
+    }
+    
     @Test(groups="Live")
     public void testOpenPortForwardingWithExplicitPort() throws Exception {
         int expectedPort = STARTING_PORT + 5;
