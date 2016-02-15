@@ -116,7 +116,7 @@ public class NatMicroserviceClient implements NatClient {
                 + (args.getPublicPortRange() == null ? "" : "&originalPortRange="+args.getPublicPortRange().toString())
                 + "&translated=" + args.getTargetEndpoint()));
 
-        if (LOG.isDebugEnabled()) LOG.debug("POST {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
+        if (LOG.isDebugEnabled()) LOG.debug("PUT {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
         
         HttpToolResponse response = HttpTool.httpPut(client, uri, ImmutableMap.<String, String>of(), new byte[0]);
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {

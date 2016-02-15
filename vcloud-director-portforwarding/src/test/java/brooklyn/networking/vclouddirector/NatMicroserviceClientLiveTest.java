@@ -54,7 +54,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
     public static final String INTERNAL_MACHINE_IP = "192.168.109.10";
     
     public static final int STARTING_PORT = 19980;
-    public static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString("19980-19999");
+    public static final PortRange DEFAULT_PORT_RANGE = PortRanges.fromString("11000-19999");
 
     protected JcloudsLocation loc;
     
@@ -115,7 +115,9 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
         }
     }
     
-    @Test(groups="Live")
+    // The "publicPortRange" is no longer supported - customer request was for the NAT microservice
+    // to always choose the port.
+    @Test(groups={"Live", "WIP"}, enabled=false)
     public void testOpenPortForwardingWithExplicitPortRange() throws Exception {
         PortRange portRange = PortRanges.fromString((STARTING_PORT+5)+"-"+(STARTING_PORT+10));
         
@@ -136,7 +138,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
             }
         }
     }
-    
+
     @Test(groups="Live")
     public void testOpenPortForwarding() throws Exception {
         HostAndPort result = client.openPortForwarding(new PortForwardingConfig()
