@@ -24,6 +24,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -37,7 +38,7 @@ import org.jclouds.cloudstack.domain.PublicIPAddress;
 import org.jclouds.cloudstack.domain.VirtualMachine;
 import org.jclouds.cloudstack.features.LoadBalancerApi;
 import org.jclouds.cloudstack.options.CreateLoadBalancerRuleOptions;
-
+import org.jclouds.compute.domain.NodeMetadata;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.config.ConfigKey;
@@ -64,17 +65,23 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
     private CloudstackNew40FeaturesClient client;
     private LoadBalancerApi loadBalancerApi;
 
-    protected String inferProtocol() {
-        // TODO support other protocols?!
-        return "http";
-    }
-
     protected String getProtocol() {
         return getAttribute(PROTOCOL);
     }
 
     protected Integer getPort() {
         return getAttribute(PROXY_HTTP_PORT);
+    }
+
+    @Override
+    protected String inferProtocol() {
+        // TODO support other protocols?!
+        return "http";
+    }
+
+    @Override
+    protected String inferUrl() {
+        return inferUrl(false);
     }
 
     /** returns URL, if it can be inferred; null otherwise */
@@ -93,19 +100,14 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         return protocol+"://"+hostname+":"+port+"/";
     }
 
-    protected String inferUrl() {
-        return inferUrl(false);
-    }
-
     @Override
-    public void start(Collection<? extends Location> locations) {
-        ConfigToAttributes.apply(this);
-
+    public void doStart(Collection<? extends Location> locations) {
         addLocations(locations);
         sensors().set(SERVICE_UP, false);
         sensors().set(SERVICE_STATE, Lifecycle.STARTING);
+        
         try {
-            super.start(locations);
+            super.doStart(locations);
 
             checkArgument(locations.size() == 1, "start must have exactly one location, but given %s (%s)", locations.size(), locations);
             Location onlyloc = Iterables.getOnlyElement(locations);
@@ -125,9 +127,9 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
             throw Exceptions.propagate(e);
         }
     }
-
+    
     @Override
-    public void stop() {
+    public void doStop() {
         // TODO Should we delete the load balancer?
         loc = null;
         sensors().set(SERVICE_STATE, Lifecycle.STOPPING);
@@ -162,7 +164,7 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         }
 
         Set<String> currentVirtualMachineIds = Sets.newLinkedHashSet();
-        for (String address : serverPoolAddresses) {
+        for (String address : getServerPoolAddresses()) {
             currentVirtualMachineIds.add(address);
         }
 
@@ -184,8 +186,9 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) Iterables.find(member.getLocations(),
                 Predicates.instanceOf(JcloudsSshMachineLocation.class), null);
 
-        if (machine != null && machine.getNode().getProviderId() != null) {
-            return machine.getNode().getProviderId();
+        Optional<NodeMetadata> node = (machine != null) ? machine.getOptionalNode() : Optional.<NodeMetadata>absent();
+        if (node.isPresent() && node.get().getProviderId() != null) {
+            return node.get().getProviderId();
         } else {
             LOG.error("Unable to construct cloudstack-id representation for {} in {}; skipping in {}", new Object[] { member, machine, this });
             return null;
