@@ -20,6 +20,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
 
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.http.HttpToolResponse;
+import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +34,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.escape.Escaper;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
-
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.http.HttpTool;
-import org.apache.brooklyn.util.http.HttpToolResponse;
-import org.apache.brooklyn.util.net.Urls;
-import org.apache.brooklyn.util.text.Strings;
 
 /**
  * For adding/removing NAT rules to vcloud-director.
@@ -73,6 +72,32 @@ public class NatMicroserviceClient implements NatClient {
         this.endpoint = NatDirectClient.transformEndpoint(loc.getEndpoint(), vOrg);
     }
 
+    // TODO Parse output, rather than returning all as String?
+    @Beta
+    public String list() {
+        HttpClient client = HttpTool.httpClientBuilder()
+                .uri(microserviceUri)
+                .trustSelfSigned()
+                .build();
+        
+        Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
+        URI uri = URI.create(Urls.mergePaths(microserviceUri, "/v1/nat"
+                + "?endpoint="+escaper.escape(endpoint)
+                + (Strings.isNonBlank(vDC) ? "&vdc="+escaper.escape(vDC) : "")
+                + "&identity="+escaper.escape(identity)
+                + "&credential="+escaper.escape(credential)));
+
+        if (LOG.isDebugEnabled()) LOG.debug("GET {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
+        
+        HttpToolResponse response = HttpTool.httpGet(client, uri, ImmutableMap.<String, String>of());
+        if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+            String msg = "List NAT Rules failed for "+endpoint+": "+response.getResponseCode()+"; "+response.getReasonPhrase()+": "+response.getContentAsString();
+            LOG.info(msg+"; rethrowing");
+            throw new RuntimeException(msg);
+        }
+        return response.getContentAsString();
+    }
+    
     @Override
     public HostAndPort openPortForwarding(PortForwardingConfig args) {
         HttpClient client = HttpTool.httpClientBuilder()
@@ -91,7 +116,7 @@ public class NatMicroserviceClient implements NatClient {
                 + (args.getPublicPortRange() == null ? "" : "&originalPortRange="+args.getPublicPortRange().toString())
                 + "&translated=" + args.getTargetEndpoint()));
 
-        if (LOG.isDebugEnabled()) LOG.debug("POST {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
+        if (LOG.isDebugEnabled()) LOG.debug("PUT {}", uri.toString().replace(escaper.escape(credential), "xxxxxxxx"));
         
         HttpToolResponse response = HttpTool.httpPut(client, uri, ImmutableMap.<String, String>of(), new byte[0]);
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
