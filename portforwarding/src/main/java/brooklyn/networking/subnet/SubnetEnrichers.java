@@ -22,12 +22,15 @@ import java.net.URISyntaxException;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
+import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.api.sensor.SensorEvent;
+import org.apache.brooklyn.api.sensor.SensorEventListener;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.AbstractEntity;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
@@ -124,6 +127,15 @@ public class SubnetEnrichers {
                 }
             };
             getConfig(SUBNET_TIER).getPortForwardManager().addAssociationListener(listener, Predicates.alwaysTrue());
+            
+            subscriptions().subscribe(producer, AbstractEntity.LOCATION_ADDED, new SensorEventListener<Location>() {
+                @Override public void onEvent(SensorEvent<Location> event) {
+                    T sensorVal = producer.getAttribute((AttributeSensor<T>)sourceSensor);
+                    if (sensorVal != null) {
+                        log.debug("Simulating sensor-event on new location-added {}, to trigger transformation by {}", new Object[] {event.getValue(), AbstractNatTransformingEnricher.this});
+                        AbstractNatTransformingEnricher.this.onEvent(new BasicSensorEvent<T>(sourceSensor, producer, sensorVal));
+                    }
+                }});
         }
         
         @Override
