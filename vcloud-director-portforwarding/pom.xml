@@ -100,15 +100,11 @@
             <groupId>com.vmware</groupId>
             <artifactId>rest-api-schemas</artifactId>
             <version>${vcloud.director.api.version}</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../vcloud-director/lib/rest-api-schemas-5.5.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.vmware</groupId>
             <artifactId>vcloud-java-sdk</artifactId>
             <version>${vcloud.director.api.version}</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../vcloud-director/lib/vcloud-java-sdk-5.5.0.jar</systemPath>
         </dependency>
         
          <dependency>
