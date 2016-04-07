@@ -115,7 +115,7 @@
         <module>cloudstack</module>
         <module>vcloud-director</module>
         <module>vcloud-director-portforwarding</module>
-        <module>brooklyn-networking-kar</module>
+        <module>brooklyn-networking-features</module>
     </modules>
 
     <build>
