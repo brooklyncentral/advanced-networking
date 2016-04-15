@@ -138,7 +138,6 @@ public class CloudstackPortForwarder implements PortForwarder {
         final String ipAddress = String.valueOf(targetVm.getPrivateAddresses().toArray()[0]);
         Maybe<VirtualMachine> vm = client.findVmByIp(ipAddress);
         Boolean useVpc = subnetTier.getConfig(USE_VPC);
-        int publicPort = optionalPublicPort.isPresent() ? optionalPublicPort.get() : targetPort;
         String publicIpId = subnetTier.getConfig(PUBLIC_IP_ID);
         
         if (vm.isAbsentOrNull()) {
@@ -180,6 +179,14 @@ public class CloudstackPortForwarder implements PortForwarder {
                     publicIpAddress = client.createIpAddressForVpc(vpcId.get());
                 } else {
                     publicIpAddress = client.createIpAddressForNetwork(networkId);
+                }
+
+                int publicPort;
+                if (optionalPublicPort.isPresent()) {
+                    publicPort = optionalPublicPort.get();
+                } else {
+                    PortForwardManager pfw = getPortForwardManager();
+                    publicPort = pfw.acquirePublicPort(publicIpAddress.getId());
                 }
 
                 log.info(format("Opening port:%s on vm:%s with IP:%s", targetPort, vm.get().getId(), publicIpAddress.getIPAddress()));
