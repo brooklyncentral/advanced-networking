@@ -20,6 +20,24 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.text.Strings;
+import org.jclouds.cloudstack.domain.NIC;
+import org.jclouds.cloudstack.domain.PortForwardingRule;
+import org.jclouds.cloudstack.domain.PublicIPAddress;
+import org.jclouds.cloudstack.domain.VirtualMachine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,26 +46,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
-
-import org.jclouds.cloudstack.domain.NIC;
-import org.jclouds.cloudstack.domain.PortForwardingRule;
-import org.jclouds.cloudstack.domain.PublicIPAddress;
-import org.jclouds.cloudstack.domain.VirtualMachine;
-
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.MachineLocation;
-import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.BasicConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.guava.Maybe;
-import org.apache.brooklyn.util.net.Cidr;
-import org.apache.brooklyn.util.net.HasNetworkAddresses;
-import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
 import brooklyn.networking.common.subnet.PortForwarder;
@@ -66,6 +64,11 @@ public class CloudstackPortForwarder implements PortForwarder {
             "advancednetworking.cloudstack.forwader.useVpc",
             "Whether to use VPC's",
             false);
+
+    public static final ConfigKey<String> PUBLIC_IP_ID = ConfigKeys.newStringConfigKey( 
+            "advancednetworking.cloudstack.forwader.publicIpId",
+            "The public IP id to use (if null, will attempt to acquire one)",
+            null);
 
     private final Object mutex = new Object();
     private PortForwardManager portForwardManager;
@@ -135,7 +138,7 @@ public class CloudstackPortForwarder implements PortForwarder {
         final String ipAddress = String.valueOf(targetVm.getPrivateAddresses().toArray()[0]);
         Maybe<VirtualMachine> vm = client.findVmByIp(ipAddress);
         Boolean useVpc = subnetTier.getConfig(USE_VPC);
-        int publicPort = optionalPublicPort.isPresent() ? optionalPublicPort.get() : targetPort;
+        String publicIpId = subnetTier.getConfig(PUBLIC_IP_ID);
         
         if (vm.isAbsentOrNull()) {
             Map<VirtualMachine, List<String>> vmIpMapping = client.getVmIps();
@@ -167,10 +170,23 @@ public class CloudstackPortForwarder implements PortForwarder {
 
                 if (allocatedPublicIpAddressId.isPresent()) {
                     publicIpAddress = allocatedPublicIpAddressId.get();
+                } else if (Strings.isNonBlank(publicIpId)) {
+                    publicIpAddress = client.getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(publicIpId);
+                    if (publicIpAddress == null) {
+                        throw new IllegalStateException("No public-ip found with id " +publicIpAddress);
+                    }
                 } else if (useVpc) {
                     publicIpAddress = client.createIpAddressForVpc(vpcId.get());
                 } else {
                     publicIpAddress = client.createIpAddressForNetwork(networkId);
+                }
+
+                int publicPort;
+                if (optionalPublicPort.isPresent()) {
+                    publicPort = optionalPublicPort.get();
+                } else {
+                    PortForwardManager pfw = getPortForwardManager();
+                    publicPort = pfw.acquirePublicPort(publicIpAddress.getId());
                 }
 
                 log.info(format("Opening port:%s on vm:%s with IP:%s", targetPort, vm.get().getId(), publicIpAddress.getIPAddress()));

@@ -22,17 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
-
-import org.jclouds.compute.domain.NodeMetadata;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -64,6 +53,15 @@ import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Time;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.networking.AttributeMunger;
 import brooklyn.networking.common.subnet.PortForwarder;
@@ -273,7 +271,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     // Code is modelled on AbstractApplication.start(locs)
     public void start(Collection<? extends Location> locations) {
         PortForwarder portForwarder = getPortForwarder();
-        portForwarder.inject(getProxy(), ImmutableList.copyOf(locations));
+        portForwarder.inject(getProxy(), ImmutableList.copyOf(Locations.getLocationsCheckingAncestors(locations, this)));
         
         addLocations(locations);
         locations = Locations.getLocationsCheckingAncestors(getLocations(), this);
