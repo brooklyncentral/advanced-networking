@@ -41,6 +41,7 @@ import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.mgmt.internal.CollectionChangeListener;
 import org.apache.brooklyn.core.mgmt.internal.ManagementContextInternal;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.enricher.stock.AbstractTransformer;
 import org.apache.brooklyn.enricher.stock.Transformer;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -419,7 +420,8 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         // to not use an enricher?
         Entity entity = targetToUpdate.getEntity();
         entity.enrichers().add(uriTransformingEnricher(targetToUpdate, targetToUpdate.getAttribute())
-                .configure(Transformer.SUPPRESS_DUPLICATES, true));
+                .configure(Transformer.SUPPRESS_DUPLICATES, true)
+                .configure(AbstractTransformer.ALLOW_CYCLIC_PUBLISHING, true));
     }
     
     public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish) {
