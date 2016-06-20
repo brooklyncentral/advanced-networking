@@ -56,7 +56,8 @@ public class SubnetEnrichers {
         return EnricherSpec.create(UriTransformingEnricher.class)
                 .configure(UriTransformingEnricher.SUBNET_TIER, subnetTier)
                 .configure(UriTransformingEnricher.SOURCE_SENSOR, original)
-                .configure(UriTransformingEnricher.TARGET_SENSOR, target);
+                .configure(UriTransformingEnricher.TARGET_SENSOR, target)
+                .configure(UriTransformingEnricher.ALLOW_CYCLIC_PUBLISHING, true);
     }
 
     public static EnricherSpec<?> uriTransformingEnricher(SubnetTier subnetTier, EntityAndAttribute<String> original, AttributeSensor<String> target) {
@@ -64,14 +65,16 @@ public class SubnetEnrichers {
                 .configure(UriTransformingEnricher.SUBNET_TIER, subnetTier)
                 .configure(UriTransformingEnricher.SOURCE_SENSOR, original.getAttribute())
                 .configure(UriTransformingEnricher.PRODUCER, original.getEntity())
-                .configure(UriTransformingEnricher.TARGET_SENSOR, target);
+                .configure(UriTransformingEnricher.TARGET_SENSOR, target)
+                .configure(UriTransformingEnricher.ALLOW_CYCLIC_PUBLISHING, true);
     }
 
     public static EnricherSpec<?> hostAndPortTransformingEnricher(SubnetTier subnetTier, AttributeSensor<Integer> originalPort, AttributeSensor<String> target) {
         return EnricherSpec.create(HostAndPortTransformingEnricher.class)
                 .configure(HostAndPortTransformingEnricher.SUBNET_TIER, subnetTier)
                 .configure(HostAndPortTransformingEnricher.SOURCE_SENSOR, originalPort)
-                .configure(HostAndPortTransformingEnricher.TARGET_SENSOR, target);
+                .configure(HostAndPortTransformingEnricher.TARGET_SENSOR, target)
+                .configure(UriTransformingEnricher.ALLOW_CYCLIC_PUBLISHING, true);
     }
 
     public static EnricherSpec<?> hostAndPortTransformingEnricher(SubnetTier subnetTier, EntityAndAttribute<Integer> originalPort, AttributeSensor<String> target) {
@@ -79,7 +82,8 @@ public class SubnetEnrichers {
                 .configure(HostAndPortTransformingEnricher.SUBNET_TIER, subnetTier)
                 .configure(HostAndPortTransformingEnricher.SOURCE_SENSOR, originalPort.getAttribute())
                 .configure(HostAndPortTransformingEnricher.PRODUCER, originalPort.getEntity())
-                .configure(HostAndPortTransformingEnricher.TARGET_SENSOR, target);
+                .configure(HostAndPortTransformingEnricher.TARGET_SENSOR, target)
+                .configure(UriTransformingEnricher.ALLOW_CYCLIC_PUBLISHING, true);
     }
 
     public static abstract class AbstractNatTransformingEnricher<T,U> extends Transformer<T,U> {
