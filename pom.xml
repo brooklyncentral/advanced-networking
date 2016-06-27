@@ -51,6 +51,12 @@
         <repository>
             <id>sonatype-oss-releases</id>
             <url>https://oss.sonatype.org/content/repositories/releases/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
         <repository>
             <id>sonatype-oss-snapshots</id>
@@ -87,6 +93,7 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+
     </repositories>
 
     <distributionManagement>
@@ -108,6 +115,7 @@
         <module>cloudstack</module>
         <module>vcloud-director</module>
         <module>vcloud-director-portforwarding</module>
+        <module>brooklyn-networking-features</module>
     </modules>
 
     <build>
@@ -176,7 +184,7 @@
                             <aggregate>false</aggregate>
                             <detectLinks />
                         </configuration>
-<executions>
+                        <executions>
                             <execution>
                                 <id>attach-javadocs</id>
                                 <goals>
