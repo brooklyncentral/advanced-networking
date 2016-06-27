@@ -6,12 +6,12 @@
 
     <groupId>io.brooklyn.networking</groupId>
     <artifactId>brooklyn-networking-features</artifactId>
-    <version>0.10.0-SNAPSHOT</version>  <!-- BROOKLYN_VERSION -->
+    <version>0.10.0-SNAPSHOT</version>  <!-- ADVANCED_NETWORKING_VERSION -->
     <packaging>kar</packaging>
     <name>Brooklyn Advanced Networking :: Features</name>
 
     <properties>
-        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version>
+        <brooklyn.version>0.10.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <vcloud.director.api.version>5.5.0</vcloud.director.api.version>
         <guava.version>16.0.1</guava.version>
         <rabbitmq.amqp-clinet.version>2.8.7</rabbitmq.amqp-clinet.version>
