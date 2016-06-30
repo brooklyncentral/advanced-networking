@@ -96,7 +96,17 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-
+        <repository>
+            <id>unmanaged-third-party</id>
+            <name>Unmanaged Third Party Dependencies</name>
+            <url>file://unmanaged-third-party</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <distributionManagement>
