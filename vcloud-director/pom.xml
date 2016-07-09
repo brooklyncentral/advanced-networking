@@ -74,11 +74,13 @@
             <groupId>com.vmware</groupId>
             <artifactId>rest-api-schemas</artifactId>
             <version>${vcloud.director.api.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.vmware</groupId>
             <artifactId>vcloud-java-sdk</artifactId>
             <version>${vcloud.director.api.version}</version>
+            <scope>provided</scope>
         </dependency>
         
          <dependency>
@@ -101,19 +103,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>unmanaged-third-party</id>
-            <name>Unmanaged Third Party Dependencies</name>
-            <url>file:${project.basedir}/../unmanaged-third-party</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
 </project>

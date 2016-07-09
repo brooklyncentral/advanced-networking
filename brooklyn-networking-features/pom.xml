@@ -13,21 +13,6 @@
 
     <packaging>kar</packaging>
     <name>Brooklyn Advanced Networking :: Features</name>
-
-    <repositories>
-        <repository>
-            <id>unmanaged-third-party</id>
-            <name>Unmanaged Third Party Dependencies</name>
-            <url>file:${project.basedir}/../unmanaged-third-party</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <build>
         <plugins>
             <plugin>
