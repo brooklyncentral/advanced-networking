@@ -4,7 +4,7 @@
     <repository>mvn:org.apache.brooklyn/brooklyn-features/${brooklyn.version}/xml/features</repository>
 
     <feature name="brooklyn-networking-prerequisite-features" version="${project.version}">
-        <feature prerequisite="true" dependency="true">brooklyn-software-webapp</feature>
+        <feature>brooklyn-software-webapp</feature>
     </feature>
 
     <feature name="brooklyn-networking" version="${project.version}">
@@ -14,7 +14,7 @@
         <bundle>mvn:io.brooklyn.networking/brooklyn-networking-portforwarding/${project.version}</bundle>
     </feature>
     <feature name="brooklyn-networking-cloudstack" version="${project.version}">
-        <feature prerequisite="true">brooklyn-networking</feature>
+        <feature>brooklyn-networking</feature>
         <bundle>mvn:io.brooklyn.networking/brooklyn-networking-cloudstack/${project.version}</bundle>
     </feature>
     <feature name="brooklyn-networking-vcloud-director-dependencies" version="${project.version}">
@@ -23,8 +23,8 @@
         <bundle>mvn:com.vmware/vcloud-java-sdk/${vcloud.director.api.version}</bundle>
     </feature>
     <feature name="brooklyn-networking-vcloud-director" version="${project.version}">
-        <feature prerequisite="true">brooklyn-networking</feature>
-        <feature prerequisite="true" dependency="true">brooklyn-networking-vcloud-director-dependencies</feature>
+        <feature>brooklyn-networking</feature>
+        <feature>brooklyn-networking-vcloud-director-dependencies</feature>
         <bundle>mvn:io.brooklyn.networking/brooklyn-networking-vcloud-director/${project.version}</bundle>
         <bundle>
             mvn:io.brooklyn.networking/brooklyn-networking-vcloud-director-portforwarding/${project.version}
