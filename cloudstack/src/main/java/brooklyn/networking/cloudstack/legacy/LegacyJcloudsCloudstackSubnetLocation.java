@@ -55,6 +55,7 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jclouds.cloudstack.CloudStackApi;
 import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
 import org.jclouds.cloudstack.domain.AsyncCreateResponse;
@@ -125,6 +126,8 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
 
     public LegacyJcloudsCloudstackSubnetLocation(JcloudsLocation parent, ConfigBag map) {
         super(MutableMap.copyOf(parent.getLocalConfigBag().getAllConfig()));
+        // TODO
+        // TODO NB relying on behaviour implemented in deprecated method
         configure(map.getAllConfig());
     }
 
@@ -207,9 +210,10 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
     }
 
     @Override
-    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template, String vmHostname1, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
+    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template,
+                                                                        LoginCredentials userCredentials, HostAndPort managementHostAndPort, ConfigBag setup) throws IOException {
         String subnetSpecificHostname = null;
-        String vmHostname = vmHostname1;
+        String vmHostname = managementHostAndPort.getHostText();
         String sshHost = vmHostname;
         Integer sshPort = null;
         PortForwardManager pfw = null;
