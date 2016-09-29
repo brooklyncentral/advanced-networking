@@ -40,6 +40,7 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -127,7 +128,8 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     // TODO Remove duplication from super's JcloudsLocation.createJcloudsSshMachineLocation
     // the todos/fixmes in this method are copied from there; they should be addressed in core brooklyn
     @Override
-    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template, String vmHostname, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
+    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template, String vmHostname, Optional<HostAndPort> sshHostAndPort,
+                                                                        Pair<LoginCredentials, HostAndPort> credentialsAndHostWhichWillBeUsed, ConfigBag setup) throws IOException {
         Map<?,?> sshConfig = extractSshConfig(setup, node);
         String nodeAvailabilityZone = extractAvailabilityZone(setup, node);
         String nodeRegion = extractRegion(setup, node);
@@ -168,6 +170,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
             }
         }
 
+        LoginCredentials userCredentials = credentialsAndHostWhichWillBeUsed.getLeft();
         if (LOG.isDebugEnabled())
             LOG.debug("creating JcloudsPortforwardingSubnetMachineLocation representation for {}@{} ({}/{}) for {}/{}",
                     new Object[] {
