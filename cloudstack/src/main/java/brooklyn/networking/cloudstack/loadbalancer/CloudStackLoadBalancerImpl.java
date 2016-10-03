@@ -198,7 +198,7 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
     protected void startLoadBalancer() {
         String lbName = getAttribute(LOAD_BALANCER_NAME);
         if (Strings.isBlank(lbName)) {
-            ConfigBag setup = ConfigBag.newInstance(getAllConfig());
+            ConfigBag setup = ConfigBag.newInstanceCopying(config().getBag());
             lbName = new BasicCloudMachineNamer().generateNewGroupId(setup);
             sensors().set(LOAD_BALANCER_NAME, lbName);
         }
