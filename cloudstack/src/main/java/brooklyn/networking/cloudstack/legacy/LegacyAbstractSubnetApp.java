@@ -67,7 +67,7 @@ public abstract class LegacyAbstractSubnetApp extends AbstractApplication implem
     }
 
     protected <T> void setIfNotAlreadySet(ConfigKey<T> key, T value) {
-        if (getConfigMap().getConfigRaw(key, true).isAbsent()) configure(key, value);
+        if (config().getRaw(key).isAbsent()) configure(key, value);
     }
 
     protected void applyDefaultConfig() {
@@ -78,7 +78,7 @@ public abstract class LegacyAbstractSubnetApp extends AbstractApplication implem
         setIfNotAlreadySet(USE_VPC, false);
         setIfNotAlreadySet(USE_SUBNET, true);
         // FIXME not safe for persistence
-        if (getConfigMap().getConfigRaw(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, true).isAbsent()) {
+        if (config().getRaw(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER).isAbsent()) {
             PortForwardManager pfm = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
             configure(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, pfm);
         }
