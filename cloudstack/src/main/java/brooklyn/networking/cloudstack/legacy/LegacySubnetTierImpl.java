@@ -79,6 +79,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
         return getConfig(VirtualPrivateCloud.USE_VPC);
     }
 
+    @Override
     public void start(Collection<? extends Location> locations) {
         addLocations(locations);
         if (isSubnetEnabled()) {
@@ -325,6 +326,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
 
     }
 
+    @Override
     public void propagateSensorStringReplacingWithSubnetAddress(final Entity target, final AttributeSensor<String> sensor) {
         SensorPropagaterWithReplacement mapper = new SensorPropagaterWithReplacement(this, sensor, new Function<String,String>() {
             @Override
@@ -347,6 +349,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
         return Strings.replaceAll(string, searchFor, replaceWith);
     }
 
+    @Override
     public void transformSensorStringReplacingWithPublicAddressAndPort(
             final Entity sensorToMapFromSource, final AttributeSensor<String> sensorToMapFromPropagating,
             final Entity optionalSensorOfPortToMapFromSource, final AttributeSensor<Integer> optionalSensorOfPortToMapFrom,

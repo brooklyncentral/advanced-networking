@@ -127,7 +127,8 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     // TODO Remove duplication from super's JcloudsLocation.createJcloudsSshMachineLocation
     // the todos/fixmes in this method are copied from there; they should be addressed in core brooklyn
     @Override
-    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template, String vmHostname, Optional<HostAndPort> sshHostAndPort, LoginCredentials userCredentials, ConfigBag setup) throws IOException {
+    protected JcloudsSshMachineLocation createJcloudsSshMachineLocation(ComputeService computeService, NodeMetadata node, Optional<Template> template,
+                                                                        LoginCredentials userCredentials, HostAndPort managementHostAndPort, ConfigBag setup) throws IOException {
         Map<?,?> sshConfig = extractSshConfig(setup, node);
         String nodeAvailabilityZone = extractAvailabilityZone(setup, node);
         String nodeRegion = extractRegion(setup, node);
@@ -136,7 +137,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
             nodeRegion = extractProvider(setup, node);
         }
 
-        String address = sshHostAndPort.isPresent() ? sshHostAndPort.get().getHostText() : vmHostname;
+        String address = managementHostAndPort.getHostText();
         try {
             Networking.getInetAddressWithFixedName(address);
             // fine, it resolves
@@ -149,7 +150,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                 // Don't want to wait for (or don't expect) VM to be ssh'able, so just check IP reachabilty; 
                 // but don't fail if can't access it at all.
                 // TODO What is a sensible time to wait?
-                LOG.debug("Could not resolve reported address '"+address+"' for "+vmHostname+" ("+setup.getDescription()+"/"+node+"), waitForSshable=false, so requesting reachable address");
+                LOG.debug("Could not resolve reported address '"+address+"' for "+managementHostAndPort+" ("+setup.getDescription()+"/"+node+"), waitForSshable=false, so requesting reachable address");
                 Iterable<String> addresses = Iterables.concat(node.getPublicAddresses(), node.getPrivateAddresses());
                 ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
                 try {
@@ -161,7 +162,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                     executor.shutdownNow();
                 }
             } else {
-                LOG.debug("Could not resolve reported address '"+address+"' for "+vmHostname+" ("+setup.getDescription()+"/"+node+"), requesting reachable socket address");
+                LOG.debug("Could not resolve reported address '"+address+"' for "+managementHostAndPort+" ("+setup.getDescription()+"/"+node+"), requesting reachable socket address");
                 if (computeService==null) throw Exceptions.propagate(e);
                 // this has sometimes already been done in waitForReachable (unless skipped) but easy enough to do again
                 address = JcloudsUtil.getFirstReachableAddress(computeService.getContext(), node);
@@ -174,7 +175,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                             userCredentials.getUser(),
                             address,
                             Entities.sanitize(sshConfig),
-                            sshHostAndPort,
+                            managementHostAndPort,
                             setup.getDescription(),
                             node
                     });
@@ -189,10 +190,10 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
             // TODO Why pass in "config"? I (Aled) am dubious that has any effect!
             // TODO These things need fixed in JcloudsLocation.createJcloudsSshMachineLocation, rather than just here.
             return getManagementContext().getLocationManager().createLocation(LocationSpec.create(JcloudsPortforwardingSubnetMachineLocation.class)
-                    .displayName(vmHostname)
+                    .displayName(address)
                     .configure(setup.getAllConfig())
                     .configure("address", address)
-                    .configure("port", sshHostAndPort.isPresent() ? sshHostAndPort.get().getPort() : node.getLoginPort())
+                    .configure("port", managementHostAndPort.getPort())
                     .configure("user", userCredentials.getUser())
                     // don't think "config" does anything
                     .configure(sshConfig)
