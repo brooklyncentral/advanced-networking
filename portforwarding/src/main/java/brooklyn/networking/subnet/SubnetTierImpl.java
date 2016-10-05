@@ -269,6 +269,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     }
 
     // Code is modelled on AbstractApplication.start(locs)
+    @Override
     public void start(Collection<? extends Location> locations) {
         PortForwarder portForwarder = getPortForwarder();
         portForwarder.inject(getProxy(), ImmutableList.copyOf(Locations.getLocationsCheckingAncestors(locations, this)));
@@ -378,7 +379,6 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         return _portForwarderExtension;
     }
 
-
     @Override
     @Effector(description = "Stop the process/service represented by an entity")
     public void stop() {
@@ -408,12 +408,14 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         getAttributeMunger().transformSensorStringReplacingWithPublicAddressAndPort(targetToUpdate, optionalTargetPort, targetsToMatch, replacementSource);
     }
 
+    @Override
     public void transformPort(EntityAndAttribute<Integer> original, EntityAndAttribute<String> destinationToPublish) {
         // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?
         destinationToPublish.getEntity().enrichers().add(hostAndPortTransformingEnricher(original, destinationToPublish.getAttribute()));
     }
     
+    @Override
     public void transformUri(EntityAndAttribute<String> targetToUpdate) {
         // TODO Should we change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?
@@ -422,6 +424,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
                 .configure(Transformer.SUPPRESS_DUPLICATES, true));
     }
     
+    @Override
     public void transformUri(EntityAndAttribute<String> original, EntityAndAttribute<String> destinationToPublish) {
         // TODO Should we do this without an enricher? Or change #transformSensorStringReplacingWithPublicAddressAndPort 
         // to not use an enricher?

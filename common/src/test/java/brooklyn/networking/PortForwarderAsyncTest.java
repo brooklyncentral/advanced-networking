@@ -88,6 +88,7 @@ public class PortForwarderAsyncTest extends BrooklynAppLiveTestSupport {
     private PortForwarderAsyncImpl pfa;
     
     @BeforeMethod(alwaysRun=true)
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         loc = mgmt.getLocationRegistry().resolve("localhost");

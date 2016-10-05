@@ -145,6 +145,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
 
 
     @Test(groups="Live")
+    @Override
     public void testAddNatRulesConcurrently() throws Exception {
         sharedMutex = new Object();
         try {
@@ -154,10 +155,12 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
         }
     }
 
+    @Override
     protected HostAndPort openPortForwarding(PortForwardingConfig config) throws Exception {
         return openPortForwarding(loc, config);
     }
 
+    @Override
     protected HostAndPort closePortForwarding(PortForwardingConfig config) throws Exception {
         return closePortForwarding(loc, config);
     }

@@ -302,6 +302,7 @@ public class SubnetEnrichers {
             return sensorVal;
         }
 
+        @Override
         public void init() {
             SubnetTier subnetTier = getConfig(SUBNET_TIER);
             config().set(TRANSFORMATION_FROM_EVENT, new HostAndPortTransformingFunction(subnetTier));
