@@ -48,6 +48,7 @@ public interface SubnetTier extends Entity, Startable {
 
     // TODO Only works for integer ports currently; should also make it work for URLs and HostAndPort (like in clocker)
     // Config should be set on entities within subnet tier, rather than on the subnet tier itself
+    @SuppressWarnings("serial")
     public static final ConfigKey<Iterable<AttributeSensor<Integer>>> PUBLICLY_FORWARDED_PORTS = ConfigKeys.newConfigKey(
             new TypeToken<Iterable<AttributeSensor<Integer>>>() {},
             "subnet.publiclyForwardedPorts",

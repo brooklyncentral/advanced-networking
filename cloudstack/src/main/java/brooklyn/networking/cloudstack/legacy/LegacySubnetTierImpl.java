@@ -41,7 +41,6 @@ import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
 import org.jclouds.cloudstack.options.CreateNetworkOptions;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
@@ -227,7 +226,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             pfw = getConfig(PORT_FORWARDING_MANAGER);
             if (pfw==null) {
                 // FIXME not safe for persistence
-                pfw = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
+                pfw = (PortForwardManager) getManagementContext().getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
                 setConfigEvenIfOwned(PORT_FORWARDING_MANAGER, pfw);
             }
             sensors().set(SUBNET_SERVICE_PORT_FORWARDS, pfw);
@@ -710,7 +709,7 @@ public class LegacySubnetTierImpl extends AbstractEntity implements LegacySubnet
             apply(event.getSource(), event.getValue());
         }
         public void apply(Entity source, Object valueIgnored) {
-            Location targetVm = Iterables.getOnlyElement(((EntityLocal)serviceToForward).getLocations(), null);
+            Location targetVm = Iterables.getOnlyElement(serviceToForward.getLocations(), null);
             if (targetVm==null) {
                 log.warn("Skipping port forward rule for "+serviceToForward+" because it does not have a location");
                 return;

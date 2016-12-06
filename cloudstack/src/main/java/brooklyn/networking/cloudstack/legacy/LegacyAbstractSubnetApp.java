@@ -79,7 +79,7 @@ public abstract class LegacyAbstractSubnetApp extends AbstractApplication implem
         setIfNotAlreadySet(USE_SUBNET, true);
         // FIXME not safe for persistence
         if (config().getRaw(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER).isAbsent()) {
-            PortForwardManager pfm = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
+            PortForwardManager pfm = (PortForwardManager) getManagementContext().getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
             config().set(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, pfm);
         }
 

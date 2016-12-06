@@ -55,7 +55,6 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jclouds.cloudstack.CloudStackApi;
 import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
 import org.jclouds.cloudstack.domain.AsyncCreateResponse;
@@ -92,7 +91,6 @@ import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
  */
 public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
 
-    private static final long serialVersionUID = -6097237757668759966L;
     private static final Logger LOG = LoggerFactory.getLogger(LegacyJcloudsCloudstackSubnetLocation.class);
 
     /* Config on the subnet jclouds location */

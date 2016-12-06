@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -36,7 +35,6 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
@@ -46,16 +44,15 @@ import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.core.test.entity.TestEntity;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Networking;
@@ -65,25 +62,23 @@ import org.apache.brooklyn.util.time.Duration;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.portforwarding.NoopPortForwarder;
 
-public class SubnetTierTest {
+public class SubnetTierTest extends BrooklynAppUnitTestSupport {
 
     private static final Logger log = LoggerFactory.getLogger(SubnetTierTest.class);
 
     private Map<HostAndPort, HostAndPort> portMapping;
     private String machineAddress = "1.2.3.4";
-    private TestApplication app;
     private SubnetTier subnetTier;
     private TestEntity entity;
-    private ManagementContext managementContext;
     private SshMachineLocation simulatedMachine;
 
     private PortForwardManager portForwardManager;
 
     @BeforeMethod(alwaysRun=true)
+    @Override
     public void setUp() throws Exception {
-        app = TestApplication.Factory.newManagedInstanceForTests();
-        managementContext = app.getManagementContext();
-        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        super.setUp();
+        portForwardManager = (PortForwardManager) mgmt.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
         
         portMapping = Maps.newLinkedHashMap();
         PortForwarder portForwarder = new StubPortForwarder(portMapping);
@@ -92,17 +87,11 @@ public class SubnetTierTest {
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager));
         entity = subnetTier.addChild(EntitySpec.create(TestEntity.class));
-        Entities.manage(entity);
 
-        simulatedMachine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
+        simulatedMachine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("address", Networking.getInetAddressWithFixedName(machineAddress))
                 .configure("port", 1234)
                 .configure("user", "myuser"));
-    }
-
-    @AfterMethod(alwaysRun=true)
-    public void tearDown() throws Exception {
-        if (app != null) Entities.destroyAll(app.getManagementContext());
     }
 
     @Test
@@ -123,7 +112,7 @@ public class SubnetTierTest {
 
         log.info(app.getAttribute(ENDPOINT));
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
+        EntityAsserts.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
     }
 
     @Test
@@ -143,7 +132,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(TARGET_PORT, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     @Test
@@ -170,7 +159,7 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     @Test
@@ -188,7 +177,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
     @Test
@@ -206,7 +195,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(ENDPOINT, machineAddress+":80");
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     /**
@@ -239,7 +228,7 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
     @Test
@@ -256,7 +245,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
-        EntityTestUtils.assertAttributeEqualsEventually(entity, ENDPOINT, "http://"+publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
     @Test
@@ -274,7 +263,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(ENDPOINT, "http://"+machineAddress+":80");
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
     @Test
@@ -297,7 +286,7 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, "http://"+publicAddress+":"+40080);
     }
 
     @Test
@@ -315,7 +304,7 @@ public class SubnetTierTest {
         entity.addLocations(ImmutableList.of(simulatedMachine));
         entity.sensors().set(ENDPOINT, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     @Test
@@ -340,7 +329,7 @@ public class SubnetTierTest {
         portMapping.put(HostAndPort.fromParts(machineAddress, 80), HostAndPort.fromParts(publicAddress, 40080));
         portForwardManager.associate(publicIpId, HostAndPort.fromParts(publicAddress, 40080), simulatedMachine, 80);
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
+        EntityAsserts.assertAttributeEqualsEventually(app, PUBLIC_ENDPOINT, publicAddress+":"+40080);
     }
 
     @Test

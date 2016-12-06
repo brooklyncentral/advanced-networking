@@ -33,10 +33,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
 
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -76,10 +76,10 @@ public abstract class AbstractDockerPortForwarderTest {
     @BeforeClass(alwaysRun = true)
     public void setUpClass() throws Exception {
         managementContext = Entities.newManagementContext();
-        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
 
         // Note: using different username on each to ensure no mix up there!
-        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve(LOC_SPEC, MutableMap.<String, Object>builder()
+        loc = (JcloudsLocation) managementContext.getLocationRegistry().getLocationManaged(LOC_SPEC, MutableMap.<String, Object>builder()
                 .put("identity", "notused")
                 .put("credential", "notused")
                 .build());
@@ -113,7 +113,7 @@ public abstract class AbstractDockerPortForwarderTest {
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
-        app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
+        app = managementContext.getEntityManager().createEntity(EntitySpec.create(TestApplication.class));
         portForwarder = new DockerPortForwarder(portForwardManager);
         portForwarder.init(DOCKER_HOST_IP, DOCKER_HOST_PORT);
     }

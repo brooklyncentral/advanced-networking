@@ -19,53 +19,44 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.List;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.location.SimulatedLocation;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.EntityTestUtils;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-public class AttributeMungerTest {
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
-    private TestApplication app;
+public class AttributeMungerTest extends BrooklynAppUnitTestSupport {
+
     private List<Object> events;
     private Location loc;
 
     @BeforeMethod(alwaysRun=true)
+    @Override
     public void setUp() throws Exception {
+        super.setUp();
         events = Lists.newCopyOnWriteArrayList();
-        app = ApplicationBuilder.newManagedApp(TestApplication.class);
-        loc = app.getManagementContext().getLocationManager().createLocation(LocationSpec.create(SimulatedLocation.class));
+        loc = mgmt.getLocationManager().createLocation(LocationSpec.create(SimulatedLocation.class));
         app.start(ImmutableList.of(loc));
 
         app.subscriptions().subscribe(app, TestApplication.MY_ATTRIBUTE, new SensorEventListener<String>() {
                 @Override public void onEvent(SensorEvent<String> event) {
                     events.add(event.getValue());
                 }});
-    }
-
-    @AfterMethod(alwaysRun=true)
-    public void tearDown() throws Exception {
-        if (app != null) Entities.destroyAll(app.getManagementContext());
     }
 
     @Test(groups="Integration") // has a sleep for equalsContinually
@@ -104,14 +95,14 @@ public class AttributeMungerTest {
         app.sensors().set(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
         app.sensors().set(PUBLIC_ENDPOINT, "mypublichostname:5678");
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
+        EntityAsserts.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
     }
 
     private <T> void assertEqualsEventually(T actual, T expected) {
-        Asserts.eventually(Suppliers.ofInstance(actual), (Predicate)Predicates.equalTo(expected));
+        Asserts.eventually(Suppliers.ofInstance(actual), Predicates.equalTo(expected));
     }
 
     private <T> void assertEqualsContinually(T actual, T expected) {
-        Asserts.continually(Suppliers.ofInstance(actual), (Predicate)Predicates.equalTo(expected));
+        Asserts.continually(Suppliers.ofInstance(actual), Predicates.equalTo(expected));
     }
 }

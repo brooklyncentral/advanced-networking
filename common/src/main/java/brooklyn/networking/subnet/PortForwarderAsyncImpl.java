@@ -19,7 +19,6 @@ import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
@@ -43,7 +42,7 @@ public class PortForwarderAsyncImpl extends brooklyn.networking.common.subnet.Po
 
     private final PortForwarder portForwarder;
 
-    public PortForwarderAsyncImpl(EntityLocal adjunctEntity,
+    public PortForwarderAsyncImpl(Entity adjunctEntity,
             PortForwarder portForwarder, PortForwardManager portForwardManager) {
         super(adjunctEntity, portForwarder, portForwardManager);
         this.portForwarder = portForwarder;

@@ -77,7 +77,7 @@ public class DockerPortForwarder implements PortForwarder {
     @Override
     public void setManagementContext(ManagementContext managementContext) {
         if (portForwardManager == null) {
-            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
         }
     }
     

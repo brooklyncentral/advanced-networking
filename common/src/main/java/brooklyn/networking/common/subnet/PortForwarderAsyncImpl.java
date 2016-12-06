@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.Task;
@@ -58,10 +57,10 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
 
     private static final Logger log = LoggerFactory.getLogger(PortForwarderAsyncImpl.class);
 
-    private final EntityLocal adjunctEntity;
+    private final Entity adjunctEntity;
     private final PortForwarder portForwarder;
 
-    public PortForwarderAsyncImpl(EntityLocal adjunctEntity, PortForwarder portForwarder, PortForwardManager portForwardManager) {
+    public PortForwarderAsyncImpl(Entity adjunctEntity, PortForwarder portForwarder, PortForwardManager portForwardManager) {
         this.adjunctEntity = adjunctEntity;
         this.portForwarder = portForwarder;
     }

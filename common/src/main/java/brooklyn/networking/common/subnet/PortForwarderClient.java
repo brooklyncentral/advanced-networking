@@ -30,7 +30,6 @@ import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.core.location.access.PortForwardManagerClient;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
@@ -38,8 +37,6 @@ import org.apache.brooklyn.util.net.Protocol;
 
 /**
  * Delegating instance of {@link PortForwarder}, for persistence-safety.
- * <p>
- * @see brooklyn.location.access.PortForwardManagerClient
  */
 @Beta
 public class PortForwarderClient implements PortForwarder {
@@ -51,12 +48,18 @@ public class PortForwarderClient implements PortForwarder {
         this.delegateSupplier = supplier;
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromSupplier(Supplier)} */ 
+    /** 
+     * Creates an instance, which will delegate to the given instance (caching the delegate after 
+     * the first call).
+     */ 
     public static PortForwarder fromSupplier(Supplier<PortForwarder> supplier) {
         return new PortForwarderClient(supplier);
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromMethodOnEntity(Entity, String)} */ 
+    /**
+     * Creates an instance, getting the delegate by calling the given method on the entity 
+     * (lazily, caching the delegate after the first call).
+     */ 
     public static PortForwarder fromMethodOnEntity(final Entity entity, final String getterMethodOnEntity) {
         Preconditions.checkNotNull(entity);
         Preconditions.checkNotNull(getterMethodOnEntity);
@@ -77,7 +80,10 @@ public class PortForwarderClient implements PortForwarder {
         });
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromConfigOnEntity(Entity, ConfigKey)} */ 
+    /**
+     * Creates an instance, getting the delegate by retrieving the config value from the 
+     * entity (lazily).
+     */ 
     public static PortForwarder fromConfigOnEntity(final Entity entity, final ConfigKey<PortForwarder> configOnEntity) {
         Preconditions.checkNotNull(entity);
         Preconditions.checkNotNull(configOnEntity);
@@ -92,7 +98,10 @@ public class PortForwarderClient implements PortForwarder {
         });
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromAttributeOnEntity(Entity, AttributeSensor)} */ 
+    /**
+     * Creates an instance, getting the delegate by retrieving the sensor value from the 
+     * entity (lazily).
+     */ 
     public static PortForwarder fromAttributeOnEntity(final Entity entity, final AttributeSensor<PortForwarder> attributeOnEntity) {
         Preconditions.checkNotNull(entity);
         Preconditions.checkNotNull(attributeOnEntity);

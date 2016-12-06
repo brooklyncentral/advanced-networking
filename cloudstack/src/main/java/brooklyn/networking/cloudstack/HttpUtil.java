@@ -20,19 +20,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthScope;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.http.HttpToolResponse;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.bouncycastle.util.io.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,53 +34,35 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.apache.brooklyn.util.http.HttpToolResponse;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-
 /**
  * HTTP convenience static methods.
  * <p>
  * Uses the Apache {@link HttpClient} for connections.
+ * 
+ * @deprecated since 0.10.0; instead use {@link HttpTool}.
  */
+@Deprecated
 public class HttpUtil {
 
     public static final Logger LOG = LoggerFactory.getLogger(HttpUtil.class);
 
     public static HttpClient createHttpClient(URI uri, Optional<Credentials> credentials) {
-        final DefaultHttpClient httpClient = new DefaultHttpClient();
-
-        // TODO if supplier returns null, we may wish to defer initialization until url available?
-        if (uri != null && "https".equalsIgnoreCase(uri.getScheme())) {
-            try {
-                int port = (uri.getPort() >= 0) ? uri.getPort() : 443;
-                SSLSocketFactory socketFactory = new SSLSocketFactory(
-                        new TrustAllStrategy(), SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-                Scheme sch = new Scheme("https", port, socketFactory);
-                httpClient.getConnectionManager().getSchemeRegistry().register(sch);
-            } catch (Exception e) {
-                LOG.warn("Error in HTTP Feed of {}, setting trust for uri {}", uri);
-                throw Exceptions.propagate(e);
-            }
-        }
-
-        // Set credentials
-        if (uri != null && credentials.isPresent()) {
-            String hostname = uri.getHost();
-            int port = uri.getPort();
-            httpClient.getCredentialsProvider().setCredentials(new AuthScope(hostname, port), credentials.get());
-        }
-
-        return httpClient;
+        return HttpTool.httpClientBuilder()
+                .uri(uri)
+                .credential(credentials)
+                .build();
     }
 
     public static HttpToolResponse invoke(org.jclouds.http.HttpRequest request) {
-        HttpClient client = HttpUtil.createHttpClient(request.getEndpoint(), Optional.<Credentials>absent());
+        HttpClient client = HttpTool.httpClientBuilder()
+                .uri(request.getEndpoint())
+                .build();
         String method = request.getMethod();
         try {
             if ("GET".equalsIgnoreCase(method)) {
-                return HttpUtil.httpGet(client, request.getEndpoint(), request.getHeaders());
+                return HttpTool.httpGet(client, request.getEndpoint(), request.getHeaders());
             } else if ("POST".equalsIgnoreCase(method)) {
-                return HttpUtil.httpPost(client, request.getEndpoint(), request.getHeaders(), Streams.readAll(request.getPayload().openStream()));
+                return HttpTool.httpPost(client, request.getEndpoint(), request.getHeaders(), Streams.readAll(request.getPayload().openStream()));
             } else {
                 // TODO being lazy!
                 throw new UnsupportedOperationException("Unsupported method: "+method+" for "+request);
@@ -99,58 +74,23 @@ public class HttpUtil {
 
     public static HttpToolResponse httpGet(URI uri, Multimap<String,String> headers) {
         HttpClient client = HttpUtil.createHttpClient(uri, Optional.<Credentials>absent());
-        return HttpUtil.httpGet(client, uri, headers);
+        return HttpTool.httpGet(client, uri, headers);
     }
 
     public static HttpToolResponse httpGet(HttpClient httpClient, URI uri, Map<String,String> headers) {
-        return httpGet(httpClient, uri, Multimaps.forMap(headers));
+        return HttpTool.httpGet(httpClient, uri, Multimaps.forMap(headers));
     }
 
     public static HttpToolResponse httpGet(HttpClient httpClient, URI uri, Multimap<String,String> headers) {
-        HttpGet httpGet = new HttpGet(uri);
-        for (Map.Entry<String,String> entry : headers.entries()) {
-            httpGet.addHeader(entry.getKey(), entry.getValue());
-        }
-
-        long startTime = System.currentTimeMillis();
-        try {
-            HttpResponse httpResponse = httpClient.execute(httpGet);
-            try {
-                return new HttpToolResponse(httpResponse, startTime);
-            } finally {
-                EntityUtils.consume(httpResponse.getEntity());
-            }
-        } catch (Exception e) {
-            throw Exceptions.propagate(e);
-        }
+        return HttpTool.httpGet(httpClient, uri, headers);
     }
 
     public static HttpToolResponse httpPost(HttpClient httpClient, URI uri, Map<String,String> headers, byte[] body) {
-        return httpPost(httpClient, uri, Multimaps.forMap(headers), body);
+        return HttpTool.httpPost(httpClient, uri, Multimaps.forMap(headers), body);
     }
 
     public static HttpToolResponse httpPost(HttpClient httpClient, URI uri, Multimap<String,String> headers, byte[] body) {
-        HttpPost httpPost = new HttpPost(uri);
-        for (Map.Entry<String,String> entry : headers.entries()) {
-            httpPost.addHeader(entry.getKey(), entry.getValue());
-        }
-        if (body != null) {
-            HttpEntity httpEntity = new ByteArrayEntity(body);
-            httpPost.setEntity(httpEntity);
-        }
-
-        long startTime = System.currentTimeMillis();
-        try {
-            HttpResponse httpResponse = httpClient.execute(httpPost);
-
-            try {
-                return new HttpToolResponse(httpResponse, startTime);
-            } finally {
-                EntityUtils.consume(httpResponse.getEntity());
-            }
-        } catch (Exception e) {
-            throw Exceptions.propagate(e);
-        }
+        return HttpTool.httpPost(httpClient, uri, headers, body);
     }
 
     public static class TrustAllStrategy implements TrustStrategy {

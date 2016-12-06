@@ -102,7 +102,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
         if (pfmFromConf == null) {
             if (pfmFromPf == null) {
                 log.trace("Subnet tier "+this+" has no PortForwardManager supplied; retrieving portForwardManager(scope=global)");
-                pfmLive = (PortForwardManager) getManagementContext().getLocationRegistry().resolve("portForwardManager(scope=global)");
+                pfmLive = (PortForwardManager) getManagementContext().getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
             } else {
                 log.trace("Subnet tier "+this+" using "+pfmFromPf+", retrieved from PortForwarder "+pf);
                 pfmLive = pfmFromPf;
@@ -147,7 +147,7 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
     }
 
     private void rescanDescendants() {
-        for (Entity descendant : Entities.descendants(this)) {
+        for (Entity descendant : Entities.descendantsAndSelf(this)) {
             if (!portMappedEntities.contains(descendant)) {
                 onEntityAdded(descendant);
             }

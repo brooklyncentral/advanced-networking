@@ -68,11 +68,11 @@ public class NoopPortForwarderSubnetTierIntegrationTest {
     public void setUp() throws Exception {
         app = TestApplication.Factory.newManagedInstanceForTests();
         managementContext = app.getManagementContext();
-        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
         portForwarder = new NoopPortForwarder(portForwardManager);
 
         // Note: using different username on each to ensure no mix up there!
-        loc = (LocalhostMachineProvisioningLocation) managementContext.getLocationRegistry().resolve(LOC_SPEC);
+        loc = (LocalhostMachineProvisioningLocation) managementContext.getLocationRegistry().getLocationManaged(LOC_SPEC);
         targetMachine = loc.obtain();
     }
 

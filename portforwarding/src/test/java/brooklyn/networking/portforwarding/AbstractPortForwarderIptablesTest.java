@@ -23,6 +23,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
+import org.apache.brooklyn.core.test.entity.TestApplication;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -34,20 +47,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
-
-import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
-import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.core.test.entity.TestApplication;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.net.Networking;
-import org.apache.brooklyn.util.os.Os;
-import org.apache.brooklyn.util.ssh.BashCommands;
 
 // TODO Tests currently written to be fast: they assume existing VMs are configured.
 // Could re-write to create the VMs (and terminate them obviously) for each run.
@@ -94,7 +93,7 @@ public abstract class AbstractPortForwarderIptablesTest {
     @BeforeClass(alwaysRun=true)
     public void setUpClass() throws Exception {
         managementContext = newManagementContext();
-        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+        portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
         portForwarder = new PortForwarderIptables(portForwardManager, forwarderPublicIp, forwarderMachine);
         
         if (!requiresMachines()) {
@@ -116,7 +115,7 @@ public abstract class AbstractPortForwarderIptablesTest {
 
             } else {
                 // Note: using different username on each to ensure no mix up there!
-                loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve(locSpec);
+                loc = (JcloudsLocation) managementContext.getLocationRegistry().getLocationManaged(locSpec);
 
                 // Start the VMs in parallel
                 executor = Executors.newCachedThreadPool();
@@ -151,7 +150,7 @@ public abstract class AbstractPortForwarderIptablesTest {
                 forwarderMachine.execScript("install-policycoreutils", ImmutableList.of(BashCommands.installPackage(ImmutableMap.of("yum", "policycoreutils"), null)));
                 forwarderMachine.execScript("enable-ip-forward", ImmutableList.of(sudo("sysctl -w net.ipv4.ip_forward=1")));
 
-                targetPrivateIp = Iterables.get(((JcloudsSshMachineLocation)targetPublicMachine).getNode().getPrivateAddresses(), 0);
+                targetPrivateIp = Iterables.get(((JcloudsSshMachineLocation)targetPublicMachine).getPrivateAddresses(), 0);
 
                 targetPrivateMachine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                     .configure("address", Networking.getInetAddressWithFixedName(targetPrivateIp))
@@ -179,7 +178,7 @@ public abstract class AbstractPortForwarderIptablesTest {
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
-        app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
+        app = managementContext.getEntityManager().createEntity(EntitySpec.create(TestApplication.class));
     }
 
     @AfterMethod(alwaysRun=true)

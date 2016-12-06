@@ -31,7 +31,6 @@ import org.apache.brooklyn.util.net.Protocol;
 import brooklyn.networking.common.subnet.PortForwarder;
 
 public class JcloudsPortforwardingSubnetMachineLocation extends AbstractJcloudsSubnetSshMachineLocation {
-    private static final long serialVersionUID = 252415164250662535L;
 
     public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(PortForwarder.class, "portForwarder");
 

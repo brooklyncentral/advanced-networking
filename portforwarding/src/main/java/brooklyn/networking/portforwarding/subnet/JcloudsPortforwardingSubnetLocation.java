@@ -26,7 +26,7 @@ import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -58,8 +58,6 @@ import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 
 /** requires zone id and tier id to be specified; shared_network_id optional (but needed if you want to connect!) */
 public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
-
-    private static final long serialVersionUID = 2447151199192553199L;
 
     private static final Logger log = LoggerFactory.getLogger(JcloudsPortforwardingSubnetLocation.class);
 
@@ -165,7 +163,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                 LOG.debug("Could not resolve reported address '"+address+"' for "+managementHostAndPort+" ("+setup.getDescription()+"/"+node+"), requesting reachable socket address");
                 if (computeService==null) throw Exceptions.propagate(e);
                 // this has sometimes already been done in waitForReachable (unless skipped) but easy enough to do again
-                address = JcloudsUtil.getFirstReachableAddress(computeService.getContext(), node);
+                address = JcloudsUtil.getFirstReachableAddress(node, Duration.FIVE_MINUTES);
             }
         }
 
@@ -174,7 +172,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                     new Object[] {
                             userCredentials.getUser(),
                             address,
-                            Entities.sanitize(sshConfig),
+                            Sanitizer.sanitize(sshConfig),
                             managementHostAndPort,
                             setup.getDescription(),
                             node

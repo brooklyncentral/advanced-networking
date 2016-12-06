@@ -434,10 +434,10 @@ public class NatService {
             // Remove the closed rules
             for (PortForwardingConfig arg : delta.toClose) {
                 // TODO Could also match on networkId
-                Iterable<NatRuleType> filtered = Iterables.filter(natService.getNatRule(), Predicates.and(
+                Iterable<NatRuleType> filtered = Iterables.filter(natService.getNatRule(), Predicates.and(ImmutableList.of(
                         NatPredicates.protocolMatches(arg.getProtocol()),
                         NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort())));
+                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort()))));
                 natService.getNatRule().removeAll(Lists.newArrayList(filtered));
 
                 result.closed(arg, arg);
@@ -488,10 +488,10 @@ public class NatService {
 
             // Confirm that deleted rules don't exist.
             for (PortForwardingConfig arg : result.getClosed().values()) {
-                Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
+                Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(ImmutableList.of(
                         NatPredicates.protocolMatches(arg.getProtocol()),
                         NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort())));
+                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort()))));
 
                 if (!Iterables.isEmpty(matches)) {
                     throw new IllegalStateException(

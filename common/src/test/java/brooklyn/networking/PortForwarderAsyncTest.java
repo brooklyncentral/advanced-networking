@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
@@ -91,7 +90,7 @@ public class PortForwarderAsyncTest extends BrooklynAppLiveTestSupport {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        loc = mgmt.getLocationRegistry().resolve("localhost");
+        loc = app.newLocalhostProvisioningLocation();
         pseudoMachine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("jcloudsParent", loc)
                 .configure("address", "1.1.1.1")
@@ -123,7 +122,7 @@ public class PortForwarderAsyncTest extends BrooklynAppLiveTestSupport {
                 });
         when(pf.getPortForwardManager()).thenAnswer(Answers.RETURNS_MOCKS.get());
         
-        pfa = new PortForwarderAsyncImpl((EntityLocal) testEntity, pf, null);
+        pfa = new PortForwarderAsyncImpl(testEntity, pf, null);
     }
 
     @Test

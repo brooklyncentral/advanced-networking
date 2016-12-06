@@ -48,7 +48,7 @@ public class Cleanup {
 
     public Cleanup(String accountName) {
         managementContext = new LocalManagementContext();
-        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve("citrix-cloudplatform");
+        loc = (JcloudsLocation) managementContext.getLocationRegistry().getLocationManaged("citrix-cloudplatform");
         networking = new CloudstackNetworking(loc);
         client = CloudstackNew40FeaturesClient.newInstance(loc);
 
