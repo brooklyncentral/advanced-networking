@@ -37,9 +37,9 @@
 
     <properties>
         <brooklyn.version>0.11.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
-        <vcloud-director.version>1.9.2</vcloud-director.version>
+        <vcloud-director.version>1.9.3</vcloud-director.version>
         <vcloud.director.api.version>5.5.0</vcloud.director.api.version>
-        <guava.version>16.0.1</guava.version>
+        <guava.version>18.0</guava.version>
         <rabbitmq.amqp-clinet.version>2.8.7</rabbitmq.amqp-clinet.version>
     </properties>
 
