@@ -159,8 +159,9 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
         if (!portForwardingMode)
             networkIds.add(serviceNetworkId);
 
-        tb.options(CloudStackTemplateOptions.Builder.networkIds(networkIds)
+        tb.options(CloudStackTemplateOptions.Builder
                 .setupStaticNat(false)
+                .networks(networkIds)
                 .dontAuthorizePublicKey()
                 .blockUntilRunning(false)
                 );
