@@ -48,7 +48,7 @@
             <version>${brooklyn.version}</version>
         </dependency>
         <dependency>
-            <groupId>${jclouds.groupId}</groupId>
+            <groupId>${jclouds.groupId}.api</groupId>
             <artifactId>docker</artifactId>
             <version>${jclouds.version}</version>
         </dependency>
