@@ -45,12 +45,12 @@ public class CloudStackPrivateNetworkLocationCustomizer extends BasicJcloudsLoca
     public void customize(JcloudsLocation location, ComputeService computeService, TemplateOptions templateOptions) {
         if ("cloudstack".equals(location.getProvider())) {
             CloudStackTemplateOptions cloudstackTemplateOptions = (CloudStackTemplateOptions) templateOptions;
-            if (cloudstackTemplateOptions.getNetworkIds().isEmpty()) {
+            if (cloudstackTemplateOptions.getNetworks().isEmpty()) {
                 String networkId = getOrCreatePrivateNetwork(location);
-                cloudstackTemplateOptions.networkId(networkId);
+                cloudstackTemplateOptions.getNetworks().add(networkId);
             } else {
                 LOG.info("Not adding CloudStack private network in {} because network already specified in template options: {}", 
-                        location, cloudstackTemplateOptions.getNetworkIds());
+                        location, cloudstackTemplateOptions.getNetworks());
             }
         }
     }
