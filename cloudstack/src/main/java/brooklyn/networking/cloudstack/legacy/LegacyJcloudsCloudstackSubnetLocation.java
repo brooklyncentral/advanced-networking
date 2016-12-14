@@ -15,20 +15,17 @@
  */
 package brooklyn.networking.cloudstack.legacy;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.annotation.Nullable;
-
+import brooklyn.networking.NetworkMultiAddressUtils2;
+import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.BasicConfigKey;
@@ -36,11 +33,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.location.jclouds.AbstractJcloudsSubnetSshMachineLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
-import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.jclouds.*;
 import org.apache.brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -55,14 +48,9 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jclouds.cloudstack.CloudStackApi;
 import org.jclouds.cloudstack.compute.options.CloudStackTemplateOptions;
-import org.jclouds.cloudstack.domain.AsyncCreateResponse;
-import org.jclouds.cloudstack.domain.FirewallRule;
-import org.jclouds.cloudstack.domain.NIC;
-import org.jclouds.cloudstack.domain.PortForwardingRule;
-import org.jclouds.cloudstack.domain.VirtualMachine;
+import org.jclouds.cloudstack.domain.*;
 import org.jclouds.cloudstack.features.VirtualMachineApi;
 import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
 import org.jclouds.compute.ComputeService;
@@ -74,18 +62,18 @@ import org.jclouds.domain.LoginCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import brooklyn.networking.NetworkMultiAddressUtils2;
-import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Legacy {@link JcloudsLocation} for a CloudStack subnet.
@@ -159,11 +147,12 @@ public class LegacyJcloudsCloudstackSubnetLocation extends JcloudsLocation {
         if (!portForwardingMode)
             networkIds.add(serviceNetworkId);
 
-        tb.options(CloudStackTemplateOptions.Builder.networkIds(networkIds)
+        tb.options(new CloudStackTemplateOptions()
+                .networks(networkIds)
                 .setupStaticNat(false)
                 .dontAuthorizePublicKey()
                 .blockUntilRunning(false)
-                );
+        );
 
         Map<Object,Object> flags = MutableMap.copyOf(flagsIn)
                 .add(TEMPLATE_BUILDER, tb);
