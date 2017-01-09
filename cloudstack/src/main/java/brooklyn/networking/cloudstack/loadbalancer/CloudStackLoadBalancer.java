@@ -34,7 +34,7 @@ import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedController;
 @ImplementedBy(CloudStackLoadBalancerImpl.class)
 public interface CloudStackLoadBalancer extends AbstractNonProvisionedController {
 
-    AttributeSensor<Lifecycle> SERVICE_STATE = Attributes.SERVICE_STATE;
+    AttributeSensor<Lifecycle> SERVICE_STATE = Attributes.SERVICE_STATE_ACTUAL;
 
     AttributeSensor<String> LOAD_BALANCER_ID = new BasicAttributeSensor<String>(String.class, "cloudstack.loadbalancer.id", "The load balancer id within CloudStack");
 
