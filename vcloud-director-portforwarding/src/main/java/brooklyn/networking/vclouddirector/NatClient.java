@@ -17,6 +17,8 @@ package brooklyn.networking.vclouddirector;
 
 import com.google.common.net.HostAndPort;
 
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
+
 public interface NatClient {
 
     public HostAndPort openPortForwarding(PortForwardingConfig args);

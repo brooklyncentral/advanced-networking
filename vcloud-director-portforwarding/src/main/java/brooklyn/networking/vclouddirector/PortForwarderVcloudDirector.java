@@ -46,6 +46,7 @@ import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
 
 public class PortForwarderVcloudDirector implements PortForwarder {
 

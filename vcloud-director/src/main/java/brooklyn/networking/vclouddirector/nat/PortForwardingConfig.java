@@ -1,13 +1,13 @@
-package brooklyn.networking.vclouddirector;
+package brooklyn.networking.vclouddirector.nat;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Objects;
-import com.google.common.net.HostAndPort;
-
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.util.net.Protocol;
+
+import com.google.common.base.Objects;
+import com.google.common.net.HostAndPort;
 
 
 public class PortForwardingConfig {

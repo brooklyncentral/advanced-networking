@@ -35,6 +35,8 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.UrlEscapers;
 
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
+
 /**
  * For adding/removing NAT rules to vcloud-director.
  * 

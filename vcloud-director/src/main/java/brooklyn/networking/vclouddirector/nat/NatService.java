@@ -1,4 +1,4 @@
-package brooklyn.networking.vclouddirector;
+package brooklyn.networking.vclouddirector.nat;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -16,9 +16,28 @@ import java.util.logging.Level;
 import javax.annotation.Nullable;
 import javax.xml.bind.JAXBElement;
 
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.location.PortRanges;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.Beta;
+import com.google.common.base.Objects;
+import com.google.common.base.Predicates;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;
 import com.vmware.vcloud.api.rest.schema.GatewayInterfaceType;
 import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
@@ -40,27 +59,6 @@ import com.vmware.vcloud.sdk.admin.extensions.ExtensionQueryService;
 import com.vmware.vcloud.sdk.admin.extensions.VcloudAdminExtension;
 import com.vmware.vcloud.sdk.constants.Version;
 import com.vmware.vcloud.sdk.constants.query.QueryReferenceType;
-
-import com.google.common.annotations.Beta;
-import com.google.common.base.Objects;
-import com.google.common.base.Predicates;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
-
-import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.location.PortRanges;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.guava.Maybe;
-import org.apache.brooklyn.util.net.Protocol;
-import org.apache.brooklyn.util.text.Strings;
-import org.apache.brooklyn.util.time.Duration;
-import org.apache.brooklyn.util.time.Time;
 
 /**
  * For adding/removing NAT rules to vcloud-director.

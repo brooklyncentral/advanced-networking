@@ -26,6 +26,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
+import brooklyn.networking.vclouddirector.nat.NatService;
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
+
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 

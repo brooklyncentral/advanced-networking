@@ -56,11 +56,12 @@ public class PortForwarderClient implements PortForwarder {
         return new PortForwarderClient(supplier);
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromMethodOnEntity(Entity, String)} */ 
-    public static PortForwarder fromMethodOnEntity(final Entity entity, final String getterMethodOnEntity) {
-        Preconditions.checkNotNull(entity);
-        Preconditions.checkNotNull(getterMethodOnEntity);
-        return new PortForwarderClient(new Supplier<PortForwarder>() {
+    // TODO Keep for persisted state, in case class $1 is being referenced.
+    //      Can't just rename it to FromMethodOnEntitySupplier, because fields are different
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_fromMethodOnEntity(final Entity entity, final String getterMethodOnEntity) {
+        new Supplier<PortForwarder>() {
             @Override
             public PortForwarder get() {
                 PortForwarder result;
@@ -74,14 +75,44 @@ public class PortForwarderClient implements PortForwarder {
                     throw new IllegalStateException("No PortForwarder available via "+getterMethodOnEntity+" on "+entity+" (returned null)");
                 return result;
             }
-        });
+        };
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromConfigOnEntity(Entity, ConfigKey)} */ 
-    public static PortForwarder fromConfigOnEntity(final Entity entity, final ConfigKey<PortForwarder> configOnEntity) {
+    /** creates an instance, cf {@link PortForwardManagerClient#fromMethodOnEntity(Entity, String)} */ 
+    public static PortForwarder fromMethodOnEntity(Entity entity, String getterMethodOnEntity) {
         Preconditions.checkNotNull(entity);
-        Preconditions.checkNotNull(configOnEntity);
-        return new PortForwarderClient(new Supplier<PortForwarder>() {
+        Preconditions.checkNotNull(getterMethodOnEntity);
+        return new PortForwarderClient(new FromMethodOnEntitySupplier(entity, getterMethodOnEntity));
+    }
+    private static class FromMethodOnEntitySupplier implements Supplier<PortForwarder> {
+        private final Entity entity;
+        private final String getterMethodOnEntity;
+        
+        FromMethodOnEntitySupplier(Entity entity, String getterMethodOnEntity) {
+            this.entity = entity;
+            this.getterMethodOnEntity = getterMethodOnEntity;
+        }
+        @Override
+        public PortForwarder get() {
+            PortForwarder result;
+            try {
+                result = (PortForwarder) entity.getClass().getMethod(getterMethodOnEntity).invoke(entity);
+            } catch (Exception e) {
+                Exceptions.propagateIfFatal(e);
+                throw new IllegalStateException("Cannot invoke "+getterMethodOnEntity+" on "+entity+" ("+entity.getClass()+"): "+e, e);
+            }
+            if (result==null)
+                throw new IllegalStateException("No PortForwarder available via "+getterMethodOnEntity+" on "+entity+" (returned null)");
+            return result;
+        }
+    }
+    
+    // TODO Keep for persisted state, in case class $2 is being referenced.
+    //      Can't just rename it to FromConfigOnEntitySupplier, because fields are different
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_fromConfigOnEntity(final Entity entity, final ConfigKey<PortForwarder> configOnEntity) {
+        new Supplier<PortForwarder>() {
             @Override
             public PortForwarder get() {
                 PortForwarder result = (PortForwarder) entity.getConfig(configOnEntity);
@@ -89,14 +120,38 @@ public class PortForwarderClient implements PortForwarder {
                     throw new IllegalStateException("No PortForwarder available via "+configOnEntity+" on "+entity+" (returned null)");
                 return result;
             }
-        });
+        };
+    }
+
+    /** creates an instance, cf {@link PortForwardManagerClient#fromConfigOnEntity(Entity, ConfigKey)} */ 
+    public static PortForwarder fromConfigOnEntity(Entity entity, ConfigKey<PortForwarder> configOnEntity) {
+        Preconditions.checkNotNull(entity);
+        Preconditions.checkNotNull(configOnEntity);
+        return new PortForwarderClient(new FromConfigOnEntitySupplier(entity, configOnEntity));
     }
     
-    /** creates an instance, cf {@link PortForwardManagerClient#fromAttributeOnEntity(Entity, AttributeSensor)} */ 
-    public static PortForwarder fromAttributeOnEntity(final Entity entity, final AttributeSensor<PortForwarder> attributeOnEntity) {
-        Preconditions.checkNotNull(entity);
-        Preconditions.checkNotNull(attributeOnEntity);
-        return new PortForwarderClient(new Supplier<PortForwarder>() {
+    private static class FromConfigOnEntitySupplier implements Supplier<PortForwarder> {
+        private final Entity entity;
+        private final ConfigKey<PortForwarder> configOnEntity;
+        
+        FromConfigOnEntitySupplier(Entity entity, ConfigKey<PortForwarder> configOnEntity) {
+            this.entity = entity;
+            this.configOnEntity = configOnEntity;
+        }
+        @Override
+        public PortForwarder get() {
+            PortForwarder result = (PortForwarder) entity.getConfig(configOnEntity);
+            if (result==null)
+                throw new IllegalStateException("No PortForwarder available via "+configOnEntity+" on "+entity+" (returned null)");
+            return result;
+        }
+    }
+    // TODO Keep for persisted state, in case class $3 is being referenced.
+    //      Can't just rename it to FromAttributeOnEntitySupplier, because fields are different
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_fromAttributeOnEntity(final Entity entity, final AttributeSensor<PortForwarder> attributeOnEntity) {
+        new Supplier<PortForwarder>() {
             @Override
             public PortForwarder get() {
                 PortForwarder result = (PortForwarder) entity.getAttribute(attributeOnEntity);
@@ -104,7 +159,30 @@ public class PortForwarderClient implements PortForwarder {
                     throw new IllegalStateException("No PortForwarder available via "+attributeOnEntity+" on "+entity+" (returned null)");
                 return result;
             }
-        });
+        };
+    }
+    
+    /** creates an instance, cf {@link PortForwardManagerClient#fromAttributeOnEntity(Entity, AttributeSensor)} */ 
+    public static PortForwarder fromAttributeOnEntity(final Entity entity, final AttributeSensor<PortForwarder> attributeOnEntity) {
+        Preconditions.checkNotNull(entity);
+        Preconditions.checkNotNull(attributeOnEntity);
+        return new PortForwarderClient(new FromAttributeOnEntitySupplier(entity, attributeOnEntity));
+    }
+    private static class FromAttributeOnEntitySupplier implements Supplier<PortForwarder> {
+        private final Entity entity;
+        private final AttributeSensor<PortForwarder> attributeOnEntity;
+        
+        FromAttributeOnEntitySupplier(Entity entity, AttributeSensor<PortForwarder> attributeOnEntity) {
+            this.entity = entity;
+            this.attributeOnEntity = attributeOnEntity;
+        }
+        @Override
+        public PortForwarder get() {
+            PortForwarder result = (PortForwarder) entity.getAttribute(attributeOnEntity);
+            if (result==null)
+                throw new IllegalStateException("No PortForwarder available via "+attributeOnEntity+" on "+entity+" (returned null)");
+            return result;
+        }
     }
     
     protected PortForwarder getDelegate() {

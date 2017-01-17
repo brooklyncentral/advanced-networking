@@ -85,20 +85,51 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
         openFirewallPortRangeAsync(publicIp, PortRanges.fromInteger(port), protocol, accessingCidr);
     }
 
-    @Override
-    public void openFirewallPortRangeAsync(final EntityAndAttribute<String> publicIp, final PortRange portRange, final Protocol protocol, final Cidr accessingCidr) {
-        DeferredExecutor<String> updater = new DeferredExecutor<String>("open-firewall", publicIp, Predicates.notNull(), new Runnable() {
+    // TODO Keep for persisted state, in case class $1 is being referenced.
+    //      Can't just rename it to OpenFirewallPortRangeJob, because fields are different.
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_openFirewallPortRangeAsync(final EntityAndAttribute<String> publicIp, final PortRange portRange, final Protocol protocol, final Cidr accessingCidr) {
+        new Runnable() {
             public void run() {
                 portForwarder.openFirewallPortRange(publicIp.getEntity(), portRange, protocol, accessingCidr);
-            }});
+            }
+        };
+    }
+    
+    @Override
+    public void openFirewallPortRangeAsync(EntityAndAttribute<String> publicIp, PortRange portRange, Protocol protocol, Cidr accessingCidr) {
+        Runnable job = new OpenFirewallPortRangeJob(portForwarder, publicIp, portRange, protocol, accessingCidr);
+        DeferredExecutor<String> updater = new DeferredExecutor<String>("open-firewall", publicIp, Predicates.notNull(), job);
         subscribe(publicIp.getEntity(), publicIp.getAttribute(), updater);
         updater.apply(publicIp.getEntity(), publicIp.getValue());
     }
+    private static class OpenFirewallPortRangeJob implements Runnable {
+        private final PortForwarder portForwarder;
+        private final EntityAndAttribute<String> publicIp;
+        private final PortRange portRange;
+        private final Protocol protocol;
+        private final Cidr accessingCidr;
+        
+        OpenFirewallPortRangeJob(PortForwarder portForwarder, final EntityAndAttribute<String> publicIp, final PortRange portRange, final Protocol protocol, final Cidr accessingCidr) {
+            this.portForwarder = portForwarder;
+            this.publicIp = publicIp;
+            this.portRange = portRange;
+            this.protocol = protocol;
+            this.accessingCidr = accessingCidr;
+        }
+        public void run() {
+            portForwarder.openFirewallPortRange(publicIp.getEntity(), portRange, protocol, accessingCidr);
+        }
+    }
 
-    @Override
-    public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
+    // TODO Keep for persisted state, in case class $2 is being referenced.
+    //      Can't just rename it to OpenPortForwardingAdvertiser, because outer-class is different?
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr) {
-        Advertiser advertiser = new Advertiser() {
+        new Advertiser() {
             @Override
             public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
                 String sourceSensor = source.getAttribute().getName();
@@ -112,101 +143,235 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
             }
         };
-        doOpenPortForwardingAndAdvertise(source, optionalPublicPort, protocol, accessingCidr, advertiser);
     }
     
     @Override
     public void openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
+            final Protocol protocol, final Cidr accessingCidr) {
+        Advertiser advertiser = new OpenPortForwardingAdvertiser();
+        doOpenPortForwardingAndAdvertise(source, optionalPublicPort, protocol, accessingCidr, advertiser);
+    }
+    private static class OpenPortForwardingAdvertiser implements Advertiser {
+        @Override
+        public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
+            String sourceSensor = source.getAttribute().getName();
+            Entity entity = source.getEntity();
+            AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sourceSensor);
+            AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sourceSensor);
+            AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sourceSensor);
+            String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+            entity.sensors().set(mappedSensor, endpoint);
+            entity.sensors().set(mappedEndpointSensor, endpoint);
+            entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
+        }
+    }
+    
+    // TODO Keep for persisted state, in case class $3 is being referenced.
+    //      Can't just rename it to OpenPortForwardingExplicitAdvertiser, because outer-class is different?
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_openPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr, final EntityAndAttribute<String> whereToAdvertiseEndpoint) {
-        Advertiser advertiser = new Advertiser() {
+        new Advertiser() {
             @Override
             public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
                 String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
                 whereToAdvertiseEndpoint.setValue(endpoint);
             }
         };
+    }
+    
+    @Override
+    public void openPortForwardingAndAdvertise(EntityAndAttribute<Integer> source, Optional<Integer> optionalPublicPort,
+            Protocol protocol, Cidr accessingCidr, EntityAndAttribute<String> whereToAdvertiseEndpoint) {
+        Advertiser advertiser = new OpenPortForwardingExplicitAdvertiser(whereToAdvertiseEndpoint);
         doOpenPortForwardingAndAdvertise(source, optionalPublicPort, protocol, accessingCidr, advertiser);
+    }
+    private static class OpenPortForwardingExplicitAdvertiser implements Advertiser {
+        private final EntityAndAttribute<String> whereToAdvertiseEndpoint;
+        
+        public OpenPortForwardingExplicitAdvertiser(EntityAndAttribute<String> whereToAdvertiseEndpoint) {
+            this.whereToAdvertiseEndpoint = whereToAdvertiseEndpoint;
+        }
+        @Override
+        public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
+            String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+            whereToAdvertiseEndpoint.setValue(endpoint);
+        }
     }
     
     private static interface Advertiser {
         public void advertise(final EntityAndAttribute<Integer> source, HostAndPort publicEndpoint);
     }
     
-    protected void doOpenPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
+    // TODO Keep for persisted state, in case class $4 is being referenced.
+    //      Can't just rename it to OpenPortForwardingExplicitAdvertiser, because outer-class is different?
+    @SuppressWarnings("unused")
+    @Deprecated
+    private void deprecated_doOpenPortForwardingAndAdvertise(final EntityAndAttribute<Integer> source, final Optional<Integer> optionalPublicPort,
             final Protocol protocol, final Cidr accessingCidr, final Advertiser advertiser) {
-        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", source, Predicates.notNull(), Boolean.FALSE,
-                new Runnable() {
+        new Runnable() {
 
-                    private AtomicReference<MachineAndPort> updated = new AtomicReference<>();
+            private AtomicReference<MachineAndPort> updated = new AtomicReference<>();
 
-                    @Override
-                    public void run() {
-                        Entity entity = source.getEntity();
-                        Integer privatePortVal = source.getValue();
-                        if (privatePortVal == null) {
-                            if (log.isDebugEnabled())
-                                log.debug("Private port null for entity {}; not opening or advertising mapped port", entity, source.getAttribute().getName());
-                            return;
-                        }
-                        Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
-                        if (machineLocationMaybe.isAbsent()) {
-                            if (log.isDebugEnabled())
-                                log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
-                            return;
-                        }
-                        MachineLocation machine = machineLocationMaybe.get();
-                        MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
-                        
-                        // Check if another thread is already opening the port-forwarding.
-                        // This can happen because the DeferredExecutor submits the task, and does 
-                        // not block for completion (hence allowing us to open ports in parallel).
-                        // Given we have multiple subscriptions (for location + port), we can get
-                        // called multiple times concurrently.
-                        if (updated.compareAndSet(null, machineAndPort)) {
-                            // We got here first; we open the port-forwarding.
-                        } else if (machineAndPort.equals(updated.get())) {
-                            if (log.isDebugEnabled())
-                                log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[]{entity, machine, privatePortVal});
-                            return;
-                        } else {
-                            // Check again before logging, in case updated was cleared - 
-                            // can happen if openPortForwarding returns null.
-                            MachineAndPort oldMachineAndPort = updated.get();
-                            if (oldMachineAndPort != null) {
-                                log.info("Previous port-forwarding for {} used different machine:port ({}:{}, compared to now {}:{}); "
-                                        + "opening with new machine:port",
-                                        new Object[] {entity, oldMachineAndPort.machine, oldMachineAndPort.port, machineAndPort.machine, 
-                                        machineAndPort.port});
-                            }
-                        }
-
-                        HostAndPort publicEndpoint;
-                        try {
-                            publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
-                        } catch (Throwable t) {
-                            updated.set(null);
-                            throw Exceptions.propagate(t);
-                        }
-                        if (publicEndpoint == null) {
-                            // Failed to open port-forwarding; clear "updated" so another thread can have a go
-                            // if we are ever called again.
-                            log.warn("No host:port obtained for " + machine + " -> " + privatePortVal + "; not advertising mapped port");
-                            updated.set(null);
-                            return;
-                        }
-    
-                        // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
-                        portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
-                        
-                        advertiser.advertise(source, publicEndpoint);
-                        log.debug("Set target sensor, advertising mapping of {}->{} ({})", new Object[] {entity, source.getAttribute().getName(), publicEndpoint});
+            @Override
+            public void run() {
+                Entity entity = source.getEntity();
+                Integer privatePortVal = source.getValue();
+                if (privatePortVal == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Private port null for entity {}; not opening or advertising mapped port", entity, source.getAttribute().getName());
+                    return;
+                }
+                Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+                if (machineLocationMaybe.isAbsent()) {
+                    if (log.isDebugEnabled())
+                        log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
+                    return;
+                }
+                MachineLocation machine = machineLocationMaybe.get();
+                MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
+                
+                // Check if another thread is already opening the port-forwarding.
+                // This can happen because the DeferredExecutor submits the task, and does 
+                // not block for completion (hence allowing us to open ports in parallel).
+                // Given we have multiple subscriptions (for location + port), we can get
+                // called multiple times concurrently.
+                if (updated.compareAndSet(null, machineAndPort)) {
+                    // We got here first; we open the port-forwarding.
+                } else if (machineAndPort.equals(updated.get())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[]{entity, machine, privatePortVal});
+                    return;
+                } else {
+                    // Check again before logging, in case updated was cleared - 
+                    // can happen if openPortForwarding returns null.
+                    MachineAndPort oldMachineAndPort = updated.get();
+                    if (oldMachineAndPort != null) {
+                        log.info("Previous port-forwarding for {} used different machine:port ({}:{}, compared to now {}:{}); "
+                                + "opening with new machine:port",
+                                new Object[] {entity, oldMachineAndPort.machine, oldMachineAndPort.port, machineAndPort.machine, 
+                                machineAndPort.port});
                     }
-                });
+                }
+
+                HostAndPort publicEndpoint;
+                try {
+                    publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+                } catch (Throwable t) {
+                    updated.set(null);
+                    throw Exceptions.propagate(t);
+                }
+                if (publicEndpoint == null) {
+                    // Failed to open port-forwarding; clear "updated" so another thread can have a go
+                    // if we are ever called again.
+                    log.warn("No host:port obtained for " + machine + " -> " + privatePortVal + "; not advertising mapped port");
+                    updated.set(null);
+                    return;
+                }
+
+                // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+                portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
+                
+                advertiser.advertise(source, publicEndpoint);
+                log.debug("Set target sensor, advertising mapping of {}->{} ({})", new Object[] {entity, source.getAttribute().getName(), publicEndpoint});
+            }
+        };
+    }
+
+    protected void doOpenPortForwardingAndAdvertise(EntityAndAttribute<Integer> source, Optional<Integer> optionalPublicPort,
+            Protocol protocol, Cidr accessingCidr, Advertiser advertiser) {
+        Runnable job = new OpenPortForwardingAndAdvertiseJob(portForwarder, source, optionalPublicPort, protocol, 
+                accessingCidr, advertiser);
+        DeferredExecutor<Integer> updater = new DeferredExecutor<>("open-port-forwarding", source, Predicates.notNull(), 
+                Boolean.FALSE, job);
         
         subscribe(ImmutableMap.of("notifyOfInitialValue", Boolean.TRUE), source.getEntity(), source.getAttribute(), updater);
         subscribe(source.getEntity(), AbstractEntity.LOCATION_ADDED, updater);
     }
+    private static class OpenPortForwardingAndAdvertiseJob implements Runnable {
+        private final PortForwarder portForwarder;
+        final EntityAndAttribute<Integer> source;
+        final Optional<Integer> optionalPublicPort;
+        final Protocol protocol;
+        final Cidr accessingCidr;
+        final Advertiser advertiser;
+        private final AtomicReference<MachineAndPort> updated = new AtomicReference<>();
 
+        OpenPortForwardingAndAdvertiseJob(PortForwarder portForwarder, final EntityAndAttribute<Integer> source, 
+                        Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr, Advertiser advertiser) {
+            this.portForwarder = portForwarder;
+            this.source = source;
+            this.optionalPublicPort = optionalPublicPort;
+            this.protocol = protocol;
+            this.accessingCidr = accessingCidr;
+            this.advertiser = advertiser;
+        }
+
+        @Override
+        public void run() {
+            Entity entity = source.getEntity();
+            Integer privatePortVal = source.getValue();
+            if (privatePortVal == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Private port null for entity {}; not opening or advertising mapped port", entity, source.getAttribute().getName());
+                return;
+            }
+            Maybe<MachineLocation> machineLocationMaybe = Machines.findUniqueMachineLocation(entity.getLocations());
+            if (machineLocationMaybe.isAbsent()) {
+                if (log.isDebugEnabled())
+                    log.debug("No machine found for entity {}; not opening or advertising mapped port", entity);
+                return;
+            }
+            MachineLocation machine = machineLocationMaybe.get();
+            MachineAndPort machineAndPort = new MachineAndPort(machine, privatePortVal);
+            
+            // Check if another thread is already opening the port-forwarding.
+            // This can happen because the DeferredExecutor submits the task, and does 
+            // not block for completion (hence allowing us to open ports in parallel).
+            // Given we have multiple subscriptions (for location + port), we can get
+            // called multiple times concurrently.
+            if (updated.compareAndSet(null, machineAndPort)) {
+                // We got here first; we open the port-forwarding.
+            } else if (machineAndPort.equals(updated.get())) {
+                if (log.isDebugEnabled())
+                    log.debug("Already created port-mapping for entity {}, at {} -> {}; not opening again", new Object[]{entity, machine, privatePortVal});
+                return;
+            } else {
+                // Check again before logging, in case updated was cleared - 
+                // can happen if openPortForwarding returns null.
+                MachineAndPort oldMachineAndPort = updated.get();
+                if (oldMachineAndPort != null) {
+                    log.info("Previous port-forwarding for {} used different machine:port ({}:{}, compared to now {}:{}); "
+                            + "opening with new machine:port",
+                            new Object[] {entity, oldMachineAndPort.machine, oldMachineAndPort.port, machineAndPort.machine, 
+                            machineAndPort.port});
+                }
+            }
+
+            HostAndPort publicEndpoint;
+            try {
+                publicEndpoint = portForwarder.openPortForwarding(machine, privatePortVal, optionalPublicPort, protocol, accessingCidr);
+            } catch (Throwable t) {
+                updated.set(null);
+                throw Exceptions.propagate(t);
+            }
+            if (publicEndpoint == null) {
+                // Failed to open port-forwarding; clear "updated" so another thread can have a go
+                // if we are ever called again.
+                log.warn("No host:port obtained for " + machine + " -> " + privatePortVal + "; not advertising mapped port");
+                updated.set(null);
+                return;
+            }
+
+            // TODO What publicIpId to use in portForwardManager.associate? Elsewhere, uses jcloudsMachine.getJcloudsId().
+            portForwarder.getPortForwardManager().associate(machine.getId(), publicEndpoint, machine, privatePortVal);
+            
+            advertiser.advertise(source, publicEndpoint);
+            log.debug("Set target sensor, advertising mapping of {}->{} ({})", new Object[] {entity, source.getAttribute().getName(), publicEndpoint});
+        }
+    }
+    
     protected <T> void subscribe(Entity entity, Sensor<T> attribute, SensorEventListener<? super T> listener) {
         adjunctEntity.subscriptions().subscribe(entity, attribute, listener);
     }

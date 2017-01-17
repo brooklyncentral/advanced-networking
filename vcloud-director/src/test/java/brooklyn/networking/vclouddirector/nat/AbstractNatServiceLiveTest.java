@@ -1,4 +1,4 @@
-package brooklyn.networking.vclouddirector;
+package brooklyn.networking.vclouddirector.nat;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.testng.Assert.assertEquals;
@@ -21,6 +21,10 @@ import org.testng.annotations.Test;
 import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
+
+import brooklyn.networking.vclouddirector.nat.NatPredicates;
+import brooklyn.networking.vclouddirector.nat.NatService;
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
