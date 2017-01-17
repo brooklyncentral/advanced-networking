@@ -59,6 +59,9 @@ import com.google.common.net.HostAndPort;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.networking.vclouddirector.nat.NatPredicates;
+import brooklyn.networking.vclouddirector.nat.NatServiceLiveTest;
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
 
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions.

@@ -1,14 +1,13 @@
-package brooklyn.networking.vclouddirector;
+package brooklyn.networking.vclouddirector.nat;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import org.apache.brooklyn.util.net.Protocol;
 
 import com.google.common.base.Predicate;
 import com.google.common.net.HostAndPort;
-
-import org.apache.brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
 
 public class NatPredicates {
 

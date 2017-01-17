@@ -36,6 +36,9 @@ import org.testng.annotations.Test;
 
 import com.google.common.net.HostAndPort;
 
+import brooklyn.networking.vclouddirector.nat.NatServiceLiveTest;
+import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
+
 /**
  * See {@link NatServiceLiveTest} for details of environment setup assumptions. 
  */

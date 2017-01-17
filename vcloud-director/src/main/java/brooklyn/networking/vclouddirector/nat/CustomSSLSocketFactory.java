@@ -9,7 +9,7 @@
  * WARRANTIES OR CONDITIONS OF MERCHANTABILITY, SATISFACTORY # QUALITY,
  * NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE.
  */
-package brooklyn.networking.vclouddirector;
+package brooklyn.networking.vclouddirector.nat;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
