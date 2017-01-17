@@ -44,7 +44,6 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.config.ConfigKey.HasConfigKey;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
-import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.cloud.names.BasicCloudMachineNamer;
 import org.apache.brooklyn.entity.proxy.AbstractNonProvisionedControllerImpl;

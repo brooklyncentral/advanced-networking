@@ -17,8 +17,6 @@ package brooklyn.networking.cloudstack.legacy;
 
 import java.util.Map;
 
-import org.jclouds.cloudstack.domain.FirewallRule;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -29,7 +27,11 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.net.Cidr;
+import org.jclouds.cloudstack.domain.FirewallRule;
+
+import com.google.common.reflect.TypeToken;
 
 @ImplementedBy(LegacySubnetTierImpl.class)
 public interface LegacySubnetTier extends Entity, Startable {
@@ -64,7 +66,9 @@ public interface LegacySubnetTier extends Entity, Startable {
     public static final AttributeSensor<String> PRIVATE_HOSTNAME = new BasicAttributeSensor<String>(String.class, "hostname.private", 
             "A private hostname or IP within the subnet (used so don't lose private address when transforming hostname etc on an entity)");
     
-    public static final AttributeSensor<Map<String,String>> PUBLIC_HOSTNAME_IP_IDS = new BasicAttributeSensor(Map.class, "subnet.publicips.mapping", 
+    @SuppressWarnings("serial")
+    public static final AttributeSensor<Map<String,String>> PUBLIC_HOSTNAME_IP_IDS = Sensors.newSensor(
+            new TypeToken<Map<String,String>>() {}, "subnet.publicips.mapping", 
             "Provides a mapping from ip ID to actual public IP");
     
     @SuppressWarnings({ "unchecked", "rawtypes" })

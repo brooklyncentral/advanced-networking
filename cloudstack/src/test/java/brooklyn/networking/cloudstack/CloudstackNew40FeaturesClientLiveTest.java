@@ -39,7 +39,7 @@ public class CloudstackNew40FeaturesClientLiveTest {
     public void setUp() throws Exception {
 
         managementContext = Entities.newManagementContext();
-        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve("bt-fast1");
+        loc = (JcloudsLocation) managementContext.getLocationRegistry().getLocationManaged("bt-fast1");
 
         client = CloudstackNew40FeaturesClient.newInstance(loc);
     }

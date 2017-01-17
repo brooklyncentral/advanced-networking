@@ -23,14 +23,18 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.entity.java.VanillaJavaApp;
 
+import com.google.common.reflect.TypeToken;
+
 @ImplementedBy(ExampleForwardingEntityImpl.class)
 public interface ExampleForwardingEntity extends VanillaJavaApp {
 
     ConfigKey<Entity> ORIGIN_ENTITY_FORWARDED = ConfigKeys.newConfigKey(
             Entity.class, "sshtunnel.origin.entity");
 
-    ConfigKey<AttributeSensor<Integer>> ORIGIN_PORT_ATTRIBUTE_FORWARDED = (ConfigKey) ConfigKeys.newConfigKey(
-            AttributeSensor.class, "sshtunnel.origin.portAttribute");
+    @SuppressWarnings("serial")
+    ConfigKey<AttributeSensor<Integer>> ORIGIN_PORT_ATTRIBUTE_FORWARDED = ConfigKeys.newConfigKey(
+            new TypeToken<AttributeSensor<Integer>>() {},
+            "sshtunnel.origin.portAttribute");
 
     // Note this is not set on this entity; it is set on the origin entity!
     AttributeSensor<String> PUBLIC_KEY_DATA = new BasicAttributeSensor<String>(String.class, 

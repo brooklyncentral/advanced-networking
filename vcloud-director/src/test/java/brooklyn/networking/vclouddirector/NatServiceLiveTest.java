@@ -46,7 +46,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     // TAI (as at 2014-12-16) is running vcloud-director version 5.1
     @Test(groups="Live")
     public void testGetNatRulesAtTai() throws Exception {
-        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_SPEC);
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_TAI_SPEC);
         NatService service = newServiceBuilder(loc2)
                 .portRange(DEFAULT_PORT_RANGE)
                 .build();
@@ -57,7 +57,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     // TAI2.0 (as at 2015-04-27) is running vcloud-director version 5.5
     @Test(groups="Live")
     public void testGetNatRulesAtTai2() throws Exception {
-        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2_SPEC);
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_TAI_2_SPEC);
         NatService service = newServiceBuilder(loc2)
                 .portRange(DEFAULT_PORT_RANGE)
                 .build();
@@ -69,7 +69,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     // TAI2.0 (as at 2015-04-27) is running vcloud-director version 5.5
     @Test(groups="Live")
     public void testGetNatRulesAtTai2b() throws Exception {
-        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2b_SPEC);
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_TAI_2b_SPEC);
         NatService service = newServiceBuilder(loc2)
                 .portRange(DEFAULT_PORT_RANGE)
                 .build();
@@ -87,7 +87,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
     
     @Test(groups="Live")
     public void testAddNatRuleAtTai2() throws Exception {
-        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2_SPEC);
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_TAI_2_SPEC);
         String publicIp2 = (String) checkNotNull(loc2.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
 
         HostAndPort targetEndpoint = HostAndPort.fromParts(INTERNAL_MACHINE_IP_TAI_2, 1);
@@ -116,7 +116,7 @@ public class NatServiceLiveTest extends AbstractNatServiceLiveTest {
 
     @Test(groups="Live")
     public void testAddNatRuleAtTai2b() throws Exception {
-        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_TAI_2b_SPEC);
+        JcloudsLocation loc2 = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_TAI_2b_SPEC);
         String publicIp2 = (String) checkNotNull(loc2.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
 
         HostAndPort targetEndpoint = HostAndPort.fromParts(INTERNAL_MACHINE_IP_TAI_2b, 1);

@@ -30,6 +30,7 @@ import org.apache.brooklyn.util.text.Strings;
 
 public class SshTunnelling {
 
+    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(SshTunnelling.class);
 
     public static String generateRsaKey(SshMachineLocation machine) {

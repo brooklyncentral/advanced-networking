@@ -59,8 +59,8 @@ import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.HttpTestUtils;
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.http.HttpAsserts;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Identifiers;
 
@@ -244,14 +244,14 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
 
         // double-check that jboss really is reachable (so don't complain about ELB if it's not ELB's fault!)
         String directurl = appserver.getAttribute(JBoss7Server.ROOT_URL);
-        HttpTestUtils.assertHttpStatusCodeEventuallyEquals(directurl, 200);
-        HttpTestUtils.assertContentContainsText(directurl, "Hello");
+        HttpAsserts.assertHttpStatusCodeEventuallyEquals(directurl, 200);
+        HttpAsserts.assertContentContainsText(directurl, "Hello");
 
         Asserts.succeedsEventually(ImmutableMap.of("timeout", 5*60*1000), new Runnable() {
                 @Override public void run() {
                     String url = "http://"+lb.getAttribute(CloudStackLoadBalancer.HOSTNAME)+":80/";
-                    HttpTestUtils.assertHttpStatusCodeEventuallyEquals(url, 200);
-                    HttpTestUtils.assertContentContainsText(url, "Hello");
+                    HttpAsserts.assertHttpStatusCodeEventuallyEquals(url, 200);
+                    HttpAsserts.assertContentContainsText(url, "Hello");
                 }});
 
         assertEquals(lb.getAttribute(CloudStackLoadBalancer.SERVER_POOL_TARGETS), ImmutableSet.of(machine.getNode().getProviderId()));

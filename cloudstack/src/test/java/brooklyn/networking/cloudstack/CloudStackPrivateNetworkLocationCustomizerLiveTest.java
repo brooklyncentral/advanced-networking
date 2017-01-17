@@ -55,7 +55,7 @@ public class CloudStackPrivateNetworkLocationCustomizerLiveTest {
     public void setUp() throws Exception {
         brooklynProperties = BrooklynProperties.Factory.newDefault();
         managementContext = new LocalManagementContext(brooklynProperties);
-        loc = (JcloudsLocation) managementContext.getLocationRegistry().resolve("citrix-cloudplatform");
+        loc = (JcloudsLocation) managementContext.getLocationRegistry().getLocationManaged("citrix-cloudplatform");
     }
 
     @AfterMethod(alwaysRun=true)

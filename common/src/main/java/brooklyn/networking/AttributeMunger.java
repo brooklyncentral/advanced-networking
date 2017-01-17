@@ -26,7 +26,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
@@ -37,9 +36,9 @@ public class AttributeMunger {
 
     private static final Logger log = LoggerFactory.getLogger(AttributeMunger.class);
 
-    private final EntityLocal adjunctEntity;
+    private final Entity adjunctEntity;
 
-    public AttributeMunger(EntityLocal adjunctEntity) {
+    public AttributeMunger(Entity adjunctEntity) {
         this.adjunctEntity = adjunctEntity;
     }
 
@@ -135,11 +134,11 @@ public class AttributeMunger {
     public static <T> void setAttributeIfChanged(Entity entity, AttributeSensor<T> attribute, T val) {
         Object oldval = entity.getAttribute(attribute);
         if (!Objects.equal(oldval, val)) {
-            ((EntityLocal)entity).setAttribute(attribute, val);
+            entity.sensors().set(attribute, val);
         }
     }
 
     private <T> void subscribe(Entity target, AttributeSensor<T> sensor, SensorEventListener<? super T> listener) {
-        adjunctEntity.subscribe(target, sensor, listener);
+        adjunctEntity.subscriptions().subscribe(target, sensor, listener);
     }
 }

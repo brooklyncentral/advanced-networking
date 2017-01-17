@@ -21,9 +21,15 @@ import static org.testng.Assert.assertTrue;
 import java.io.File;
 import java.util.Arrays;
 
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.net.Networking;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Identifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.reporters.Files;
@@ -31,37 +37,19 @@ import org.testng.reporters.Files;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
-import org.apache.brooklyn.core.test.entity.TestApplication;
-import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.util.net.Networking;
-import org.apache.brooklyn.util.os.Os;
-import org.apache.brooklyn.util.ssh.BashCommands;
-import org.apache.brooklyn.util.text.Identifiers;
-
-public class SshTunnellingIntegrationTest {
+public class SshTunnellingIntegrationTest extends BrooklynAppUnitTestSupport {
 
     private static final Logger log = LoggerFactory.getLogger(SshTunnellingIntegrationTest.class);
 
-    protected TestApplication app;
-    protected ManagementContext managementContext;
     protected SshMachineLocation localMachine;
 
     @BeforeMethod(alwaysRun=true)
+    @Override
     public void setUp() throws Exception {
-        app = ApplicationBuilder.newManagedApp(TestApplication.class);
-        managementContext = app.getManagementContext();
+        super.setUp();
 
-        localMachine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
+        localMachine = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("address", Networking.getLocalHost()));
-    }
-
-    @AfterMethod(alwaysRun=true)
-    public void tearDown() throws Exception {
-        if (managementContext != null) Entities.destroyAll(managementContext);
     }
 
     // TODO This code checks if ~/.ssh/id_rsa already exists, and if it does then it's a no-op.
@@ -114,7 +102,7 @@ public class SshTunnellingIntegrationTest {
 
         SshTunnelling.authorizePublicKey(localMachine, publicKeyData);
 
-        SshMachineLocation viaForwarding = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
+        SshMachineLocation viaForwarding = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("address", localMachine.getAddress())
                 .configure("port", localMachine.getPort())
                 .configure("user", localMachine.getUser())
@@ -123,7 +111,7 @@ public class SshTunnellingIntegrationTest {
             assertTrue(viaForwarding.isSshable(), "hostAndPort="+viaForwarding);
         } finally {
             viaForwarding.close();
-            managementContext.getLocationManager().unmanage(viaForwarding);
+            mgmt.getLocationManager().unmanage(viaForwarding);
             new File(privateKeyFile).delete();
             new File(publicKeyFile).delete();
         }

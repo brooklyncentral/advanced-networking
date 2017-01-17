@@ -31,7 +31,6 @@ import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.access.PortMapping;
 import org.apache.brooklyn.core.mgmt.internal.LocalManagementContext;
@@ -72,7 +71,6 @@ public class PortForwarderSubnetTierRebindUnitTest extends AbstractPortForwarder
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 
         TestEntity origTestChild = origSubnetTier.addChild(EntitySpec.create(TestEntity.class));
-        Entities.startManagement(origTestChild);
 
         // don't start it, so the port-forwarder isn't actually used
         // (this is a brittle hack but it should work)

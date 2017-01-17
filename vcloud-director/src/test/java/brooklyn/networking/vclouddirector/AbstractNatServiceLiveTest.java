@@ -94,7 +94,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_SPEC);
         publicIp = (String) checkNotNull(loc.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
         
         executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());

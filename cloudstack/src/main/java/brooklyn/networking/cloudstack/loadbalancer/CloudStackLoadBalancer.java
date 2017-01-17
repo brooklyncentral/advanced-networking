@@ -56,8 +56,9 @@ public interface CloudStackLoadBalancer extends AbstractNonProvisionedController
 
     /** @deprecated in CloudStack; open firewall explicitly */
     @Deprecated
+    @SuppressWarnings("serial")
     ConfigKey<Set<String>> ALLOWED_SOURCE_CIDRs = ConfigKeys.newConfigKey(
-            new TypeToken<Set<String>>() { }, "cloudstack.loadbalancer.cidr", "List of allowed source CIDRs (Deprecated in CloudStack)");
+            new TypeToken<Set<String>>() {}, "cloudstack.loadbalancer.cidr", "List of allowed source CIDRs (Deprecated in CloudStack)");
 
     /** @deprecated in CloudStack; open firewall explicitly */
     @Deprecated
