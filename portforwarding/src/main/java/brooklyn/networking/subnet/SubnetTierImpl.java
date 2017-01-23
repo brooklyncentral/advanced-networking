@@ -45,9 +45,9 @@ import org.apache.brooklyn.enricher.stock.Transformer;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.networking.JcloudsPortForwarderExtension;
+import org.apache.brooklyn.util.core.ClassLoaderUtils;
 import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.javalang.Reflections;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
@@ -339,17 +339,24 @@ public class SubnetTierImpl extends AbstractEntity implements SubnetTier {
             if (Strings.isNonBlank(type)) {
                 log.trace("Subnet tier "+this+" instantiating new PortForwarder of type "+type);
                 ClassLoader catalogClassLoader = getManagementContext().getCatalog().getRootClassLoader();
-                Optional<PortForwarder> portForwarderByType = Reflections.invokeConstructorWithArgs(catalogClassLoader, type);
-                if (portForwarderByType.isPresent()) {
-                    result = portForwarderByType.get();
-                } else {
-                    throw new IllegalStateException("Failed to create PortForwarder "+type+" for subnet tier "+this);
+                try {
+                    Class<?> portForwarderClass = new ClassLoaderUtils(SubnetTierImpl.class, this).loadClass(type);
+                    result = (PortForwarder) portForwarderClass.newInstance();
+
+                    if (result != null) {
+                        result.setManagementContext(getManagementContext());
+                        sensors().set(PORT_FORWARDER_LIVE, result);
+                    } else {
+                        throw new IllegalStateException("Failed to create PortForwarder "+type+" for subnet tier "+this);
+                    }
+                } catch (ClassNotFoundException e) {
+                    Exceptions.propagate(e);
+                } catch (InstantiationException e) {
+                    Exceptions.propagate(e);
+                } catch (IllegalAccessException e) {
+                    Exceptions.propagate(e);
                 }
             }
-        }
-        if (result != null) {
-            result.setManagementContext(getManagementContext());
-            sensors().set(PORT_FORWARDER_LIVE, result);
         }
         return result;
     }
