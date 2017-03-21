@@ -110,8 +110,9 @@ public class PortForwarderAsyncTest extends BrooklynAppLiveTestSupport {
                     
                     @Override
                     public HostAndPort answer(final InvocationOnMock invocationOnMock) throws Throwable {
+
                         @SuppressWarnings("unchecked")
-                        Optional<Integer> optionalPublicPort = invocationOnMock.getArgumentAt(2, Optional.class);
+                        Optional<Integer> optionalPublicPort = invocationOnMock.getArgument(2);
                         int publicPort = optionalPublicPort.isPresent() ? optionalPublicPort.get() : nextPublicPort.getAndIncrement();
                         Duration invokeTimestamp = Duration.of(watch);
                         invokeTimestamps.add(invokeTimestamp);
