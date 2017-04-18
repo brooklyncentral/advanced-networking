@@ -6,5 +6,6 @@ test-output
 *.log
 .idea/
 *.iml
+*.bak
 .DS_Store
 ignored
