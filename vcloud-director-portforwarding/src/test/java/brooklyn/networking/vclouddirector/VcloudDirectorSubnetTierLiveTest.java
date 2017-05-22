@@ -33,6 +33,7 @@ import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
@@ -42,7 +43,6 @@ import org.apache.brooklyn.core.test.entity.TestEntity;
 import org.apache.brooklyn.entity.machine.MachineEntity;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.slf4j.Logger;
@@ -207,9 +207,9 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             // Confirm the expected port is advertised
             if (publicPort != null) {
                 publicEndpoint = HostAndPort.fromParts(publicIp, publicPort);
-                EntityTestUtils.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, publicEndpoint.toString());
+                EntityAsserts.assertAttributeEqualsEventually(entity, MAPPED_ENDPOINT, publicEndpoint.toString());
             } else {
-                String mappedEndpoint = EntityTestUtils.assertAttributeEventuallyNonNull(entity, MAPPED_ENDPOINT);
+                String mappedEndpoint = EntityAsserts.assertAttributeEventuallyNonNull(entity, MAPPED_ENDPOINT);
                 publicEndpoint = HostAndPort.fromString(mappedEndpoint);
                 assertEquals(publicEndpoint.getHostText(), publicIp);
                 assertTrue(publicEndpoint.hasPort(), "result="+publicEndpoint);

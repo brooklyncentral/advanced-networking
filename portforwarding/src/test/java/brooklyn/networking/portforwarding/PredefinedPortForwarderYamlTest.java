@@ -5,6 +5,7 @@ import static org.testng.Assert.assertEquals;
 import java.io.StringReader;
 import java.util.Map;
 
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.location.Machines;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,6 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.EmptySoftwareProcess;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.net.UserAndHostAndPort;
 
 public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
@@ -64,11 +64,11 @@ public class PredefinedPortForwarderYamlTest extends AbstractYamlTest {
         
         assertMachine(machine, UserAndHostAndPort.fromParts("myuser", "83.222.229.1", 12001), ImmutableMap.of(
                 SshMachineLocation.PASSWORD.getName(), "mypassword"));
-        
-        EntityTestUtils.assertAttributeEquals(entity, Attributes.SUBNET_ADDRESS, "10.0.0.1");
-        EntityTestUtils.assertAttributeEquals(entity, Attributes.ADDRESS, "83.222.229.1");
-        EntityTestUtils.assertAttributeEquals(entity, Attributes.HTTP_PORT, 8080);
-        EntityTestUtils.assertAttributeEqualsEventually(entity, Sensors.newStringSensor("mapped.http.port"), "83.222.229.1:12002");
+
+        EntityAsserts.assertAttributeEquals(entity, Attributes.SUBNET_ADDRESS, "10.0.0.1");
+        EntityAsserts.assertAttributeEquals(entity, Attributes.ADDRESS, "83.222.229.1");
+        EntityAsserts.assertAttributeEquals(entity, Attributes.HTTP_PORT, 8080);
+        EntityAsserts.assertAttributeEqualsEventually(entity, Sensors.newStringSensor("mapped.http.port"), "83.222.229.1:12002");
     }
     
     private void assertMachine(SshMachineLocation machine, UserAndHostAndPort conn, Map<String, ?> config) {

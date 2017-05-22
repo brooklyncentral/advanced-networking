@@ -19,6 +19,7 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.List;
 
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -42,7 +43,6 @@ import org.apache.brooklyn.core.location.SimulatedLocation;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.EntityTestUtils;
 
 public class AttributeMungerTest {
 
@@ -104,7 +104,7 @@ public class AttributeMungerTest {
         app.sensors().set(ENDPOINT, "PREFIX://myprivatehostname:1234/POSTFIX");
         app.sensors().set(PUBLIC_ENDPOINT, "mypublichostname:5678");
 
-        EntityTestUtils.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
+        EntityAsserts.assertAttributeEqualsEventually(app, ENDPOINT, "PREFIX://mypublichostname:5678/POSTFIX");
     }
 
     private <T> void assertEqualsEventually(T actual, T expected) {
