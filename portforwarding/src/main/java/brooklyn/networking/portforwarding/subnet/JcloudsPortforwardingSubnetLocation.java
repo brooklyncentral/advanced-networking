@@ -165,7 +165,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                 LOG.debug("Could not resolve reported address '"+address+"' for "+managementHostAndPort+" ("+setup.getDescription()+"/"+node+"), requesting reachable socket address");
                 if (computeService==null) throw Exceptions.propagate(e);
                 // this has sometimes already been done in waitForReachable (unless skipped) but easy enough to do again
-                address = JcloudsUtil.getFirstReachableAddress(computeService.getContext(), node);
+                address = JcloudsUtil.getFirstReachableAddress(node, Duration.FIVE_MINUTES);
             }
         }
 
