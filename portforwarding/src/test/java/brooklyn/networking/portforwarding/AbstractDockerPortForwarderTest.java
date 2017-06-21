@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -36,7 +37,6 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -47,7 +47,7 @@ import org.apache.brooklyn.util.net.Networking;
 
 // TODO Tests currently written to be fast: they assume existing VMs are configured.
 // Could re-write to create the VMs (and terminate them obviously) for each run.
-public abstract class AbstractDockerPortForwarderTest {
+public abstract class AbstractDockerPortForwarderTest extends BrooklynAppUnitTestSupport {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractDockerPortForwarderTest.class);
 
@@ -113,7 +113,7 @@ public abstract class AbstractDockerPortForwarderTest {
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
-        app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
+        super.setUp();
         portForwarder = new DockerPortForwarder(portForwardManager);
         portForwarder.init(DOCKER_HOST_IP, DOCKER_HOST_PORT);
     }

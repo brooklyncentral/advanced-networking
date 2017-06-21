@@ -20,6 +20,7 @@ import static org.testng.Assert.assertEquals;
 import java.util.List;
 
 import org.apache.brooklyn.core.entity.EntityAsserts;
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -38,22 +39,20 @@ import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.core.location.SimulatedLocation;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensor;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.test.Asserts;
 
-public class AttributeMungerTest {
+public class AttributeMungerTest extends BrooklynAppUnitTestSupport {
 
-    private TestApplication app;
     private List<Object> events;
     private Location loc;
 
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
+        super.setUp();
         events = Lists.newCopyOnWriteArrayList();
-        app = ApplicationBuilder.newManagedApp(TestApplication.class);
         loc = app.getManagementContext().getLocationManager().createLocation(LocationSpec.create(SimulatedLocation.class));
         app.start(ImmutableList.of(loc));
 
