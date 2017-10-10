@@ -12,21 +12,19 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.location.PortRanges;
+import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
-
-import brooklyn.networking.vclouddirector.nat.NatPredicates;
-import brooklyn.networking.vclouddirector.nat.NatService;
-import brooklyn.networking.vclouddirector.nat.PortForwardingConfig;
-
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -35,13 +33,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-
-import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.core.location.PortRanges;
-import org.apache.brooklyn.core.test.BrooklynAppLiveTestSupport;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.net.Protocol;
+import com.vmware.vcloud.api.rest.schema.NatPortForwardingRuleType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
 
 /**
  * Tests assume that brooklyn.properties have been configured with location specs for vCHS and TAI.
@@ -98,7 +92,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        loc = (JcloudsLocation) mgmt.getLocationRegistry().resolve(LOCATION_SPEC);
+        loc = (JcloudsLocation) mgmt.getLocationRegistry().getLocationManaged(LOCATION_SPEC);
         publicIp = (String) checkNotNull(loc.config().getBag().getStringKey("advancednetworking.vcloud.network.publicip"), "publicip");
         
         executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
@@ -259,7 +253,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     
     protected String toString(NatRuleType rule) {
         if (rule == null) return null;
-        return Objects.toStringHelper(rule)
+        return MoreObjects.toStringHelper(rule)
                 .add("type", rule.getRuleType())
                 .add("portForwardingRule", toString(rule.getPortForwardingRule()))
                 .add("portForwardingRule", toString(rule.getVmRule()))
@@ -268,7 +262,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
     
     private String toString(NatVmRuleType rule) {
         if (rule == null) return null;
-        return Objects.toStringHelper(rule)
+        return MoreObjects.toStringHelper(rule)
                 .add("protocol", rule.getProtocol())
                 .add("internalPort", rule.getInternalPort())
                 .add("vAppScopedVmId", rule.getVAppScopedVmId())
@@ -279,7 +273,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
 
     protected String toString(NatPortForwardingRuleType rule) {
         if (rule == null) return null;
-        return Objects.toStringHelper(rule)
+        return MoreObjects.toStringHelper(rule)
                 .add("protocol", rule.getProtocol())
                 .add("internalIp", rule.getInternalIpAddress())
                 .add("internalPort", rule.getInternalPort())

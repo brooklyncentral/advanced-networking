@@ -24,25 +24,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-
-import org.jclouds.cloudstack.domain.AsyncCreateResponse;
-import org.jclouds.cloudstack.domain.FirewallRule;
-import org.jclouds.cloudstack.domain.Network;
-import org.jclouds.cloudstack.domain.PublicIPAddress;
-import org.jclouds.cloudstack.options.AssociateIPAddressOptions;
-import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
-import org.jclouds.cloudstack.options.CreateNetworkOptions;
-
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -59,13 +40,32 @@ import org.apache.brooklyn.entity.webapp.jboss.JBoss7Server;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.HttpTestUtils;
 import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.http.HttpAsserts;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Identifiers;
+import org.jclouds.cloudstack.domain.AsyncCreateResponse;
+import org.jclouds.cloudstack.domain.FirewallRule;
+import org.jclouds.cloudstack.domain.Network;
+import org.jclouds.cloudstack.domain.PublicIPAddress;
+import org.jclouds.cloudstack.options.AssociateIPAddressOptions;
+import org.jclouds.cloudstack.options.CreateFirewallRuleOptions;
+import org.jclouds.cloudstack.options.CreateNetworkOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import brooklyn.networking.cloudstack.CloudstackNew40FeaturesClient;
-import brooklyn.networking.cloudstack.legacy.LegacyJcloudsCloudstackSubnetLocation;
+import brooklyn.networking.cloudstack.portforwarding.CloudstackPortForwarder;
+import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.networking.subnet.SubnetTier;
 
 // FIXME: Tests currently failing with NPE
 @Test(groups={"WIP"})
@@ -174,8 +174,6 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
         String ipId = response.getId();
         PublicIPAddress ip = client.getCloudstackGlobalClient().getAddressApi().getPublicIPAddress(ipId);
 
-        portForwardManager.recordPublicIpHostname(ip.getId(), ip.getIPAddress());
-
         return ip.getId();
     }
 
@@ -211,47 +209,50 @@ public class CloudStackLoadBalancerLiveTest extends BrooklynAppLiveTestSupport {
         lb.reload();
     }
 
+    // TODO Updated the code to use `SubnetTier` instead of `LegacyJcloudsCloudstackSubnetLocation`,
+    // but have not tested this! Don't have an appropriate cloudstack endpoint to hand.
     @Test(groups="Live")
     public void testLoadBalancerWithHttpTargets() throws Exception {
         networkId = createNetwork(zoneId);
         publicIpId = createPublicIp(zoneId, networkId);
         openPublicPort(publicIpId, 1234, Cidr.UNIVERSAL);
 
-        LegacyJcloudsCloudstackSubnetLocation subnetLoc = new LegacyJcloudsCloudstackSubnetLocation(loc, ConfigBag.newInstance()
-                .configure(LegacyJcloudsCloudstackSubnetLocation.CLOUDSTACK_SUBNET_NETWORK_ID, networkId)
-                .configure(LegacyJcloudsCloudstackSubnetLocation.CLOUDSTACK_ZONE_ID, zoneId)
-                .configure(LegacyJcloudsCloudstackSubnetLocation.MANAGEMENT_ACCESS_CIDR, Cidr.UNIVERSAL)
-                .configure(LegacyJcloudsCloudstackSubnetLocation.CLOUDSTACK_TIER_PUBLIC_IP_ID, publicIpId)
-                .configure(LegacyJcloudsCloudstackSubnetLocation.PORT_FORWARDING_MANAGER, portForwardManager));
+        PortForwarder portForwarder = new CloudstackPortForwarder();
 
-        DynamicCluster cluster = app.createAndManageChild(EntitySpec.create(DynamicCluster.class)
+        SubnetTier subnetTier = app.addChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDING_MANAGER, portForwardManager)
+                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL)
+                .configure(CloudstackPortForwarder.PUBLIC_IP_ID, publicIpId));
+
+        DynamicCluster cluster = subnetTier.addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(DynamicCluster.INITIAL_SIZE, 1)
                 .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
                         .configure("war", warUrl.toString())
                         .configure(JBoss7Server.HTTP_PORT, PortRanges.fromInteger(8080))));
 
-        lb = app.createAndManageChild(EntitySpec.create(CloudStackLoadBalancer.class)
+        lb = app.addChild(EntitySpec.create(CloudStackLoadBalancer.class)
                 .configure(CloudStackLoadBalancer.SERVER_POOL, cluster)
                 .configure(CloudStackLoadBalancer.LOAD_BALANCER_NAME, "myname-"+System.getProperty("user.name")+"-"+Identifiers.makeRandomId(8))
                 .configure(CloudStackLoadBalancer.PUBLIC_IP_ID, publicIpId)
                 .configure(CloudStackLoadBalancer.PROXY_HTTP_PORT, PortRanges.fromInteger(1234))
                 .configure(CloudStackLoadBalancer.INSTANCE_PORT, 8080));
 
-        app.start(ImmutableList.of(subnetLoc));
+        app.start(ImmutableList.of(loc));
 
         JBoss7Server appserver = (JBoss7Server) Iterables.getOnlyElement(cluster.getMembers());
         JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) Iterables.getOnlyElement(appserver.getLocations());
 
         // double-check that jboss really is reachable (so don't complain about ELB if it's not ELB's fault!)
         String directurl = appserver.getAttribute(JBoss7Server.ROOT_URL);
-        HttpTestUtils.assertHttpStatusCodeEventuallyEquals(directurl, 200);
-        HttpTestUtils.assertContentContainsText(directurl, "Hello");
+        HttpAsserts.assertHttpStatusCodeEventuallyEquals(directurl, 200);
+        HttpAsserts.assertContentContainsText(directurl, "Hello");
 
         Asserts.succeedsEventually(ImmutableMap.of("timeout", 5*60*1000), new Runnable() {
                 @Override public void run() {
                     String url = "http://"+lb.getAttribute(CloudStackLoadBalancer.HOSTNAME)+":80/";
-                    HttpTestUtils.assertHttpStatusCodeEventuallyEquals(url, 200);
-                    HttpTestUtils.assertContentContainsText(url, "Hello");
+                    HttpAsserts.assertHttpStatusCodeEventuallyEquals(url, 200);
+                    HttpAsserts.assertContentContainsText(url, "Hello");
                 }});
 
         assertEquals(lb.getAttribute(CloudStackLoadBalancer.SERVER_POOL_TARGETS), ImmutableSet.of(machine.getNode().getProviderId()));

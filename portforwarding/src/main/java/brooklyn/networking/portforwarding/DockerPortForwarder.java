@@ -20,6 +20,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
+import org.apache.brooklyn.core.location.access.PortForwardManagerImpl;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
+import org.apache.brooklyn.util.net.Protocol;
+import org.jclouds.Constants;
+import org.jclouds.ContextBuilder;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.docker.DockerApi;
+import org.jclouds.docker.domain.Container;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
+import org.jclouds.sshj.config.SshjSshClientModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,28 +51,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.google.inject.Module;
-
-import org.jclouds.Constants;
-import org.jclouds.ContextBuilder;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.docker.DockerApi;
-import org.jclouds.docker.domain.Container;
-import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
-import org.jclouds.sshj.config.SshjSshClientModule;
-
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.MachineLocation;
-import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.location.access.PortForwardManager;
-import org.apache.brooklyn.core.location.access.PortForwardManagerImpl;
-import org.apache.brooklyn.core.location.access.PortMapping;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import org.apache.brooklyn.util.net.Cidr;
-import org.apache.brooklyn.util.net.HasNetworkAddresses;
-import org.apache.brooklyn.util.net.Protocol;
 
 import brooklyn.networking.common.subnet.PortForwarder;
 
@@ -77,7 +74,7 @@ public class DockerPortForwarder implements PortForwarder {
     @Override
     public void setManagementContext(ManagementContext managementContext) {
         if (portForwardManager == null) {
-            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
+            portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().getLocationManaged("portForwardManager(scope=global)");
         }
     }
     
@@ -169,18 +166,15 @@ public class DockerPortForwarder implements PortForwarder {
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
         // FIXME Does this actually open the port forwarding? Or just record that the port is supposed to be open?
         PortForwardManager pfw = getPortForwardManager();
-        PortMapping mapping;
+        HostAndPort publicEndpoint;
         if (optionalPublicPort.isPresent()) {
             int publicPort = optionalPublicPort.get();
-            mapping = pfw.acquirePublicPortExplicit(dockerHostname, publicPort);
+            publicEndpoint = HostAndPort.fromParts(dockerHostname, publicPort);
         } else {
-            mapping = pfw.acquirePublicPortExplicit(dockerHostname, targetSide.getPort());
+            publicEndpoint = HostAndPort.fromParts(dockerHostname, targetSide.getPort());
         }
-        if (mapping == null) {
-            return HostAndPort.fromParts(dockerHostname, targetSide.getPort());
-        } else {
-            return HostAndPort.fromParts(dockerHostname, mapping.getPublicPort());
-        }
+        pfw.associate(dockerHostname, publicEndpoint, targetSide.getPort());
+        return publicEndpoint;
     }
 
     @Override

@@ -26,7 +26,7 @@ import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -59,8 +59,6 @@ import brooklyn.networking.util.ConcurrentReachableAddressFinder;
 /** requires zone id and tier id to be specified; shared_network_id optional (but needed if you want to connect!) */
 public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
 
-    private static final long serialVersionUID = 2447151199192553199L;
-
     private static final Logger log = LoggerFactory.getLogger(JcloudsPortforwardingSubnetLocation.class);
 
     /** config on the subnet jclouds location */
@@ -81,7 +79,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
     }
 
     public JcloudsPortforwardingSubnetLocation(JcloudsLocation parent, ConfigBag map) {
-        super(MutableMap.copyOf(parent.getLocalConfigBag().getAllConfig()));
+        super(MutableMap.copyOf(parent.config().getLocalBag().getAllConfig()));
         configure(map.getAllConfig());
     }
 
@@ -174,7 +172,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
                     new Object[] {
                             userCredentials.getUser(),
                             address,
-                            Entities.sanitize(sshConfig),
+                            Sanitizer.sanitize(sshConfig),
                             managementHostAndPort,
                             setup.getDescription(),
                             node
