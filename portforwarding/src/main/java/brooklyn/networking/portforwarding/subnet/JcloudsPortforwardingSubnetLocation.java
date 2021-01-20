@@ -135,7 +135,7 @@ public class JcloudsPortforwardingSubnetLocation extends JcloudsLocation {
             nodeRegion = extractProvider(setup, node);
         }
 
-        String address = managementHostAndPort.getHostText();
+        String address = managementHostAndPort.getHost();
         try {
             Networking.getInetAddressWithFixedName(address);
             // fine, it resolves

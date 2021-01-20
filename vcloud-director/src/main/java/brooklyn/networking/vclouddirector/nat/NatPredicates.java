@@ -17,7 +17,7 @@ public class NatPredicates {
 
     public static Predicate<NatRuleType> translatedEndpointEquals(HostAndPort hostAndPort) {
         checkArgument(hostAndPort.hasPort(), "must have port");
-        return translatedEndpointEquals(hostAndPort.getHostText(), hostAndPort.getPort());
+        return translatedEndpointEquals(hostAndPort.getHost(), hostAndPort.getPort());
     }
 
     public static Predicate<NatRuleType> originalEndpointEquals(String ip, int port) {
@@ -26,7 +26,7 @@ public class NatPredicates {
     
     public static Predicate<NatRuleType> originalEndpointEquals(HostAndPort hostAndPort) {
         checkArgument(hostAndPort.hasPort(), "must have port");
-        return new OriginalTargetEquals(hostAndPort.getHostText(), hostAndPort.getPort());
+        return new OriginalTargetEquals(hostAndPort.getHost(), hostAndPort.getPort());
     }
     
     public static Predicate<NatRuleType> originalIpEquals(String ip) {

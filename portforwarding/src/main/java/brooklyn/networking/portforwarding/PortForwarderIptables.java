@@ -196,17 +196,17 @@ public class PortForwarderIptables implements PortForwarder {
     protected boolean systemCreatePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Cidr cidr) {
         checkNotNull(targetSide, "targetSide");
         checkNotNull(publicSide, "publicSide");
-        checkArgument(publicSide.getHostText().equals(forwarderIp), "publicSide %s should match forwarderIp %s", publicSide, forwarderIp);
+        checkArgument(publicSide.getHost().equals(forwarderIp), "publicSide %s should match forwarderIp %s", publicSide, forwarderIp);
 
         try {
             List<String> commands = ImmutableList.of(
-                    sudo(String.format("/sbin/iptables -t nat -I PREROUTING -p tcp --dport %s -j DNAT --to-destination %s:%s", publicSide.getPort(), targetSide.getHostText(), targetSide.getPort())),
+                    sudo(String.format("/sbin/iptables -t nat -I PREROUTING -p tcp --dport %s -j DNAT --to-destination %s:%s", publicSide.getPort(), targetSide.getHost(), targetSide.getPort())),
                     sudo("/sbin/iptables -t nat -I POSTROUTING -j MASQUERADE"),
                     IptablesCommands.saveIptablesRules()); // note save already wrapped in sudo
 
             int result = forwarderMachine.execScript("port-forwarding "+publicSide+"->"+targetSide, commands);
 
-            boolean opened = systemOpenFirewall(publicSide.getHostText(), publicSide.getPort(), publicSide.getPort(), Protocol.TCP, cidr);
+            boolean opened = systemOpenFirewall(publicSide.getHost(), publicSide.getPort(), publicSide.getPort(), Protocol.TCP, cidr);
             // targetPort doesn't need to be opened - assuming both on internal network, and already opened
 
             if (result != 0) {

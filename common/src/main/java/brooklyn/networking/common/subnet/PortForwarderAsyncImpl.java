@@ -137,7 +137,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
                 AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sourceSensor);
                 AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sourceSensor);
                 AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sourceSensor);
-                String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+                String endpoint = publicEndpoint.getHost() + ":" + publicEndpoint.getPort();
                 entity.sensors().set(mappedSensor, endpoint);
                 entity.sensors().set(mappedEndpointSensor, endpoint);
                 entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
@@ -159,7 +159,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
             AttributeSensor<String> mappedSensor = Sensors.newStringSensor("mapped." + sourceSensor);
             AttributeSensor<String> mappedEndpointSensor = Sensors.newStringSensor("mapped.endpoint." + sourceSensor);
             AttributeSensor<Integer> mappedPortSensor = Sensors.newIntegerSensor("mapped.portPart." + sourceSensor);
-            String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+            String endpoint = publicEndpoint.getHost() + ":" + publicEndpoint.getPort();
             entity.sensors().set(mappedSensor, endpoint);
             entity.sensors().set(mappedEndpointSensor, endpoint);
             entity.sensors().set(mappedPortSensor, publicEndpoint.getPort());
@@ -175,7 +175,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
         new Advertiser() {
             @Override
             public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
-                String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+                String endpoint = publicEndpoint.getHost() + ":" + publicEndpoint.getPort();
                 whereToAdvertiseEndpoint.setValue(endpoint);
             }
         };
@@ -195,7 +195,7 @@ public class PortForwarderAsyncImpl implements PortForwarderAsync {
         }
         @Override
         public void advertise(EntityAndAttribute<Integer> source, HostAndPort publicEndpoint) {
-            String endpoint = publicEndpoint.getHostText() + ":" + publicEndpoint.getPort();
+            String endpoint = publicEndpoint.getHost() + ":" + publicEndpoint.getPort();
             whereToAdvertiseEndpoint.setValue(endpoint);
         }
     }

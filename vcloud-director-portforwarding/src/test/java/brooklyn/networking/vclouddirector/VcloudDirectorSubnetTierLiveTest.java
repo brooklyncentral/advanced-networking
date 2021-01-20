@@ -211,7 +211,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             } else {
                 String mappedEndpoint = EntityAsserts.assertAttributeEventuallyNonNull(entity, MAPPED_ENDPOINT);
                 publicEndpoint = HostAndPort.fromString(mappedEndpoint);
-                assertEquals(publicEndpoint.getHostText(), publicIp);
+                assertEquals(publicEndpoint.getHost(), publicIp);
                 assertTrue(publicEndpoint.hasPort(), "result="+publicEndpoint);
                 assertTrue(contains(DEFAULT_PORT_RANGE, publicEndpoint.getPort()), "result="+publicEndpoint);
             }
@@ -223,7 +223,7 @@ public class VcloudDirectorSubnetTierLiveTest extends BrooklynAppLiveTestSupport
             if (createVm) {
                 SshMachineLocation machineViaOtherPort = mgmt.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                         .configure("user", machine.getUser())
-                        .configure("address", publicEndpoint.getHostText())
+                        .configure("address", publicEndpoint.getHost())
                         .configure("port", publicEndpoint.getPort())
                         .configure("privateKeyFile", machine.getConfig(SshMachineLocation.PRIVATE_KEY_FILE))
                         .configure("privateKeyData", machine.getConfig(SshMachineLocation.PRIVATE_KEY_DATA))

@@ -92,7 +92,7 @@ public class CloudStackLoadBalancerImpl extends AbstractNonProvisionedController
         if (requireManagementAccessible) {
             HostAndPort accessible = BrooklynAccessUtils.getBrooklynAccessibleAddress(this, port);
             if (accessible!=null) {
-                hostname = accessible.getHostText();
+                hostname = accessible.getHost();
                 port = accessible.getPort();
             }
         }

@@ -130,7 +130,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
                 .publicPortRange(portRange)
                 .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
         try {
-            assertEquals(result.getHostText(), publicIp, "result="+result);
+            assertEquals(result.getHost(), publicIp, "result="+result);
             assertTrue(contains(portRange, result.getPort()), "result="+result);
         } finally {
             if (result != null) {
@@ -149,7 +149,7 @@ public class NatMicroserviceClientLiveTest extends BrooklynAppLiveTestSupport {
                 .publicEndpoint(HostAndPort.fromString(publicIp))
                 .targetEndpoint(HostAndPort.fromParts(INTERNAL_MACHINE_IP, 1234)));
         try {
-            assertEquals(result.getHostText(), publicIp, "result="+result);
+            assertEquals(result.getHost(), publicIp, "result="+result);
             assertTrue(contains(DEFAULT_PORT_RANGE, result.getPort()), "result="+result);
         } finally {
             if (result != null) {

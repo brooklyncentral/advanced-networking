@@ -252,7 +252,7 @@ public class SubnetEnrichers {
                 }
                 URI result;
                 try {
-                    result = new URI(uri.getScheme(), uri.getUserInfo(), publicTarget.getHostText(), publicTarget.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
+                    result = new URI(uri.getScheme(), uri.getUserInfo(), publicTarget.getHost(), publicTarget.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
                 } catch (URISyntaxException e) {
                     log.debug("Error transforming URI "+uri+", using target "+publicTarget+"; rethrowing");
                     throw Exceptions.propagate(e);
@@ -274,7 +274,7 @@ public class SubnetEnrichers {
                     log.debug("sensor mapper not transforming {} URI {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine});
                     return sensorVal;
                 }
-                String result = publicTarget.getHostText() + ":" + publicTarget.getPort();
+                String result = publicTarget.getHost() + ":" + publicTarget.getPort();
                 log.debug("sensor mapper transforming URI "+hostAndPort+" to "+result);
                 return result;
             } else {
@@ -327,7 +327,7 @@ public class SubnetEnrichers {
 
                 if (publicTarget != null) {
                     log.debug("sensor mapper transforming {} port {} to {}", new Object[] {source, sensorVal, publicTarget});
-                    return publicTarget.getHostText()+":"+publicTarget.getPort();
+                    return publicTarget.getHost()+":"+publicTarget.getPort();
                 } else {
                     log.debug("sensor mapper not transforming {} port {}, because no port-mapping for {}", new Object[] {source, sensorVal, machine.get()});
                     return null;

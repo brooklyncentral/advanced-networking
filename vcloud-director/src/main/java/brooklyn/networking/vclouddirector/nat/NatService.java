@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import javax.annotation.Nullable;
 import javax.xml.bind.JAXBElement;
 
+import com.google.common.base.MoreObjects;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -200,7 +201,7 @@ public class NatService {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this).add("toOpen", toOpen).add("toClose", toClose).toString();
+            return MoreObjects.toStringHelper(this).add("toOpen", toOpen).add("toClose", toClose).toString();
         }
 
         public boolean isEmpty() {
@@ -241,7 +242,7 @@ public class NatService {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this).add("opened", opened.values()).add("closed", closed.values()).toString();
+            return MoreObjects.toStringHelper(this).add("opened", opened.values()).add("closed", closed.values()).toString();
         }
     }
 
@@ -374,10 +375,10 @@ public class NatService {
 
         Set<String> publicIps = Sets.newLinkedHashSet();
         for (PortForwardingConfig arg : delta.toOpen) {
-            publicIps.add(arg.getPublicEndpoint().getHostText());
+            publicIps.add(arg.getPublicEndpoint().getHost());
         }
         for (PortForwardingConfig arg : delta.toClose) {
-            publicIps.add(arg.getPublicEndpoint().getHostText());
+            publicIps.add(arg.getPublicEndpoint().getHost());
         }
 
         UpdateResult result = new UpdateResult();
@@ -398,7 +399,7 @@ public class NatService {
                 // TODO If many NAT rules to be opened in the batch, then this is inefficient - but nothing compared to
                 // the time it takes VMware to make the change (e.g. 40 seconds).
                 HostAndPort publicEndpoint = arg.getPublicEndpoint();
-                GatewayInterfaceType gatewayInterface = publicIpToGatewayInterface.get(publicEndpoint.getHostText());
+                GatewayInterfaceType gatewayInterface = publicIpToGatewayInterface.get(publicEndpoint.getHost());
                 ReferenceType externalNetworkRef = gatewayInterface.getNetwork();
 
                 if (arg.getPublicEndpoint().hasPort()) {
@@ -409,9 +410,9 @@ public class NatService {
                     PortRange portRangeToUse = portRange;
                     Set<Integer> usedPorts = getUsedPublicPorts(Iterables.filter(natService.getNatRule(), Predicates.and(
                             NatPredicates.protocolMatches(arg.getProtocol()),
-                            NatPredicates.originalIpEquals(arg.getPublicEndpoint().getHostText()))));
+                            NatPredicates.originalIpEquals(arg.getPublicEndpoint().getHost()))));
                     int availablePublicPort = findAvailablePort(portRangeToUse, usedPorts);
-                    publicEndpoint = HostAndPort.fromParts(arg.getPublicEndpoint().getHostText(), availablePublicPort);
+                    publicEndpoint = HostAndPort.fromParts(arg.getPublicEndpoint().getHost(), availablePublicPort);
                 }
 
                 GatewayNatRuleType gatewayNatRule = generateGatewayNatRule(
@@ -434,8 +435,8 @@ public class NatService {
                 // TODO Could also match on networkId
                 Iterable<NatRuleType> filtered = Iterables.filter(natService.getNatRule(), Predicates.and(
                         NatPredicates.protocolMatches(arg.getProtocol()),
-                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort())));
+                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort()),
+                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHost(), arg.getTargetEndpoint().getPort())));
                 natService.getNatRule().removeAll(Lists.newArrayList(filtered));
 
                 result.closed(arg, arg);
@@ -462,25 +463,25 @@ public class NatService {
             // and without any conflicting DNAT rules already using that port.
             for (PortForwardingConfig arg : result.getOpened().values()) {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
-                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort())));
+                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort()),
+                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHost(), arg.getTargetEndpoint().getPort())));
 
                 Iterable<NatRuleType> conflicts = Iterables.filter(rules, Predicates.and(
-                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        Predicates.not(NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort()))));
+                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort()),
+                        Predicates.not(NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHost(), arg.getTargetEndpoint().getPort()))));
 
                 if (Iterables.isEmpty(matches)) {
                     throw new IllegalStateException(
                             String.format("Gateway NAT Rules: cannot find translated %s and original %s:%s at %s",
-                                    arg.getTargetEndpoint(), arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort(), baseUrl));
+                                    arg.getTargetEndpoint(), arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort(), baseUrl));
                 } else if (Iterables.size(matches) > 1) {
                     LOG.warn(String.format("Gateway NAT Rules: %s duplicates for translated %s and original %s:%s at %s; continuing.",
-                            Iterables.size(matches), arg.getTargetEndpoint(), arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort(), baseUrl));
+                            Iterables.size(matches), arg.getTargetEndpoint(), arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort(), baseUrl));
                 }
                 if (Iterables.size(conflicts) > 0) {
                     throw new IllegalStateException(
                             String.format("Gateway NAT Rules: original already assigned for translated %s and original %s:%s at %s",
-                                    arg.getTargetEndpoint(), arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort(), baseUrl));
+                                    arg.getTargetEndpoint(), arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort(), baseUrl));
                 }
             }
 
@@ -488,13 +489,13 @@ public class NatService {
             for (PortForwardingConfig arg : result.getClosed().values()) {
                 Iterable<NatRuleType> matches = Iterables.filter(rules, Predicates.and(
                         NatPredicates.protocolMatches(arg.getProtocol()),
-                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort()),
-                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHostText(), arg.getTargetEndpoint().getPort())));
+                        NatPredicates.originalEndpointEquals(arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort()),
+                        NatPredicates.translatedEndpointEquals(arg.getTargetEndpoint().getHost(), arg.getTargetEndpoint().getPort())));
 
                 if (!Iterables.isEmpty(matches)) {
                     throw new IllegalStateException(
                             String.format("Gateway NAT Rules: the rule with translated %s and original %s:%s at %s has NOT " +
-                                    "been deleted", arg.getTargetEndpoint(), arg.getPublicEndpoint().getHostText(), arg.getPublicEndpoint().getPort(), baseUrl));
+                                    "been deleted", arg.getTargetEndpoint(), arg.getPublicEndpoint().getHost(), arg.getPublicEndpoint().getPort(), baseUrl));
                 }
             }
 
@@ -819,9 +820,9 @@ public class NatService {
                                                       HostAndPort translated, ReferenceType interfaceRef) {
         GatewayNatRuleType gatewayNatRule = new GatewayNatRuleType();
         gatewayNatRule.setProtocol(protocol.toString());
-        gatewayNatRule.setOriginalIp(original.getHostText());
+        gatewayNatRule.setOriginalIp(original.getHost());
         gatewayNatRule.setOriginalPort(Integer.toString(original.getPort()));
-        gatewayNatRule.setTranslatedIp(translated.getHostText());
+        gatewayNatRule.setTranslatedIp(translated.getHost());
         gatewayNatRule.setTranslatedPort(Integer.toString(translated.getPort()));
         gatewayNatRule.setInterface(interfaceRef);
         return gatewayNatRule;

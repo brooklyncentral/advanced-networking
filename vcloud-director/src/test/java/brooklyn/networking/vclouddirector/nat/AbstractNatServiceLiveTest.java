@@ -140,7 +140,7 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
             if (publicPort != null) {
                 assertEquals(result, publicEndpoint);
             } else {
-                assertEquals(result.getHostText(), publicIp, "result="+result);
+                assertEquals(result.getHost(), publicIp, "result="+result);
                 assertTrue(result.hasPort(), "result="+result);
                 if (publicPortRange != null) {
                     assertTrue(contains(publicPortRange, result.getPort()), "result="+result+"; range="+publicPortRange);
@@ -238,9 +238,9 @@ public abstract class AbstractNatServiceLiveTest extends BrooklynAppLiveTestSupp
         List<NatRuleType> rules = service.getNatRules();
         NatRuleType rule = Iterables.tryFind(rules, NatPredicates.translatedEndpointEquals(targetEndpoint)).get();
         
-        assertEquals(rule.getGatewayNatRule().getOriginalIp(), expectedPublicEndpoint.getHostText());
+        assertEquals(rule.getGatewayNatRule().getOriginalIp(), expectedPublicEndpoint.getHost());
         assertEquals(rule.getGatewayNatRule().getOriginalPort(), ""+expectedPublicEndpoint.getPort());
-        assertEquals(rule.getGatewayNatRule().getTranslatedIp(), targetEndpoint.getHostText());
+        assertEquals(rule.getGatewayNatRule().getTranslatedIp(), targetEndpoint.getHost());
         assertEquals(rule.getGatewayNatRule().getTranslatedPort(), ""+targetEndpoint.getPort());
     }
     
