@@ -190,10 +190,10 @@ public abstract class AbstractPortForwarderIptablesTest {
     }
 
     protected void assertTargetReachableVia(HostAndPort hostAndPort) throws Exception {
-        log.info("Confirming ssh-reachable: "+targetPrivateMachine.getUser()+"@"+hostAndPort.getHostText()+":"+hostAndPort.getPort());
+        log.info("Confirming ssh-reachable: "+targetPrivateMachine.getUser()+"@"+hostAndPort.getHost()+":"+hostAndPort.getPort());
 
         SshMachineLocation viaForwarding = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHostText()))
+                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHost()))
                 .configure("port", hostAndPort.getPort())
                 .configure("user", targetPrivateMachine.getUser())
                 .configure("privateKeyData", targetPrivateMachine.getConfig(SshMachineLocation.PRIVATE_KEY_DATA))

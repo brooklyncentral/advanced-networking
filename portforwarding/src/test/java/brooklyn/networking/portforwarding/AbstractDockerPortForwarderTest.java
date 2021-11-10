@@ -126,11 +126,11 @@ public abstract class AbstractDockerPortForwarderTest extends BrooklynAppUnitTes
     }
 
     protected void assertTargetSshableVia(HostAndPort hostAndPort) throws Exception {
-        log.info("Confirming ssh-reachable: "+privateMachine.getUser()+"@"+hostAndPort.getHostText()+":"+hostAndPort
+        log.info("Confirming ssh-reachable: "+privateMachine.getUser()+"@"+hostAndPort.getHost()+":"+hostAndPort
                 .getPort());
 
         SshMachineLocation viaForwarding = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHostText()))
+                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHost()))
                 .configure("port", hostAndPort.getPort())
                 .configure("user", privateMachine.getUser())
                 .configure("password", PASSWORD));

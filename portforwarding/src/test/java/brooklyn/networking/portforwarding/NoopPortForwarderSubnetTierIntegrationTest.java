@@ -122,10 +122,10 @@ public class NoopPortForwarderSubnetTierIntegrationTest {
 
     // TODO Duplication of AbstractPortForwarderIptablesTest.assertTargetReachableVia
     protected void assertTargetReachableVia(HostAndPort hostAndPort) throws Exception {
-        log.info("Confirming ssh-reachable: "+targetMachine.getUser()+"@"+hostAndPort.getHostText()+":"+hostAndPort.getPort());
+        log.info("Confirming ssh-reachable: "+targetMachine.getUser()+"@"+hostAndPort.getHost()+":"+hostAndPort.getPort());
 
         SshMachineLocation viaForwarding = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHostText()))
+                .configure("address", Networking.getInetAddressWithFixedName(hostAndPort.getHost()))
                 .configure("port", hostAndPort.getPort())
                 .configure("user", targetMachine.getUser())
                 .configure("privateKeyData", targetMachine.getConfig(SshMachineLocation.PRIVATE_KEY_DATA))

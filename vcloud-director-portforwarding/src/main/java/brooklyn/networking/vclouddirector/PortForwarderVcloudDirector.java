@@ -200,7 +200,7 @@ public class PortForwarderVcloudDirector implements PortForwarder {
                     .targetEndpoint(targetEndpoint));
             
             // TODO Work around for old vCD NAT microservice, which returned empty result
-            if (!result.hasPort() && result.getHostText().equals("")) {
+            if (!result.hasPort() && result.getHost().equals("")) {
                 if (publicEndpoint.hasPort()) {
                     LOG.warn("[DEPRECATED] NAT Rule addition returned endpoint '{}'; probably old micro-service version; "
                             + "assuming result is {}->{} via {}", new Object[] {result, publicEndpoint, targetEndpoint, subnetTier});

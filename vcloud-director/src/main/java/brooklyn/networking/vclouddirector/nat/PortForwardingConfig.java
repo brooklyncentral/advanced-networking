@@ -3,6 +3,7 @@ package brooklyn.networking.vclouddirector.nat;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.MoreObjects;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.util.net.Protocol;
 
@@ -78,7 +79,7 @@ public class PortForwardingConfig {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("protocol", protocol).add("targetEndpoint", targetEndpoint)
+        return MoreObjects.toStringHelper(this).add("protocol", protocol).add("targetEndpoint", targetEndpoint)
                 .add("publicEndpoint", publicEndpoint).add("publicPortRange", publicPortRange).toString();
     }
 }
