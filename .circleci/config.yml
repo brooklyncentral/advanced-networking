@@ -1,53 +1,27 @@
 version: 2.1
 
+orbs:
+  maven: circleci/maven@1.4.1
+
 executors:
   openjdk8:
     docker:
       - image: cimg/openjdk:8.0
 
-jobs:
-  build:
-    executor: openjdk8
-
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "pom.xml" }}
-          - v1-dependencies-
-
-      - run:
-          name: Build
-          command: mvn -s .circleci/circleci-m2-settings.xml clean install
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
-  deploy:
-    executor: openjdk8
-
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "pom.xml" }}
-          - v1-dependencies-
-
-      - run:
-          name: Deploy
-          command: mvn -s .circleci/circleci-m2-settings.xml clean deploy -P cloudsoft-release -P sonatype-release
-
 workflows:
   build-and-deploy:
     jobs:
-      - build:
+      - maven/test:
+          name: build
+          executor: openjdk8
           filters:
             branches:
-              only: master
-      - deploy:
+              only:
+                - master
+          settings_file: .circleci/m2-settings.xml
+      - maven/test:
+          name: deploy
+          executor: openjdk8
           requires:
             - build
           context:
@@ -55,5 +29,7 @@ workflows:
             - cloudsoft-artifactory
           filters:
             branches:
-              only: master
-
+              only:
+                - master
+          settings_file: .circleci/m2-settings.xml
+          command: deploy -DskipTests -P cloudsoft-release -P sonatype-release
